@@ -17,7 +17,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || true,
+  origin: ['https://tradejournal101-frontend.onrender.com', 'http://localhost:3000'],
   credentials: true
 }));
 app.use(express.json());
