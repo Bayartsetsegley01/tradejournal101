@@ -1,36 +1,21 @@
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '') + '/api';
-
+const getHeaders = () => {
+  const token = localStorage.getItem('token');
+  const h = { 'Content-Type': 'application/json' };
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+};
 const safeFetch = async (url, options = {}) => {
   try {
-    const res = await fetch(url, options);
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-    return await res.json();
-  } catch (error) {
-    console.error(`Fetch error for ${url}:`, error);
-    return { success: false, error: error.message };
-  }
+    const r = await fetch(url, { ...options, headers: getHeaders(), credentials: 'include' });
+    if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
+    return await r.json();
+  } catch (e) { console.error(`Fetch error for ${url}:`, e); return { success: false, error: e.message }; }
 };
 
 export const analyticsService = {
-  getSummary: async (range = '7d') => {
-    return safeFetch(`${API_BASE_URL}/analytics/summary?range=${range}`);
-  },
-  
-  getCharts: async (range = '7d') => {
-    return safeFetch(`${API_BASE_URL}/analytics/charts?range=${range}`);
-  },
-  
-  getMistakes: async (range = '7d') => {
-    return safeFetch(`${API_BASE_URL}/analytics/mistakes?range=${range}`);
-  },
-  
-  getAiInsights: async (trades = []) => {
-    return safeFetch(`${API_BASE_URL}/ai/insights`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(trades)
-    });
-  }
+  getSummary: async (range = '7d') => safeFetch(`${API_BASE_URL}/analytics/summary?range=${range}`),
+  getCharts: async (range = '7d') => safeFetch(`${API_BASE_URL}/analytics/charts?range=${range}`),
+  getMistakes: async (range = '7d') => safeFetch(`${API_BASE_URL}/analytics/mistakes?range=${range}`),
+  getAiInsights: async (trades = []) => safeFetch(`${API_BASE_URL}/ai/insights`, { method: 'POST', body: JSON.stringify(trades) })
 };
