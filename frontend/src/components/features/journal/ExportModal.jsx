@@ -1,6 +1,6 @@
 import { X, FileSpreadsheet, FileText, Download } from "lucide-react";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 export function ExportModal({ onClose, trades = [] }) {
   const handleExportCSV = () => {
@@ -70,7 +70,7 @@ export function ExportModal({ onClose, trades = [] }) {
       ];
     });
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 45,
       head: [['Date', 'Symbol', 'Direction', 'Status', 'PnL']],
       body: tableData,
