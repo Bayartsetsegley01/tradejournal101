@@ -162,3 +162,35 @@ WHERE NOT EXISTS (SELECT 1 FROM tag_definitions WHERE name = 'Followed Plan' AND
 INSERT INTO tag_definitions (name, type, color, is_default)
 SELECT 'Revenge Trading', 'MISTAKE', 'rose', true
 WHERE NOT EXISTS (SELECT 1 FROM tag_definitions WHERE name = 'Revenge Trading' AND is_default = true);
+
+-- Add extra trade detail columns
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='emotion_before') THEN
+        ALTER TABLE trades ADD COLUMN emotion_before VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='emotion_after') THEN
+        ALTER TABLE trades ADD COLUMN emotion_after VARCHAR(100);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='why_entered') THEN
+        ALTER TABLE trades ADD COLUMN why_entered TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='what_happened') THEN
+        ALTER TABLE trades ADD COLUMN what_happened TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='what_went_well') THEN
+        ALTER TABLE trades ADD COLUMN what_went_well TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='mistakes_made') THEN
+        ALTER TABLE trades ADD COLUMN mistakes_made TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='positive_tags') THEN
+        ALTER TABLE trades ADD COLUMN positive_tags JSONB DEFAULT '[]';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='mistake_tags') THEN
+        ALTER TABLE trades ADD COLUMN mistake_tags JSONB DEFAULT '[]';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='setup_description') THEN
+        ALTER TABLE trades ADD COLUMN setup_description TEXT;
+    END IF;
+END $$;
