@@ -17,6 +17,7 @@ export function JournalPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  
   // Filters state
   const [filters, setFilters] = useState({
     search: '',
@@ -29,6 +30,7 @@ export function JournalPage() {
     hasNotes: false,
   });
 
+  
   const fetchTrades = async () => {
     setIsLoading(true);
     try {
@@ -53,8 +55,11 @@ export function JournalPage() {
 
   const handleDuplicate = (trade) => {
     const { id, ...tradeWithoutId } = trade;
-    setEditingTrade({ ...tradeWithoutId, date: new Date().toISOString().slice(0, 16) });
-    setIsAddModalOpen(true);
+    setIsAddModalOpen(false);
+    setTimeout(() => {
+      setEditingTrade({ ...tradeWithoutId, date: new Date().toISOString().slice(0, 16) });
+      setIsAddModalOpen(true);
+    }, 50);
   };
 
   const handleDelete = async (id) => {

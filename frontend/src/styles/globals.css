@@ -9,7 +9,6 @@
 
 @layer base {
   :root {
-    /* Light mode overrides */
     --color-slate-950: #ffffff;
     --color-slate-900: #f8fafc;
     --color-slate-800: #e2e8f0;
@@ -26,7 +25,6 @@
   }
 
   .dark {
-    /* Dark mode overrides */
     --color-slate-950: #0a0a0b;
     --color-slate-900: #121214;
     --color-slate-800: #27272a;
@@ -35,5 +33,10 @@
     --color-black: #000000;
     background-color: var(--color-slate-950);
     color: var(--color-white);
+  }
+
+  body {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI Emoji",
+                 "Apple Color Emoji", "Noto Color Emoji", sans-serif;
   }
 }

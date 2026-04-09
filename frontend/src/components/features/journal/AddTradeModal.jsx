@@ -170,6 +170,21 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
     });
   };
 
+  useEffect(() => {
+    if (isOpen && initialData) {
+      // date formatting...
+      setFormData(prev => ({ ...prev, ...initialData, date: formattedDate, expiry: formattedExpiry }));
+    } else if (isOpen && !initialData) {
+      // reset to empty form
+      setFormData({
+        symbol: '', direction: 'LONG', market: 'FOREX',
+        date: new Date().toISOString().slice(0, 16),
+        // ...
+      });
+    }
+  }, [initialData, isOpen]);
+
+
   const validateForm = () => {
     if (!formData.symbol) return "Симбол (Symbol) оруулна уу";
     if (!formData.entry) return "Орох үнэ (Entry price) оруулна уу";
