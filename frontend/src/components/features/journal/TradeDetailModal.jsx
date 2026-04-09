@@ -29,7 +29,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 {trade.symbol}
                 <span className="text-xs font-medium px-2 py-0.5 bg-slate-800 text-slate-300 rounded uppercase">
-                  {trade.market}
+                {trade.market_type || trade.market}
                 </span>
                 {trade.is_draft && (
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-800 px-2 py-0.5 rounded ml-2">
@@ -38,7 +38,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
                 )}
               </h2>
               <div className="flex items-center gap-3 text-sm text-slate-400 mt-1">
-                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {safeFormatDate(trade.date, "MMM dd, yyyy")}</span>
+                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {safeFormatDate(trade.entry_date || trade.date, "MMM dd, yyyy")}</span>
                 {trade.session && <span className="flex items-center gap-1 capitalize"><Clock className="w-3 h-3" /> {trade.session}</span>}
               </div>
             </div>
@@ -67,15 +67,15 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
               <div className="text-xs text-slate-500 mb-1">Entry</div>
-              <div className="text-sm font-mono text-white">{trade.entry}</div>
+              <div className="text-sm font-mono text-white">{trade.entry_price || trade.entry || '-'}</div>
             </div>
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
               <div className="text-xs text-slate-500 mb-1">Exit</div>
-              <div className="text-sm font-mono text-white">{trade.exit || '-'}</div>
+              <div className="text-sm font-mono text-white">{trade.exit_price || trade.exit || '-'}</div>
             </div>
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
               <div className="text-xs text-slate-500 mb-1">R/R</div>
-              <div className="text-sm font-mono text-white">{trade.rr ? `${trade.rr}R` : '-'}</div>
+              <div className="text-sm font-mono text-white">{(trade.rr_ratio || trade.rr) ? `${trade.rr_ratio || trade.rr}R` : '-'}</div>
             </div>
             <div className={`bg-slate-950 border border-slate-800 rounded-xl p-4 ${
               isWin ? 'border-emerald-500/30 bg-emerald-500/5' : isLoss ? 'border-rose-500/30 bg-rose-500/5' : ''
