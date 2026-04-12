@@ -44,7 +44,7 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="hidden md:flex flex-col w-64 bg-slate-950 border-r border-slate-800 h-full shrink-0">
+      <aside className="hidden md:flex flex-col w-64 bg-slate-950 border-r border-slate-800 fixed top-0 left-0 h-screen shrink-0 z-40">
         {/* Logo */}
         <div className="p-6 border-b border-slate-800">
           <Link to="/app/analytics" className="flex items-center gap-2">
