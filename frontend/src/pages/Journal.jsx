@@ -221,7 +221,7 @@ export function JournalPage() {
 
       <ImportModal 
         isOpen={isImportModalOpen} 
-        onClose={() => setIsImportModalOpen(false)} 
+        onClose={() => { setIsImportModalOpen(false); fetchTrades(); }} 
         onImportComplete={fetchTrades} 
       />
     </div>

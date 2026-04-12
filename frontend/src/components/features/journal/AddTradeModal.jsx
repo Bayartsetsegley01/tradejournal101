@@ -3,17 +3,19 @@ import { X, Image as ImageIcon, Target, LineChart, Brain, LayoutTemplate, Upload
 import { MARKET_TYPES, EMOTIONS, POSITIVE_TAGS, MISTAKE_TAGS, SESSIONS } from "@/lib/constants";
 import { CustomTagModal } from "./CustomTagModal";
 import { tradeService } from "@/services/tradeService";
+import { useLang } from "@/contexts/LanguageContext";
 import { tagService } from "@/services/tagService";
 import { emotionService } from "@/services/emotionService";
 
-const TABS = [
-  { id: 'setup', label: 'Setup & Market', icon: Target, description: 'Зах зээл болон чиглэл' },
-  { id: 'execution', label: 'Execution & Risk', icon: LineChart, description: 'Үнэ болон эрсдэл' },
-  { id: 'psychology', label: 'Psychology & Tags', icon: Brain, description: 'Сэтгэл зүй, алдаа' },
-  { id: 'journal', label: 'Journal & Media', icon: LayoutTemplate, description: 'Тэмдэглэл, зураг' },
-];
-
 export function AddTradeModal({ isOpen, onClose, initialData = null }) {
+  const { t } = useLang();
+
+  const TABS = [
+    { id: 'setup', label: t('setupMarket'), icon: Target, description: t('setupMarket') },
+    { id: 'execution', label: t('executionRisk'), icon: LineChart, description: t('executionRisk') },
+    { id: 'psychology', label: t('psychologyTags'), icon: Brain, description: t('psychologyTags') },
+    { id: 'journal', label: t('journalMedia'), icon: LayoutTemplate, description: t('journalMedia') },
+  ];
   const [activeTab, setActiveTab] = useState('setup');
   const [customTagModal, setCustomTagModal] = useState(null); // { type: 'emotion' | 'positive' | 'mistake' }
   
@@ -168,11 +170,36 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
         }
       }
 
-      setFormData(prev => ({ 
-        ...prev, 
+      // Parse tags from DB (stored as JSONB string or array)
+      const parseTags = (val) => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        try { return JSON.parse(val); } catch { return []; }
+      };
+
+      setFormData(prev => ({
+        ...prev,
         ...initialData,
         date: formattedDate,
-        expiry: formattedExpiry
+        expiry: formattedExpiry,
+        // DB field → form field mapping
+        market: initialData.market_type || initialData.market || prev.market,
+        entry: initialData.entry_price || initialData.entry || '',
+        exit: initialData.exit_price || initialData.exit || '',
+        stopLoss: initialData.stop_loss || initialData.stopLoss || '',
+        takeProfit: initialData.take_profit || initialData.takeProfit || '',
+        quantity: initialData.position_size || initialData.quantity || '',
+        emotionBefore: initialData.emotion_before || initialData.emotionBefore || '',
+        emotionAfter: initialData.emotion_after || initialData.emotionAfter || '',
+        positiveTags: parseTags(initialData.positive_tags || initialData.positiveTags),
+        mistakeTags: parseTags(initialData.mistake_tags || initialData.mistakeTags),
+        whyEntered: initialData.why_entered || initialData.whyEntered || '',
+        whatHappened: initialData.what_happened || initialData.whatHappened || '',
+        whatWentWell: initialData.what_went_well || initialData.whatWentWell || '',
+        mistakesMade: initialData.mistakes_made || initialData.mistakesMade || '',
+        setupDescription: initialData.setup_description || initialData.setupDescription || '',
+        lessonLearned: initialData.lessons_learned || initialData.lessonLearned || '',
+        notes: initialData.notes || '',
       }));
     }
   }, [initialData]);

@@ -1,3 +1,4 @@
+import { useLang } from "@/contexts/LanguageContext";
 import { useState, useEffect } from "react";
 import { CalendarDays, TrendingUp, TrendingDown, Target, Brain, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { analyticsService } from "@/services/analyticsService";
@@ -28,6 +29,7 @@ const MONTH_NAMES = ['1-р сар','2-р сар','3-р сар','4-р сар','5-
   '7-р сар','8-р сар','9-р сар','10-р сар','11-р сар','12-р сар'];
 
 export function WeeklyReviewPage() {
+  const { t } = useLang();
   const [mode, setMode] = useState('weekly'); // 'weekly' | 'monthly'
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -74,7 +76,7 @@ export function WeeklyReviewPage() {
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
             <CalendarDays className="w-6 h-6 text-accent" />
-            {mode === 'weekly' ? 'Долоо хоногийн' : 'Сарын'} дүгнэлт
+            {mode === 'weekly' ? t('weeklyTitle') : t('monthlyTitle')}
           </h1>
           <p className="text-sm text-slate-400 mt-1">Арилжааны гүйцэтгэлийн автомат тайлан</p>
         </div>
@@ -114,7 +116,7 @@ export function WeeklyReviewPage() {
       ) : !data ? null : data.totalTrades === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400">
           <CalendarDays className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p>Энэ хугацаанд арилжаа бүртгэгдээгүй байна.</p>
+          <p>{t('noTradesInPeriod')}</p>
         </div>
       ) : (
         <>
@@ -126,13 +128,13 @@ export function WeeklyReviewPage() {
           {/* Stats grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: 'Нийт арилжаа', value: data.totalTrades, color: 'text-white' },
-              { label: 'Win Rate', value: data.winRate + '%', color: data.winRate >= 50 ? 'text-emerald-400' : 'text-rose-400' },
-              { label: 'Нийт PnL', value: fmtPnl(data.netPnl), color: data.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400' },
-              { label: 'Profit Factor', value: data.profitFactor || '—', color: data.profitFactor >= 1.5 ? 'text-emerald-400' : 'text-amber-400' },
-              { label: 'Дундаж ашиг', value: fmtPnl(data.avgWin), color: 'text-emerald-400' },
-              { label: 'Дундаж алдагдал', value: '-' + data.avgLoss?.toFixed(2), color: 'text-rose-400' },
-              { label: 'Дундаж RR', value: data.avgRR ? data.avgRR + 'R' : '—', color: 'text-accent' },
+              { label: t('totalTrades'), value: data.totalTrades, color: 'text-white' },
+              { label: t('winRate'), value: data.winRate + '%', color: data.winRate >= 50 ? 'text-emerald-400' : 'text-rose-400' },
+              { label: t('netPnl'), value: fmtPnl(data.netPnl), color: data.netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400' },
+              { label: t('profitFactor'), value: data.profitFactor || '—', color: data.profitFactor >= 1.5 ? 'text-emerald-400' : 'text-amber-400' },
+              { label: t('avgWin'), value: fmtPnl(data.avgWin), color: 'text-emerald-400' },
+              { label: t('avgLoss'), value: '-' + data.avgLoss?.toFixed(2), color: 'text-rose-400' },
+              { label: t('avgRR'), value: data.avgRR ? data.avgRR + 'R' : '—', color: 'text-accent' },
               { label: 'Ялагч / Ялагдагч', value: `${data.winningTrades} / ${data.losingTrades}`, color: 'text-slate-300' },
             ].map((s, i) => (
               <div key={i} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
@@ -149,7 +151,7 @@ export function WeeklyReviewPage() {
                 <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-5">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm font-semibold text-white">Хамгийн сайн арилжаа</span>
+                    <span className="text-sm font-semibold text-white">{t('bestTrade')}</span>
                   </div>
                   <p className="text-lg font-bold text-emerald-400">{fmtPnl(parseFloat(data.bestTrade.pnl))}</p>
                   <p className="text-xs text-slate-400 mt-1">{data.bestTrade.symbol} · {data.bestTrade.direction}</p>
@@ -159,7 +161,7 @@ export function WeeklyReviewPage() {
                 <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-5">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingDown className="w-4 h-4 text-rose-400" />
-                    <span className="text-sm font-semibold text-white">Хамгийн муу арилжаа</span>
+                    <span className="text-sm font-semibold text-white">{t('worstTrade')}</span>
                   </div>
                   <p className="text-lg font-bold text-rose-400">{fmtPnl(parseFloat(data.worstTrade.pnl))}</p>
                   <p className="text-xs text-slate-400 mt-1">{data.worstTrade.symbol} · {data.worstTrade.direction}</p>
@@ -173,7 +175,7 @@ export function WeeklyReviewPage() {
             {data.topMistakeTags.length > 0 && (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                 <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                  <Target className="w-4 h-4 text-rose-400" /> Давтагдсан алдаанууд
+                  <Target className="w-4 h-4 text-rose-400" /> {t('topMistakes')}
                 </h3>
                 <ul className="space-y-2">
                   {data.topMistakeTags.map((t, i) => (
@@ -206,7 +208,7 @@ export function WeeklyReviewPage() {
           {Object.keys(data.emotionStats).length > 0 && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                <Brain className="w-4 h-4 text-accent" /> Сэтгэл зүйн нөлөөлөл
+                <Brain className="w-4 h-4 text-accent" /> {t('emotionEffect')}
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {Object.entries(data.emotionStats).map(([emotion, stats]) => (
@@ -225,7 +227,7 @@ export function WeeklyReviewPage() {
           {/* Daily breakdown */}
           {data.dailyBreakdown.length > 1 && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-              <h3 className="text-sm font-semibold text-white mb-4">Өдрийн задаргаа</h3>
+              <h3 className="text-sm font-semibold text-white mb-4">{t('dailyBreakdown')}</h3>
               <div className="space-y-2">
                 {data.dailyBreakdown.map((d, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm">

@@ -154,16 +154,7 @@ export function AnalyticsPage() {
 
           {activeTab === "detailed" && !loading && summary && charts && summary.totalTrades > 0 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {/* Row 3: Performance Breakdown */}
-              <PerformanceCharts />
-
-              {/* Row 4: Strategy Table */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <StrategyTable />
-                <div className="bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-center text-slate-500 text-sm h-full min-h-[300px]">
-                  P&L by Day of Week Chart Placeholder
-                </div>
-              </div>
+              <PerformanceCharts timeRange={timeRange} />
             </div>
           )}
 
