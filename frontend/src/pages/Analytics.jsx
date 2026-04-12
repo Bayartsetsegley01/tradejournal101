@@ -94,7 +94,7 @@ export function AnalyticsPage() {
   }, [timeRange, customRange]);
 
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex flex-col">
       {/* Sticky Top Header */}
       <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 px-8 h-16 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-white tracking-tight">Анализ</h1>
