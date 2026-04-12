@@ -10,6 +10,7 @@ import tagsRoutes from './routes/tags.js';
 import emotionsRoutes from './routes/emotions.js';
 import authRoutes from './routes/authRoutes.js';
 import { authenticateToken } from './utils/authMiddleware.js';
+import importRoutes from './routes/import.js';
 
 dotenv.config();
 const app = express();
@@ -32,5 +33,5 @@ app.use('/api/journal', authenticateToken, journalRoutes);
 app.use('/api/ai', authenticateToken, aiRoutes);
 app.use('/api/tags', authenticateToken, tagsRoutes);
 app.use('/api/emotions', authenticateToken, emotionsRoutes);
-
+app.use('/api/import', authenticateToken, importRoutes);
 export default app;

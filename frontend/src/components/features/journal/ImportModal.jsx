@@ -73,7 +73,7 @@ export function ImportModal({ isOpen, onClose, onImportComplete }) {
     setIsImporting(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE_URL}/import/trades`, {
+      const res = await fetch(`${API_BASE_URL}/trades/import`, {
         method: 'POST',
         headers: getHeaders(),
         credentials: 'include',
