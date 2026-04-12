@@ -4,12 +4,14 @@ import { TradeFilters } from "@/components/features/journal/TradeFilters";
 import { AddTradeModal } from "@/components/features/journal/AddTradeModal";
 import { TradeDetailModal } from "@/components/features/journal/TradeDetailModal";
 import { ExportModal } from "@/components/features/journal/ExportModal";
-import { Plus, Download, Loader2 } from "lucide-react";
+import { ImportModal } from "@/components/features/journal/ImportModal";
+import { Plus, Download, Loader2, Upload } from "lucide-react";
 import { tradeService } from "@/services/tradeService";
 
 export function JournalPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [editingTrade, setEditingTrade] = useState(null);
   
@@ -147,6 +149,13 @@ export function JournalPage() {
         
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <button 
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
+          >
+            <Upload className="w-4 h-4" />
+            CSV Import
+          </button>
+          <button 
             onClick={() => setIsExportModalOpen(true)}
             className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
           >
@@ -209,6 +218,12 @@ export function JournalPage() {
       {isExportModalOpen && (
         <ExportModal onClose={() => setIsExportModalOpen(false)} trades={filteredTrades} />
       )}
+
+      <ImportModal 
+        isOpen={isImportModalOpen} 
+        onClose={() => setIsImportModalOpen(false)} 
+        onImportComplete={fetchTrades} 
+      />
     </div>
   );
 }
