@@ -67,12 +67,12 @@ export function AIAdvisorPage() {
         method: 'POST',
         headers: getHeaders(),
         credentials: 'include',
-        body: JSON.stringify({ message: userMsg, history: apiMessages })
+        body: JSON.stringify({ messages: apiMessages })
       });
       const data = await res.json();
       
-      if (data.success && data.reply) {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      if (data.success && data.data) {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: data.data }]);
       } else {
         setChatMessages(prev => [...prev, { role: 'assistant', content: 'Уучлаарай, хариулт авахад алдаа гарлаа. Дахин оролдоно уу.' }]);
       }
@@ -185,7 +185,7 @@ export function AIAdvisorPage() {
                   <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                     msg.role === 'user' 
                       ? 'bg-accent text-slate-950 rounded-tr-md' 
-                      : 'bg-slate-700 text-white rounded-tl-md'
+                      : 'bg-slate-800/80 text-slate-200 rounded-tl-md'
                   }`}>
                     {msg.content.split('\n').map((line, i) => (
                       <span key={i}>{line}{i < msg.content.split('\n').length - 1 && <br/>}</span>
