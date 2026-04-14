@@ -16,44 +16,50 @@ export const addTrade = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
     const userId = req.user.id;
-    const {
-      status, symbol, market_type, direction, strategy, session,
-      entry_date, exit_date, entry_price, exit_price, stop_loss, take_profit,
-      position_size, pnl, rr_ratio, notes, lessons_learned, screenshot_url,
-      // Emotion & tag fields
-      emotion_before, emotion_after, emotionBefore, emotionAfter,
-      positive_tags, mistake_tags, positiveTags, mistakeTags,
-      why_entered, whyEntered, what_happened, whatHappened,
-      what_went_well, whatWentWell, mistakes_made, mistakesMade,
-      setup_description, setupDescription
-    } = req.body;
+    const b = req.body;
+    
+    const entryPrice = b.entry_price || b.entry || null;
+    const exitPrice = b.exit_price || b.exit || null;
+    const stopLoss = b.stop_loss || b.stopLoss || null;
+    const takeProfit = b.take_profit || b.takeProfit || null;
+    const positionSize = b.position_size || b.quantity || null;
+    const entryDate = b.entry_date || b.date || null;
+    const exitDate = b.exit_date || null;
+    const marketType = b.market_type || b.market || null;
+    const notes = b.notes || b.whyEntered || b.setupDescription || null;
+    const lessonsLearned = b.lessons_learned || b.lessonLearned || null;
+    
+    // Calculate PnL if not provided
+    let pnl = b.pnl || null;
+    if (!pnl && entryPrice && exitPrice && positionSize) {
+      const ep = parseFloat(entryPrice);
+      const xp = parseFloat(exitPrice);
+      const qty = parseFloat(positionSize);
+      if (!isNaN(ep) && !isNaN(xp) && !isNaN(qty)) {
+        pnl = b.direction === 'SHORT' ? (ep - xp) * qty : (xp - ep) * qty;
+      }
+    }
 
-    const eBefore = emotion_before || emotionBefore || null;
-    const eAfter = emotion_after || emotionAfter || null;
-    const posTags = JSON.stringify(positive_tags || positiveTags || []);
-    const misTags = JSON.stringify(mistake_tags || mistakeTags || []);
-    const whyEnt = why_entered || whyEntered || null;
-    const whatHap = what_happened || whatHappened || null;
-    const whatWell = what_went_well || whatWentWell || null;
-    const mistMade = mistakes_made || mistakesMade || null;
-    const setupDesc = setup_description || setupDescription || null;
+    // Calculate R:R ratio
+    let rrRatio = b.rr_ratio || null;
+    if (!rrRatio && entryPrice && stopLoss && takeProfit) {
+      const ep = parseFloat(entryPrice);
+      const sl = parseFloat(stopLoss);
+      const tp = parseFloat(takeProfit);
+      if (!isNaN(ep) && !isNaN(sl) && !isNaN(tp) && Math.abs(ep - sl) > 0) {
+        rrRatio = Math.abs(tp - ep) / Math.abs(ep - sl);
+      }
+    }
 
     const result = await query(
-      `INSERT INTO trades (
-        user_id, status, symbol, market_type, direction, strategy, session,
+      `INSERT INTO trades (user_id, status, symbol, market_type, direction, strategy, session,
         entry_date, exit_date, entry_price, exit_price, stop_loss, take_profit,
-        position_size, pnl, rr_ratio, notes, lessons_learned, screenshot_url,
-        emotion_before, emotion_after, positive_tags, mistake_tags,
-        why_entered, what_happened, what_went_well, mistakes_made, setup_description
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28) RETURNING *`,
-      [
-        userId, status||'CLOSED', symbol, market_type, direction, strategy, session,
-        entry_date?new Date(entry_date):null, exit_date?new Date(exit_date):null,
-        entry_price, exit_price, stop_loss, take_profit, position_size, pnl, rr_ratio,
-        notes, lessons_learned, screenshot_url,
-        eBefore, eAfter, posTags, misTags,
-        whyEnt, whatHap, whatWell, mistMade, setupDesc
-      ]
+        position_size, pnl, rr_ratio, notes, lessons_learned, screenshot_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
+      [userId, b.status||'CLOSED', b.symbol, marketType, b.direction, b.strategy, b.session,
+        entryDate?new Date(entryDate):null, exitDate?new Date(exitDate):null,
+        entryPrice, exitPrice, stopLoss, takeProfit,
+        positionSize, pnl, rrRatio, notes, lessonsLearned, b.screenshot_url||null]
     );
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
@@ -67,46 +73,49 @@ export const updateTrade = async (req, res) => {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
     const { id } = req.params;
     const userId = req.user.id;
-    const {
-      status, symbol, market_type, direction, strategy, session,
-      entry_date, exit_date, entry_price, exit_price, stop_loss, take_profit,
-      position_size, pnl, rr_ratio, notes, lessons_learned, screenshot_url,
-      emotion_before, emotion_after, emotionBefore, emotionAfter,
-      positive_tags, mistake_tags, positiveTags, mistakeTags,
-      why_entered, whyEntered, what_happened, whatHappened,
-      what_went_well, whatWentWell, mistakes_made, mistakesMade,
-      setup_description, setupDescription
-    } = req.body;
+    const b = req.body;
+    
+    const entryPrice = b.entry_price || b.entry || null;
+    const exitPrice = b.exit_price || b.exit || null;
+    const stopLoss = b.stop_loss || b.stopLoss || null;
+    const takeProfit = b.take_profit || b.takeProfit || null;
+    const positionSize = b.position_size || b.quantity || null;
+    const entryDate = b.entry_date || b.date || null;
+    const exitDate = b.exit_date || null;
+    const marketType = b.market_type || b.market || null;
+    const notes = b.notes || b.whyEntered || b.setupDescription || null;
+    const lessonsLearned = b.lessons_learned || b.lessonLearned || null;
 
-    const eBefore = emotion_before || emotionBefore || null;
-    const eAfter = emotion_after || emotionAfter || null;
-    const posTags = JSON.stringify(positive_tags || positiveTags || []);
-    const misTags = JSON.stringify(mistake_tags || mistakeTags || []);
-    const whyEnt = why_entered || whyEntered || null;
-    const whatHap = what_happened || whatHappened || null;
-    const whatWell = what_went_well || whatWentWell || null;
-    const mistMade = mistakes_made || mistakesMade || null;
-    const setupDesc = setup_description || setupDescription || null;
+    let pnl = b.pnl || null;
+    if (!pnl && entryPrice && exitPrice && positionSize) {
+      const ep = parseFloat(entryPrice);
+      const xp = parseFloat(exitPrice);
+      const qty = parseFloat(positionSize);
+      if (!isNaN(ep) && !isNaN(xp) && !isNaN(qty)) {
+        pnl = b.direction === 'SHORT' ? (ep - xp) * qty : (xp - ep) * qty;
+      }
+    }
+
+    let rrRatio = b.rr_ratio || null;
+    if (!rrRatio && entryPrice && stopLoss && takeProfit) {
+      const ep = parseFloat(entryPrice);
+      const sl = parseFloat(stopLoss);
+      const tp = parseFloat(takeProfit);
+      if (!isNaN(ep) && !isNaN(sl) && !isNaN(tp) && Math.abs(ep - sl) > 0) {
+        rrRatio = Math.abs(tp - ep) / Math.abs(ep - sl);
+      }
+    }
 
     const result = await query(
-      `UPDATE trades SET
-        status=$1, symbol=$2, market_type=$3, direction=$4, strategy=$5, session=$6,
-        entry_date=$7, exit_date=$8, entry_price=$9, exit_price=$10, stop_loss=$11,
-        take_profit=$12, position_size=$13, pnl=$14, rr_ratio=$15, notes=$16,
-        lessons_learned=$17, screenshot_url=$18,
-        emotion_before=$19, emotion_after=$20, positive_tags=$21, mistake_tags=$22,
-        why_entered=$23, what_happened=$24, what_went_well=$25, mistakes_made=$26,
-        setup_description=$27, updated_at=CURRENT_TIMESTAMP
-       WHERE id=$28 AND user_id=$29 RETURNING *`,
-      [
-        status||'CLOSED', symbol, market_type, direction, strategy, session,
-        entry_date?new Date(entry_date):null, exit_date?new Date(exit_date):null,
-        entry_price, exit_price, stop_loss, take_profit, position_size, pnl, rr_ratio,
-        notes, lessons_learned, screenshot_url,
-        eBefore, eAfter, posTags, misTags,
-        whyEnt, whatHap, whatWell, mistMade, setupDesc,
-        id, userId
-      ]
+      `UPDATE trades SET status=$1, symbol=$2, market_type=$3, direction=$4, strategy=$5, session=$6,
+        entry_date=$7, exit_date=$8, entry_price=$9, exit_price=$10, stop_loss=$11, take_profit=$12,
+        position_size=$13, pnl=$14, rr_ratio=$15, notes=$16, lessons_learned=$17, screenshot_url=$18,
+        updated_at=CURRENT_TIMESTAMP WHERE id=$19 AND user_id=$20 RETURNING *`,
+      [b.status||'CLOSED', b.symbol, marketType, b.direction, b.strategy, b.session,
+        entryDate?new Date(entryDate):null, exitDate?new Date(exitDate):null,
+        entryPrice, exitPrice, stopLoss, takeProfit,
+        positionSize, pnl, rrRatio, notes, lessonsLearned, b.screenshot_url||null,
+        id, userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ success: false, error: 'Trade not found' });
     res.json({ success: true, data: result.rows[0] });
@@ -125,7 +134,6 @@ export const getTradeById = async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ success: false, error: 'Trade not found' });
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
-    console.error('getTradeById error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -139,7 +147,6 @@ export const deleteTrade = async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ success: false, error: 'Trade not found' });
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
-    console.error('deleteTrade error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -158,7 +165,6 @@ export const updateTradeNotes = async (req, res) => {
     }
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
-    console.error('updateTradeNotes error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -171,7 +177,6 @@ export const addTradeMedia = async (req, res) => {
     const result = await query('INSERT INTO trade_media (trade_id, file_url, file_type) VALUES ($1,$2,$3) RETURNING *', [id, file_url, file_type]);
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
-    console.error('addTradeMedia error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

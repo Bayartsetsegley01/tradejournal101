@@ -1,9 +1,13 @@
 import express from 'express';
-import { getInsights, chat } from '../controllers/aiController.js';
+import { chat, getInsights } from '../controllers/aiController.js';
+import { authenticateToken } from '../utils/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/insights', getInsights);
+// All AI routes require auth
+router.use(authenticateToken);
+
 router.post('/chat', chat);
+router.post('/insights', getInsights);
 
 export default router;
