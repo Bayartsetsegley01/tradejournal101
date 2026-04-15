@@ -296,7 +296,7 @@ ${tradeContext ? `\nХэрэглэгчийн арилжааны мэдээлэл
                           ? 'bg-accent text-slate-950 font-medium rounded-tr-sm'
                           : msg.isError
                           ? 'bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-tl-sm'
-                          : 'bg-slate-800/80 border border-slate-700/50 text-slate-200 rounded-tl-sm'
+                          : 'bg-slate-700 border border-slate-600 text-white rounded-tl-sm'
                       }`}>
                         {msg.role === 'assistant'
                           ? <MessageContent content={msg.content} />
