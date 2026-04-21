@@ -19,7 +19,7 @@ app.use(cors({
   origin: ['https://tradejournal101-frontend.onrender.com', 'http://localhost:3000'],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
 // Public routes
