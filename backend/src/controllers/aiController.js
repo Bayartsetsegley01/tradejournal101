@@ -76,7 +76,7 @@ export const getInsights = async (req, res) => {
       return res.status(503).json({ success: false, error: 'AI API not configured' });
     }
 
-    let tradesData = req.body;
+    let tradesData = Array.isArray(req.body) ? req.body : [];
 
     if (!tradesData || tradesData.length === 0) {
       if (getDbStatus()) {
