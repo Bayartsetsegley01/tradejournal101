@@ -139,12 +139,33 @@ CREATE TABLE IF NOT EXISTS payments (
 
 -- Insert default plans
 INSERT INTO plans (name, price_monthly, price_yearly, features)
-SELECT 'FREE', 0, 0, '{"max_trades_per_month": 30, "ai_analysis": false}'::jsonb
+SELECT 'FREE', 0, 0, '{"max_trades_per_month": -1, "ai_analysis": true}'::jsonb
 WHERE NOT EXISTS (SELECT 1 FROM plans WHERE name = 'FREE');
 
-INSERT INTO plans (name, price_monthly, price_yearly, features)
-SELECT 'PRO', 29000, 290000, '{"max_trades_per_month": -1, "ai_analysis": true}'::jsonb
-WHERE NOT EXISTS (SELECT 1 FROM plans WHERE name = 'PRO');
+-- Add Google Auth and admin columns to users
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='role') THEN
+        ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='google_id') THEN
+        ALTER TABLE users ADD COLUMN google_id VARCHAR(255) UNIQUE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='avatar_url') THEN
+        ALTER TABLE users ADD COLUMN avatar_url TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='auth_provider') THEN
+        ALTER TABLE users ADD COLUMN auth_provider VARCHAR(20) DEFAULT 'email';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='last_login_at') THEN
+        ALTER TABLE users ADD COLUMN last_login_at TIMESTAMP WITH TIME ZONE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_active') THEN
+        ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT true;
+    END IF;
+    -- Make password_hash nullable for Google-only users
+    ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+END $$;
 
 -- Insert default tags if they don't exist
 INSERT INTO emotion_tags (name, emoji, color, is_default)
@@ -257,3 +278,26 @@ SELECT name, type, color, true FROM (VALUES
   ('FOMO оролт', 'MISTAKE', 'pink', true)
 ) AS v(name, type, color, is_default)
 WHERE NOT EXISTS (SELECT 1 FROM tag_definitions WHERE name = v.name AND is_default = true);
+
+-- Migration: users table — Google Auth + Admin columns
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='role') THEN
+        ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='google_id') THEN
+        ALTER TABLE users ADD COLUMN google_id VARCHAR(255) UNIQUE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='avatar_url') THEN
+        ALTER TABLE users ADD COLUMN avatar_url TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='auth_provider') THEN
+        ALTER TABLE users ADD COLUMN auth_provider VARCHAR(20) DEFAULT 'email';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='last_login_at') THEN
+        ALTER TABLE users ADD COLUMN last_login_at TIMESTAMP WITH TIME ZONE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_active') THEN
+        ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT true;
+    END IF;
+END $$;

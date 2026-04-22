@@ -26,8 +26,17 @@ export const addTrade = async (req, res) => {
     const entryDate = b.entry_date || b.date || null;
     const exitDate = b.exit_date || null;
     const marketType = b.market_type || b.market || null;
-    const notes = b.notes || b.whyEntered || b.setupDescription || null;
+    const notes = b.notes || null;
     const lessonsLearned = b.lessons_learned || b.lessonLearned || null;
+    const emotionBefore = b.emotion_before || b.emotionBefore || null;
+    const emotionAfter = b.emotion_after || b.emotionAfter || null;
+    const positiveTags = b.positive_tags || b.positiveTags || '[]';
+    const mistakeTags = b.mistake_tags || b.mistakeTags || '[]';
+    const whyEntered = b.why_entered || b.whyEntered || null;
+    const whatHappened = b.what_happened || b.whatHappened || null;
+    const whatWentWell = b.what_went_well || b.whatWentWell || null;
+    const mistakesMade = b.mistakes_made || b.mistakesMade || null;
+    const setupDescription = b.setup_description || b.setupDescription || null;
     
     // Calculate PnL if not provided
     let pnl = b.pnl || null;
@@ -54,12 +63,19 @@ export const addTrade = async (req, res) => {
     const result = await query(
       `INSERT INTO trades (user_id, status, symbol, market_type, direction, strategy, session,
         entry_date, exit_date, entry_price, exit_price, stop_loss, take_profit,
-        position_size, pnl, rr_ratio, notes, lessons_learned, screenshot_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *`,
+        position_size, pnl, rr_ratio, notes, lessons_learned, screenshot_url,
+        emotion_before, emotion_after, positive_tags, mistake_tags,
+        why_entered, what_happened, what_went_well, mistakes_made, setup_description)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
+        $20,$21,$22,$23,$24,$25,$26,$27,$28) RETURNING *`,
       [userId, b.status||'CLOSED', b.symbol, marketType, b.direction, b.strategy, b.session,
         entryDate?new Date(entryDate):null, exitDate?new Date(exitDate):null,
         entryPrice, exitPrice, stopLoss, takeProfit,
-        positionSize, pnl, rrRatio, notes, lessonsLearned, b.screenshot_url||null]
+        positionSize, pnl, rrRatio, notes, lessonsLearned, b.screenshot_url||null,
+        emotionBefore, emotionAfter,
+        typeof positiveTags === 'string' ? positiveTags : JSON.stringify(positiveTags),
+        typeof mistakeTags === 'string' ? mistakeTags : JSON.stringify(mistakeTags),
+        whyEntered, whatHappened, whatWentWell, mistakesMade, setupDescription]
     );
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
@@ -83,8 +99,17 @@ export const updateTrade = async (req, res) => {
     const entryDate = b.entry_date || b.date || null;
     const exitDate = b.exit_date || null;
     const marketType = b.market_type || b.market || null;
-    const notes = b.notes || b.whyEntered || b.setupDescription || null;
+    const notes = b.notes || null;
     const lessonsLearned = b.lessons_learned || b.lessonLearned || null;
+    const emotionBefore = b.emotion_before || b.emotionBefore || null;
+    const emotionAfter = b.emotion_after || b.emotionAfter || null;
+    const positiveTags = b.positive_tags || b.positiveTags || '[]';
+    const mistakeTags = b.mistake_tags || b.mistakeTags || '[]';
+    const whyEntered = b.why_entered || b.whyEntered || null;
+    const whatHappened = b.what_happened || b.whatHappened || null;
+    const whatWentWell = b.what_went_well || b.whatWentWell || null;
+    const mistakesMade = b.mistakes_made || b.mistakesMade || null;
+    const setupDescription = b.setup_description || b.setupDescription || null;
 
     let pnl = b.pnl || null;
     if (!pnl && entryPrice && exitPrice && positionSize) {
@@ -110,11 +135,17 @@ export const updateTrade = async (req, res) => {
       `UPDATE trades SET status=$1, symbol=$2, market_type=$3, direction=$4, strategy=$5, session=$6,
         entry_date=$7, exit_date=$8, entry_price=$9, exit_price=$10, stop_loss=$11, take_profit=$12,
         position_size=$13, pnl=$14, rr_ratio=$15, notes=$16, lessons_learned=$17, screenshot_url=$18,
-        updated_at=CURRENT_TIMESTAMP WHERE id=$19 AND user_id=$20 RETURNING *`,
+        emotion_before=$19, emotion_after=$20, positive_tags=$21, mistake_tags=$22,
+        why_entered=$23, what_happened=$24, what_went_well=$25, mistakes_made=$26, setup_description=$27,
+        updated_at=CURRENT_TIMESTAMP WHERE id=$28 AND user_id=$29 RETURNING *`,
       [b.status||'CLOSED', b.symbol, marketType, b.direction, b.strategy, b.session,
         entryDate?new Date(entryDate):null, exitDate?new Date(exitDate):null,
         entryPrice, exitPrice, stopLoss, takeProfit,
         positionSize, pnl, rrRatio, notes, lessonsLearned, b.screenshot_url||null,
+        emotionBefore, emotionAfter,
+        typeof positiveTags === 'string' ? positiveTags : JSON.stringify(positiveTags),
+        typeof mistakeTags === 'string' ? mistakeTags : JSON.stringify(mistakeTags),
+        whyEntered, whatHappened, whatWentWell, mistakesMade, setupDescription,
         id, userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ success: false, error: 'Trade not found' });

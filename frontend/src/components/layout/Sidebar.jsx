@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BookOpen, BarChart2, Sparkles, Settings, PlusCircle,
-  User, CreditCard, LogOut, BrainCircuit, CalendarDays
+  User, LogOut, BrainCircuit, CalendarDays
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
@@ -113,14 +113,6 @@ export function Sidebar() {
                 className="flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
               >
                 <User className="w-4 h-4" /> {t('settings')}
-              </Link>
-              <Link
-                to="/app/settings"
-                state={{ activeTab: 'plan' }}
-                onClick={() => setIsProfileOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-              >
-                <CreditCard className="w-4 h-4" /> Plan & Billing
               </Link>
               <button
                 onClick={handleLogout}

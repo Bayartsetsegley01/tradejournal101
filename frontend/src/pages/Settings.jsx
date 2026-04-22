@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { User, Palette, Globe, Bell, Shield, CreditCard, AlertTriangle } from "lucide-react";
+import { User, Palette, Globe, Bell, Shield, AlertTriangle } from "lucide-react";
 
 export function SettingsPage() {
   const location = useLocation();
@@ -167,7 +167,6 @@ export function SettingsPage() {
     { id: "preferences", label: text.preferences, icon: Globe },
     { id: "notifications", label: text.notifications, icon: Bell },
     { id: "privacy", label: text.privacy, icon: Shield },
-    { id: "plan", label: text.plan, icon: CreditCard },
   ];
 
   return (
@@ -392,28 +391,6 @@ export function SettingsPage() {
                   className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-sm font-medium rounded-xl transition-colors border border-rose-500/20"
                 >
                   Бүх өгөгдлөө устгах
-                </button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "plan" && (
-            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-lg font-semibold text-white">План & Төлбөр</h2>
-              <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-2xl p-8 relative overflow-hidden shadow-xl">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 blur-3xl rounded-full" />
-                <div className="flex items-center justify-between mb-6 relative z-10">
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 bg-accent uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">Pro Plan</span>
-                    <h3 className="text-2xl font-bold text-white mt-3">Идэвхтэй байна</h3>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold text-white">$19<span className="text-base text-slate-400 font-normal">/сар</span></div>
-                  </div>
-                </div>
-                <p className="text-sm text-slate-400 mb-8 relative z-10">Дараагийн төлбөр: 2026 оны 5 сарын 5</p>
-                <button className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-xl transition-all border border-slate-600 hover:border-slate-500 shadow-sm relative z-10">
-                  Төлбөрийн мэдээлэл шинэчлэх
                 </button>
               </div>
             </div>
