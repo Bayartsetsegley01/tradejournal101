@@ -18,7 +18,6 @@ export function LandingPage() {
         <Features />
         <HowItWorks />
         <AnalyticsPreview />
-        <Pricing />
         <Testimonials />
         <FAQ />
         <CTA />
