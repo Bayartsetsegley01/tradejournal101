@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import app from "./app.js";
 import { initDb } from "./db/index.js";
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 3001;

@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import passport from './utils/passport.js';
 import tradesRoutes from './routes/trades.js';
@@ -13,7 +12,6 @@ import authRoutes from './routes/authRoutes.js';
 import { authenticateToken } from './utils/authMiddleware.js';
 import importRoutes from './routes/import.js';
 
-dotenv.config();
 const app = express();
 
 app.use(cors({
