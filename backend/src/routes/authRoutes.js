@@ -1,8 +1,10 @@
+
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import passport from '../utils/passport.js';
 import { register, login, logout, getMe, sendCode, verifyCode, googleAuth } from '../controllers/authController.js';
 import { authenticateToken } from '../utils/authMiddleware.js';
+import { query } from '../db/index.js';
 
 const router = express.Router();
 
@@ -17,7 +19,17 @@ router.post('/verify-code', verifyCode);
 router.post('/logout', logout);
 router.get('/me', authenticateToken, getMe);
 
-// Google OAuth redirect-based flow
+router.post('/make-admin', async (req, res) => {
+  try {
+    const { email, secret } = req.body;
+    if (secret !== JWT_SECRET) return res.status(403).json({ error: 'Forbidden' });
+    await query('UPDATE users SET role = $1 WHERE email = $2', ['admin', email]);
+    res.json({ success: true, message: `${email} is now admin` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/google/redirect', passport.authenticate('google', {
   scope: ['profile', 'email'],
   session: false,
