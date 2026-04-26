@@ -112,10 +112,29 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const googleLogin = async ({ credential, googleId, email, name, picture }) => {
+    const response = await fetch(`${API_BASE_URL}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ credential, googleId, email, name, picture }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Google нэвтрэлт амжилтгүй боллоо.');
+    }
+
+    if (data.token) localStorage.setItem('token', data.token);
+    setUser(data.user);
+    return data;
+  };
+
   const logout = async () => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API_BASE_URL}/auth/logout`, { 
+      await fetch(`${API_BASE_URL}/auth/logout`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         credentials: 'include'
@@ -129,7 +148,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, sendCode, verifyCode }}>
+    <AuthContext.Provider value={{ user, loading, login, register, googleLogin, logout, sendCode, verifyCode }}>
       {children}
     </AuthContext.Provider>
   );
