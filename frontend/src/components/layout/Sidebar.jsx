@@ -1,11 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   BookOpen, BarChart2, Sparkles, Settings, PlusCircle,
-  User, LogOut, BrainCircuit, CalendarDays
+  User, LogOut, BrainCircuit, CalendarDays, Shield, MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { AddTradeModal } from "@/components/features/journal/AddTradeModal";
+import { FeedbackModal } from "@/components/FeedbackModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLang } from "@/contexts/LanguageContext";
 
@@ -16,6 +17,7 @@ export function Sidebar() {
   const { t } = useLang();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const profileRef = useRef(null);
 
   const primaryMenu = [
@@ -89,6 +91,15 @@ export function Sidebar() {
           })}
         </nav>
 
+        {/* Feedback button */}
+        <div className="px-3 pb-2">
+          <button onClick={() => setIsFeedbackOpen(true)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
+            <MessageSquare className="w-4 h-4 shrink-0" />
+            Санал, хүсэлт
+          </button>
+        </div>
+
         {/* User */}
         <div className="p-4 border-t border-slate-800" ref={profileRef}>
           <button
@@ -114,6 +125,12 @@ export function Sidebar() {
               >
                 <User className="w-4 h-4" /> {t('settings')}
               </Link>
+              {user?.role === 'admin' && (
+                <Link to="/admin/dashboard" onClick={() => setIsProfileOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors">
+                  <Shield className="w-4 h-4" /> Admin Panel
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
@@ -148,11 +165,9 @@ export function Sidebar() {
       </nav>
 
       {isAddModalOpen && (
-        <AddTradeModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-        />
+        <AddTradeModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
       )}
+      {isFeedbackOpen && <FeedbackModal onClose={() => setIsFeedbackOpen(false)} />}
     </>
   );
 }

@@ -300,4 +300,31 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_active') THEN
         ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT true;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='onboarding_completed') THEN
+        ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN DEFAULT false;
+    END IF;
 END $$;
+
+-- ─── Admin & Feedback tables ──────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  user_name VARCHAR(255),
+  user_email VARCHAR(255),
+  type VARCHAR(50) DEFAULT 'general',
+  message TEXT NOT NULL,
+  status VARCHAR(50) DEFAULT 'new',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS app_config (
+  key VARCHAR(100) PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO app_config (key, value) VALUES
+  ('maintenance_mode', 'false'),
+  ('maintenance_message', 'Системд засвар хийгдэж байна. Удахгүй буцаж ирнэ.')
+ON CONFLICT (key) DO NOTHING;

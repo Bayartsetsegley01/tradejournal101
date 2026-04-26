@@ -9,6 +9,8 @@ import aiRoutes from './routes/ai.js';
 import tagsRoutes from './routes/tags.js';
 import emotionsRoutes from './routes/emotions.js';
 import authRoutes from './routes/authRoutes.js';
+import adminRoutes from './routes/admin.js';
+import feedbackRoutes from './routes/feedback.js';
 import { authenticateToken } from './utils/authMiddleware.js';
 import importRoutes from './routes/import.js';
 
@@ -24,6 +26,16 @@ app.use(passport.initialize());
 
 // Public routes
 app.use('/api/auth', authRoutes);
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/admin', adminRoutes);
+app.get('/api/status', async (req, res) => {
+  try {
+    const { query } = await import('./db/index.js');
+    const r = await query("SELECT key, value FROM app_config WHERE key IN ('maintenance_mode','maintenance_message')");
+    const cfg = Object.fromEntries(r.rows.map(row => [row.key, row.value]));
+    res.json({ maintenance: cfg.maintenance_mode === 'true', message: cfg.maintenance_message || '' });
+  } catch { res.json({ maintenance: false, message: '' }); }
+});
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 // Protected routes - authenticateToken applied once here
