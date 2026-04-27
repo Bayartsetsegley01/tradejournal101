@@ -3,8 +3,7 @@ import jwt from 'jsonwebtoken';
 import passport from '../utils/passport.js';
 import {
   register, login, logout, getMe,
-  sendCode, verifyCode, googleAuth,
-  verifyEmail, resendVerification, completeOnboarding,
+  sendCode, verifyCode, googleAuth, completeOnboarding,
 } from '../controllers/authController.js';
 import { authenticateToken } from '../utils/authMiddleware.js';
 import { query } from '../db/index.js';
@@ -18,8 +17,6 @@ router.post('/login', login);
 router.post('/google', googleAuth);
 router.post('/send-code', sendCode);
 router.post('/verify-code', verifyCode);
-router.post('/verify-email', verifyEmail);
-router.post('/resend-verification', resendVerification);
 router.post('/complete-onboarding', authenticateToken, completeOnboarding);
 router.post('/logout', logout);
 router.get('/me', authenticateToken, getMe);

@@ -55,22 +55,8 @@ export const AuthProvider = ({ children }) => {
     const r = await authFetch(`${API}/auth/register`, { method: 'POST', body: JSON.stringify({ name, email, password }) });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Registration failed');
-    return data; // { requiresVerification: true, email }
-  };
-
-  const verifyEmail = async (email, code) => {
-    const r = await authFetch(`${API}/auth/verify-email`, { method: 'POST', body: JSON.stringify({ email, code }) });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'Verification failed');
     if (data.token) localStorage.setItem('token', data.token);
-    setUser(data.user);
-    return data;
-  };
-
-  const resendVerification = async (email) => {
-    const r = await authFetch(`${API}/auth/resend-verification`, { method: 'POST', body: JSON.stringify({ email }) });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'Failed');
+    if (data.user) setUser(data.user);
     return data;
   };
 
@@ -105,7 +91,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, verifyEmail, resendVerification, googleLogin, sendCode, verifyCode, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, googleLogin, sendCode, verifyCode, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

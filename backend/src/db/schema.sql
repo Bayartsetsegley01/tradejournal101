@@ -309,8 +309,7 @@ END $$;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='email_verified') THEN
-    ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false;
-    UPDATE users SET email_verified = true; -- existing users are already verified
+    ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT true;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='verification_code') THEN
     ALTER TABLE users ADD COLUMN verification_code VARCHAR(10);
@@ -357,8 +356,7 @@ BEGIN
     ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN NOT NULL DEFAULT false;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='email_verified') THEN
-    ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT false;
-    UPDATE users SET email_verified = true;
+    ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT true;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='verification_code') THEN
     ALTER TABLE users ADD COLUMN verification_code VARCHAR(10);

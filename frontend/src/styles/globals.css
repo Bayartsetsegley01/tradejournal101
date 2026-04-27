@@ -40,3 +40,20 @@
                  "Apple Color Emoji", "Noto Color Emoji", sans-serif;
   }
 }
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-20px) scale(1.05); }
+}
+
+.animate-fade-slide-in  { animation: fadeSlideIn 0.28s ease forwards; }
+.animate-fade-slide-out { animation: fadeSlideOut 0.2s ease forwards; }
+.animate-float          { animation: float 6s ease-in-out infinite; }
