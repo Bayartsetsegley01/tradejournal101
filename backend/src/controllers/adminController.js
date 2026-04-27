@@ -65,7 +65,7 @@ export const getUsers = async (req, res) => {
     const { page = 1, limit = 20, search, status, sort = 'created_at', order = 'desc' } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const conditions = ["COALESCE(u.role, 'user') != 'admin'"];
+    const conditions = ["u.role = 'user'"];
     const params = [];
 
     if (search) {
