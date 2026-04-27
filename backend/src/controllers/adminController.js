@@ -62,51 +62,25 @@ export const getDashboardStats = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, status, sort = 'created_at', order = 'desc' } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-
-    const conditions = ["u.role = 'user'"];
-    const params = [];
-
-    if (search) {
-      params.push(`%${search}%`);
-      conditions.push(`(u.name ILIKE $${params.length} OR u.email ILIKE $${params.length})`);
-    }
-    if (status === 'active') conditions.push("COALESCE(u.is_active, true) = true");
-    if (status === 'inactive') conditions.push("COALESCE(u.is_active, true) = false");
-
-    const where = conditions.join(' AND ');
-    const allowedSort = { created_at: 'u.created_at', name: 'u.name', email: 'u.email', last_login_at: 'u.last_login_at', trades: 'trade_count' };
-    const sortCol = allowedSort[sort] || 'u.created_at';
-    const sortDir = order === 'asc' ? 'ASC' : 'DESC';
-
-    const countParams = [...params];
-    params.push(parseInt(limit), offset);
-
-    const [usersResult, countResult] = await Promise.all([
-      query(`
-        SELECT u.id, u.name, u.email, u.role, COALESCE(u.is_active, true) AS is_active, u.created_at,
-               u.last_login_at, u.auth_provider, u.avatar_url,
-               COUNT(t.id)::int AS trade_count
-        FROM users u
-        LEFT JOIN trades t ON t.user_id = u.id
-        WHERE ${where}
-        GROUP BY u.id
-        ORDER BY ${sortCol} ${sortDir}
-        LIMIT $${params.length - 1} OFFSET $${params.length}
-      `, params),
-      query(`SELECT COUNT(*)::int AS total FROM users u WHERE ${where}`, countParams),
-    ]);
+    const result = await query(`
+      SELECT u.id, u.name, u.email, u.role, u.is_active, u.created_at,
+             u.last_login_at, u.auth_provider, u.avatar_url,
+             COUNT(t.id)::int AS trade_count
+      FROM users u
+      LEFT JOIN trades t ON t.user_id = u.id
+      GROUP BY u.id
+      ORDER BY u.created_at DESC
+    `);
 
     res.json({
-      users: usersResult.rows,
-      total: countResult.rows[0].total,
-      page: parseInt(page),
-      pages: Math.ceil(countResult.rows[0].total / parseInt(limit)),
+      users: result.rows,
+      total: result.rows.length,
+      page: 1,
+      pages: 1,
     });
   } catch (err) {
     console.error('Admin getUsers error:', err);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    res.status(500).json({ error: err.message });
   }
 };
 
