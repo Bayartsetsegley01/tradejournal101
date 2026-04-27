@@ -15,6 +15,14 @@ export const AuthProvider = ({ children }) => {
     });
 
   const checkAuth = async () => {
+    // Pick up token from URL params after Google OAuth redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get('token');
+    if (urlToken) {
+      localStorage.setItem('token', urlToken);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
     const token = localStorage.getItem('token');
     if (!token) { setLoading(false); return; }
     try {

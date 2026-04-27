@@ -37,19 +37,25 @@ router.post('/make-admin', async (req, res) => {
 router.get('/google/redirect', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
 
 router.get('/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: `${FRONTEND_URL}/login?error=google_auth_failed` }),
-  (req, res) => {
-    const user = req.user;
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role || 'user' }, JWT_SECRET, { expiresIn: '30d' });
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-    // Redirect to onboarding for new users, app for returning users
-    const dest = user.onboarding_completed ? `${FRONTEND_URL}/app` : `${FRONTEND_URL}/onboarding`;
-    res.redirect(dest);
+  (req, res, next) => {
+    passport.authenticate('google', { session: false }, (err, user) => {
+      if (err || !user) {
+        console.error('Google OAuth callback error:', err);
+        return res.redirect(`${FRONTEND_URL}/login?error=google_auth_failed`);
+      }
+      const token = jwt.sign({ id: user.id, email: user.email, role: user.role || 'user' }, JWT_SECRET, { expiresIn: '30d' });
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
+      // Pass token in URL so frontend can save it to localStorage
+      const dest = user.onboarding_completed
+        ? `${FRONTEND_URL}/app?token=${token}`
+        : `${FRONTEND_URL}/onboarding?token=${token}`;
+      res.redirect(dest);
+    })(req, res, next);
   }
 );
 

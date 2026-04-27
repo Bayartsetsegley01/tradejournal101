@@ -8,6 +8,10 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.GOOGLE_CALLBACK_URL,
 }, async (accessToken, refreshToken, profile, done) => {
   try {
+    if (!profile.emails || !profile.emails[0]) {
+      console.error('Google OAuth: no email in profile');
+      return done(new Error('Google профайлд имэйл олдсонгүй'));
+    }
     const email = profile.emails[0].value;
     const googleId = profile.id;
     const name = profile.displayName;
@@ -43,6 +47,7 @@ passport.use(new GoogleStrategy({
 
     return done(null, user);
   } catch (err) {
+    console.error('Google OAuth strategy error:', err);
     return done(err);
   }
 }));

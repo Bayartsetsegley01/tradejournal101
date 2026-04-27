@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { BarChart2, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff, User, CheckCircle2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -88,6 +88,14 @@ export function LoginPage() {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) { setError(err.message); }
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'google_auth_failed') {
+      setError('Google нэвтрэлт амжилтгүй боллоо. Дахин оролдоно уу.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   const handleGoogleRedirect = () => { window.location.href = `${BACKEND_URL}/api/auth/google/redirect`; };
 
