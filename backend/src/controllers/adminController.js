@@ -6,13 +6,13 @@ export const getDashboardStats = async (req, res) => {
   try {
     const stats = await query(`
       SELECT
-        (SELECT COUNT(*) FROM users WHERE role != 'admin')::int                                          AS total_users,
-        (SELECT COUNT(*) FROM users WHERE role != 'admin' AND is_active = true)::int                    AS active_users,
-        (SELECT COUNT(*) FROM users WHERE role != 'admin' AND is_active = false)::int                   AS inactive_users,
-        (SELECT COUNT(*) FROM users WHERE role != 'admin' AND created_at >= NOW() - INTERVAL '7 days')::int AS new_users_week,
-        (SELECT COUNT(*) FROM trades)::int                                                               AS total_trades,
-        (SELECT COUNT(*) FROM trades WHERE created_at >= NOW() - INTERVAL '7 days')::int                AS trades_this_week,
-        (SELECT COUNT(*) FROM feedback WHERE status = 'new')::int                                       AS pending_feedback
+        (SELECT COUNT(*) FROM users WHERE role != 'admin')::int                                                         AS total_users,
+        (SELECT COUNT(*) FROM users WHERE role != 'admin' AND COALESCE(is_active, true) = true)::int                   AS active_users,
+        (SELECT COUNT(*) FROM users WHERE role != 'admin' AND COALESCE(is_active, true) = false)::int                  AS inactive_users,
+        (SELECT COUNT(*) FROM users WHERE role != 'admin' AND created_at >= NOW() - INTERVAL '7 days')::int            AS new_users_week,
+        (SELECT COUNT(*) FROM trades)::int                                                                              AS total_trades,
+        (SELECT COUNT(*) FROM trades WHERE created_at >= NOW() - INTERVAL '7 days')::int                               AS trades_this_week,
+        (SELECT COUNT(*) FROM feedback WHERE status = 'new')::int                                                      AS pending_feedback
     `);
 
     const topAssets = await query(`
@@ -72,8 +72,8 @@ export const getUsers = async (req, res) => {
       params.push(`%${search}%`);
       conditions.push(`(u.name ILIKE $${params.length} OR u.email ILIKE $${params.length})`);
     }
-    if (status === 'active') conditions.push('u.is_active = true');
-    if (status === 'inactive') conditions.push('u.is_active = false');
+    if (status === 'active') conditions.push("COALESCE(u.is_active, true) = true");
+    if (status === 'inactive') conditions.push("COALESCE(u.is_active, true) = false");
 
     const where = conditions.join(' AND ');
     const allowedSort = { created_at: 'u.created_at', name: 'u.name', email: 'u.email', last_login_at: 'u.last_login_at', trades: 'trade_count' };
@@ -85,7 +85,7 @@ export const getUsers = async (req, res) => {
 
     const [usersResult, countResult] = await Promise.all([
       query(`
-        SELECT u.id, u.name, u.email, u.role, u.is_active, u.created_at,
+        SELECT u.id, u.name, u.email, u.role, COALESCE(u.is_active, true) AS is_active, u.created_at,
                u.last_login_at, u.auth_provider, u.avatar_url,
                COUNT(t.id)::int AS trade_count
         FROM users u

@@ -346,3 +346,42 @@ INSERT INTO app_config (key, value) VALUES
   ('maintenance_mode', 'false'),
   ('maintenance_message', 'Системд засвар хийгдэж байна. Удахгүй буцаж ирнэ.')
 ON CONFLICT (key) DO NOTHING;
+
+-- ─── Guaranteed column migrations (run last, safe to re-run) ─────────────────
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_active') THEN
+    ALTER TABLE users ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='onboarding_completed') THEN
+    ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN NOT NULL DEFAULT false;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='email_verified') THEN
+    ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT false;
+    UPDATE users SET email_verified = true;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='verification_code') THEN
+    ALTER TABLE users ADD COLUMN verification_code VARCHAR(10);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='verification_expires') THEN
+    ALTER TABLE users ADD COLUMN verification_expires TIMESTAMP WITH TIME ZONE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='trader_profile') THEN
+    ALTER TABLE users ADD COLUMN trader_profile JSONB DEFAULT '{}';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='google_id') THEN
+    ALTER TABLE users ADD COLUMN google_id VARCHAR(255) UNIQUE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='avatar_url') THEN
+    ALTER TABLE users ADD COLUMN avatar_url TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='auth_provider') THEN
+    ALTER TABLE users ADD COLUMN auth_provider VARCHAR(20) DEFAULT 'email';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='role') THEN
+    ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='last_login_at') THEN
+    ALTER TABLE users ADD COLUMN last_login_at TIMESTAMP WITH TIME ZONE;
+  END IF;
+END $$;
