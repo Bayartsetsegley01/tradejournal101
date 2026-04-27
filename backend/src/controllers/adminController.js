@@ -121,40 +121,22 @@ export const deleteUser = async (req, res) => {
 
 export const getFeedback = async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, type } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-
-    const conditions = [];
-    const params = [];
-
-    if (status) { params.push(status); conditions.push(`f.status = $${params.length}`); }
-    if (type) { params.push(type); conditions.push(`f.type = $${params.length}`); }
-
-    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-    const countParams = [...params];
-    params.push(parseInt(limit), offset);
-
-    const [feedbackResult, countResult] = await Promise.all([
-      query(`
-        SELECT f.*, u.name AS submitter_name
-        FROM feedback f
-        LEFT JOIN users u ON u.id = f.user_id
-        ${where}
-        ORDER BY f.created_at DESC
-        LIMIT $${params.length - 1} OFFSET $${params.length}
-      `, params),
-      query(`SELECT COUNT(*)::int AS total FROM feedback f ${where}`, countParams),
-    ]);
+    const result = await query(`
+      SELECT f.*, u.name AS submitter_name, u.email AS submitter_email
+      FROM feedback f
+      LEFT JOIN users u ON u.id = f.user_id
+      ORDER BY f.created_at DESC
+    `);
 
     res.json({
-      feedback: feedbackResult.rows,
-      total: countResult.rows[0].total,
-      page: parseInt(page),
-      pages: Math.ceil(countResult.rows[0].total / parseInt(limit)),
+      feedback: result.rows,
+      total: result.rows.length,
+      page: 1,
+      pages: 1,
     });
   } catch (err) {
     console.error('Admin getFeedback error:', err);
-    res.status(500).json({ error: 'Failed to fetch feedback' });
+    res.status(500).json({ error: err.message });
   }
 };
 
