@@ -48,7 +48,7 @@ export const register = async (req, res) => {
       if (!existing.rows[0].email_verified) {
         const code = gen6();
         await query("UPDATE users SET verification_code=$1, verification_expires=NOW()+INTERVAL '10 minutes' WHERE email=$2", [code, email]);
-        await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code));
+        try { await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code)); } catch (emailErr) { console.warn('Email send failed:', emailErr.message); }
         return res.json({ requiresVerification: true, email });
       }
       return res.status(400).json({ error: 'Энэ имэйл аль хэдийн бүртгэлтэй байна' });
@@ -61,7 +61,7 @@ export const register = async (req, res) => {
        VALUES ($1,$2,$3,'email','user',false,$4,NOW()+INTERVAL '10 minutes')`,
       [name, email, hash, code]
     );
-    await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code));
+    try { await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code)); } catch (emailErr) { console.warn('Email send failed (user created):', emailErr.message); }
     res.status(201).json({ requiresVerification: true, email });
   } catch (e) { console.error('register:', e); res.status(500).json({ error: 'Бүртгэлд алдаа гарлаа' }); }
 };
@@ -101,7 +101,7 @@ export const resendVerification = async (req, res) => {
     if (r.rows[0].email_verified) return res.status(400).json({ error: 'И-мэйл аль хэдийн баталгаажсан' });
     const code = gen6();
     await query("UPDATE users SET verification_code=$1,verification_expires=NOW()+INTERVAL '10 minutes' WHERE email=$2", [code, email]);
-    await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code));
+    try { await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code)); } catch (emailErr) { console.warn('Resend email failed:', emailErr.message); }
     res.json({ message: 'Код дахин илгээлээ' });
   } catch (e) { console.error('resendVerification:', e); res.status(500).json({ error: 'Server error' }); }
 };
@@ -131,7 +131,7 @@ export const login = async (req, res) => {
     if (!user.email_verified) {
       const code = gen6();
       await query("UPDATE users SET verification_code=$1,verification_expires=NOW()+INTERVAL '10 minutes' WHERE id=$2", [code, user.id]);
-      await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code));
+      try { await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code)); } catch (emailErr) { console.warn('Login verify email failed:', emailErr.message); }
       return res.status(401).json({ error: 'И-мэйлээ баталгаажуулна уу', requiresVerification: true, email });
     }
 
