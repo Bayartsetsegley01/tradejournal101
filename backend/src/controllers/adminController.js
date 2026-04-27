@@ -6,10 +6,10 @@ export const getDashboardStats = async (req, res) => {
   try {
     const stats = await query(`
       SELECT
-        (SELECT COUNT(*) FROM users WHERE role != 'admin')::int                                                         AS total_users,
-        (SELECT COUNT(*) FROM users WHERE role != 'admin' AND COALESCE(is_active, true) = true)::int                   AS active_users,
-        (SELECT COUNT(*) FROM users WHERE role != 'admin' AND COALESCE(is_active, true) = false)::int                  AS inactive_users,
-        (SELECT COUNT(*) FROM users WHERE role != 'admin' AND created_at >= NOW() - INTERVAL '7 days')::int            AS new_users_week,
+        (SELECT COUNT(*) FROM users WHERE COALESCE(role, 'user') != 'admin')::int                                                         AS total_users,
+        (SELECT COUNT(*) FROM users WHERE COALESCE(role, 'user') != 'admin' AND COALESCE(is_active, true) = true)::int                   AS active_users,
+        (SELECT COUNT(*) FROM users WHERE COALESCE(role, 'user') != 'admin' AND COALESCE(is_active, true) = false)::int                  AS inactive_users,
+        (SELECT COUNT(*) FROM users WHERE COALESCE(role, 'user') != 'admin' AND created_at >= NOW() - INTERVAL '7 days')::int            AS new_users_week,
         (SELECT COUNT(*) FROM trades)::int                                                                              AS total_trades,
         (SELECT COUNT(*) FROM trades WHERE created_at >= NOW() - INTERVAL '7 days')::int                               AS trades_this_week,
         (SELECT COUNT(*) FROM feedback WHERE status = 'new')::int                                                      AS pending_feedback
@@ -32,7 +32,7 @@ export const getDashboardStats = async (req, res) => {
       SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') AS month,
         COUNT(*)::int AS count
       FROM users
-      WHERE created_at >= NOW() - INTERVAL '6 months' AND role != 'admin'
+      WHERE created_at >= NOW() - INTERVAL '6 months' AND COALESCE(role, 'user') != 'admin'
       GROUP BY DATE_TRUNC('month', created_at)
       ORDER BY DATE_TRUNC('month', created_at)
     `);
@@ -65,7 +65,7 @@ export const getUsers = async (req, res) => {
     const { page = 1, limit = 20, search, status, sort = 'created_at', order = 'desc' } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const conditions = ["u.role != 'admin'"];
+    const conditions = ["COALESCE(u.role, 'user') != 'admin'"];
     const params = [];
 
     if (search) {

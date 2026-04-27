@@ -18,12 +18,14 @@ export function AdminUsers() {
   const [order, setOrder] = useState("desc");
   const [page, setPage] = useState(1);
   const [confirm, setConfirm] = useState(null);
+  const [error, setError] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
+    setError('');
     getUsers({ page, limit: 20, search: search || undefined, status: status || undefined, sort, order })
       .then(setData)
-      .catch(console.error)
+      .catch(e => setError(e.message || 'Хэрэглэгчдийг татаж чадсангүй'))
       .finally(() => setLoading(false));
   }, [page, search, status, sort, order]);
 
@@ -75,6 +77,12 @@ export function AdminUsers() {
           <option value="inactive">Идэвхгүй</option>
         </select>
       </div>
+
+      {error && (
+        <div className="mb-4 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-sm text-rose-400">
+          ⚠️ {error}
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
