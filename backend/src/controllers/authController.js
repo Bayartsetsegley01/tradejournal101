@@ -61,7 +61,12 @@ export const register = async (req, res) => {
        VALUES ($1,$2,$3,'email','user',false,$4,NOW()+INTERVAL '10 minutes')`,
       [name, email, hash, code]
     );
-    try { await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code)); } catch (emailErr) { console.warn('Email send failed (user created):', emailErr.message); }
+    try {
+      await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code));
+    } catch (emailErr) {
+      console.warn('register email failed:', emailErr.message);
+      console.log(`[DEV] register verification code for ${email}: ${code}`);
+    }
     res.status(201).json({ requiresVerification: true, email });
   } catch (e) { console.error('register:', e); res.status(500).json({ error: 'Бүртгэлд алдаа гарлаа' }); }
 };
@@ -101,7 +106,12 @@ export const resendVerification = async (req, res) => {
     if (r.rows[0].email_verified) return res.status(400).json({ error: 'И-мэйл аль хэдийн баталгаажсан' });
     const code = gen6();
     await query("UPDATE users SET verification_code=$1,verification_expires=NOW()+INTERVAL '10 minutes' WHERE email=$2", [code, email]);
-    try { await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code)); } catch (emailErr) { console.warn('Resend email failed:', emailErr.message); }
+    try {
+      await sendEmail(email, 'TradeJournal — И-мэйл баталгаажуулах', verifHtml(code));
+    } catch (emailErr) {
+      console.warn('resendVerification email failed:', emailErr.message);
+      console.log(`[DEV] resend verification code for ${email}: ${code}`);
+    }
     res.json({ message: 'Код дахин илгээлээ' });
   } catch (e) { console.error('resendVerification:', e); res.status(500).json({ error: 'Server error' }); }
 };
@@ -199,12 +209,17 @@ export const sendCode = async (req, res) => {
     const code = gen4();
     verificationCodes.set(contact, { code, expiresAt: Date.now() + 10 * 60 * 1000, attempts: 0 });
     if (method === 'email' || contact.includes('@')) {
-      await sendEmail(contact, 'TradeJournal — Баталгаажуулах код',
-        `<div style="font-family:Arial;max-width:400px;margin:0 auto;padding:20px;text-align:center;">
-          <h2 style="color:#c8f07a;">TradeJournal</h2>
-          <div style="background:#1a1a2e;color:#c8f07a;font-size:32px;font-weight:bold;padding:20px;border-radius:12px;letter-spacing:8px;margin:20px 0;">${code}</div>
-          <p style="color:#666;font-size:14px;">10 минутын дотор хүчинтэй.</p>
-        </div>`);
+      try {
+        await sendEmail(contact, 'TradeJournal — Баталгаажуулах код',
+          `<div style="font-family:Arial;max-width:400px;margin:0 auto;padding:20px;text-align:center;">
+            <h2 style="color:#c8f07a;">TradeJournal</h2>
+            <div style="background:#1a1a2e;color:#c8f07a;font-size:32px;font-weight:bold;padding:20px;border-radius:12px;letter-spacing:8px;margin:20px 0;">${code}</div>
+            <p style="color:#666;font-size:14px;">10 минутын дотор хүчинтэй.</p>
+          </div>`);
+      } catch (emailErr) {
+        console.warn('sendCode email failed:', emailErr.message);
+        console.log(`[DEV] sendCode verification code for ${contact}: ${code}`);
+      }
     }
     res.json({ message: 'Code sent' });
   } catch (e) { console.error('sendCode:', e); res.status(500).json({ error: 'Failed to send code' }); }
