@@ -346,6 +346,23 @@ INSERT INTO app_config (key, value) VALUES
   ('maintenance_message', 'Системд засвар хийгдэж байна. Удахгүй буцаж ирнэ.')
 ON CONFLICT (key) DO NOTHING;
 
+-- ─── Guaranteed trades note column migrations ────────────────────────────────
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='notes') THEN
+    ALTER TABLE trades ADD COLUMN notes TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='lessons_learned') THEN
+    ALTER TABLE trades ADD COLUMN lessons_learned TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='what_happened') THEN
+    ALTER TABLE trades ADD COLUMN what_happened TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='why_entered') THEN
+    ALTER TABLE trades ADD COLUMN why_entered TEXT;
+  END IF;
+END $$;
+
 -- ─── Guaranteed column migrations (run last, safe to re-run) ─────────────────
 DO $$
 BEGIN
