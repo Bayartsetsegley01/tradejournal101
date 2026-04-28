@@ -67,7 +67,6 @@ function MediaCell({ trade, onMediaUpdate }) {
 
   return (
     <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
-      {/* Single flex-wrap row: [img1] [img2] [+ Нэмэх] */}
       <div className="flex flex-wrap gap-1.5 items-center">
         {/* Thumbnails */}
         {mediaUrls.map((url, i) => (
@@ -78,6 +77,7 @@ function MediaCell({ trade, onMediaUpdate }) {
               className="w-full h-full object-cover rounded-lg cursor-zoom-in border border-slate-700 hover:border-slate-500 transition-colors"
               onClick={() => setLightbox(url)}
             />
+            {/* Delete button on hover */}
             <button
               onClick={(e) => handleRemove(e, url)}
               className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 hover:bg-rose-400 rounded-full flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity shadow-md"
@@ -87,8 +87,8 @@ function MediaCell({ trade, onMediaUpdate }) {
           </div>
         ))}
 
-        {/* Add button — same size as thumbnail, shown only when < 3 images */}
-        {canAdd && (
+        {/* No images: full 72×72 drop zone with text */}
+        {mediaUrls.length === 0 && canAdd && (
           <div
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
             onDragLeave={(e) => { e.stopPropagation(); setDragOver(false); }}
@@ -105,15 +105,36 @@ function MediaCell({ trade, onMediaUpdate }) {
             ) : (
               <>
                 <Camera className="w-5 h-5 text-slate-500" />
-                <span className="text-[9px] text-slate-600 leading-tight text-center">
-                  {mediaUrls.length === 0 ? 'Зураг\nоруулах' : 'Нэмэх'}
-                </span>
+                <span className="text-[9px] text-slate-600 leading-tight text-center">Зураг<br/>оруулах</span>
               </>
             )}
-            <input ref={inputRef} type="file" accept="image/*" className="hidden"
-              onChange={(e) => { const f = e.target.files[0]; if (f) { handleUpload(f); e.target.value = ''; } }} />
           </div>
         )}
+
+        {/* Has images + can add: small round camera button */}
+        {mediaUrls.length > 0 && canAdd && (
+          <button
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+            onDragLeave={(e) => { e.stopPropagation(); setDragOver(false); }}
+            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleUpload(f); }}
+            onClick={() => inputRef.current?.click()}
+            title="Зураг нэмэх"
+            className={[
+              'w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0',
+              dragOver ? 'border-accent bg-accent/20 scale-110' : 'border-slate-700 bg-slate-800/60 hover:border-accent/60 hover:bg-accent/10',
+              uploading ? 'opacity-50 pointer-events-none' : '',
+            ].filter(Boolean).join(' ')}
+          >
+            {uploading
+              ? <Loader2 className="w-3 h-3 text-slate-400 animate-spin" />
+              : <Camera className="w-3 h-3 text-slate-500 group-hover:text-accent" />
+            }
+          </button>
+        )}
+
+        {/* Hidden file input shared by both add buttons */}
+        <input ref={inputRef} type="file" accept="image/*" className="hidden"
+          onChange={(e) => { const f = e.target.files[0]; if (f) { handleUpload(f); e.target.value = ''; } }} />
       </div>
 
       {/* Lightbox */}
@@ -467,7 +488,7 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
                     <>
                       {t.pnl != null ? (
                         <span className={`font-mono font-bold text-base ${isWin ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-slate-400'}`}>
-                          {t.pnl > 0 ? '+' : ''}${t.pnl}
+                          {t.pnl >= 0 ? '+' : '-'}${Math.abs(parseFloat(t.pnl)).toFixed(2)}
                         </span>
                       ) : <span className="text-slate-600 font-mono">—</span>}
                       <FlashOverlay id={t.id} field="pnl" />

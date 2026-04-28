@@ -5,7 +5,9 @@ import { AddTradeModal } from "@/components/features/journal/AddTradeModal";
 import { TradeDetailModal } from "@/components/features/journal/TradeDetailModal";
 import { ExportModal } from "@/components/features/journal/ExportModal";
 import { ImportModal } from "@/components/features/journal/ImportModal";
-import { Plus, Download, Loader2, Upload } from "lucide-react";
+import { Plus, Download, Loader2, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+
+const PAGE_SIZE = 10;
 import { tradeService } from "@/services/tradeService";
 
 export function JournalPage() {
@@ -18,6 +20,7 @@ export function JournalPage() {
   const [trades, setTrades] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
   
   
   // Filters state
@@ -95,6 +98,9 @@ export function JournalPage() {
     setEditingTrade(null);
     fetchTrades();
   };
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [filters]);
 
   // Filter trades based on search and other filters
   const filteredTrades = trades.filter(trade => {
@@ -201,17 +207,83 @@ export function JournalPage() {
           <div className="flex-1 flex items-center justify-center p-12 text-red-400">
             Алдаа гарлаа: {error}
           </div>
-        ) : (
-          <TradeTable
-            trades={filteredTrades}
-            onRowClick={(trade) => setSelectedTrade(trade)}
-            onEdit={handleEdit}
-            onDuplicate={handleDuplicate}
-            onDelete={handleDelete}
-            onPatch={handlePatch}
-            onMediaUpdate={handleMediaUpdate}
-          />
-        )}
+        ) : (() => {
+          const totalPages = Math.ceil(filteredTrades.length / PAGE_SIZE);
+          const safePage = Math.min(page, Math.max(1, totalPages));
+          const pagedTrades = filteredTrades.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+          // Page numbers: show up to 7 slots with ellipsis
+          const getPages = () => {
+            if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+            const pages = [];
+            if (safePage > 3) { pages.push(1); if (safePage > 4) pages.push('…'); }
+            for (let i = Math.max(1, safePage - 2); i <= Math.min(totalPages, safePage + 2); i++) pages.push(i);
+            if (safePage < totalPages - 2) { if (safePage < totalPages - 3) pages.push('…'); pages.push(totalPages); }
+            return pages;
+          };
+
+          return (
+            <>
+              <TradeTable
+                trades={pagedTrades}
+                onRowClick={(trade) => setSelectedTrade(trade)}
+                onEdit={handleEdit}
+                onDuplicate={handleDuplicate}
+                onDelete={handleDelete}
+                onPatch={handlePatch}
+                onMediaUpdate={handleMediaUpdate}
+              />
+
+              {/* Pagination */}
+              {filteredTrades.length > 0 && (
+                <div className="flex items-center justify-between px-5 py-3 border-t border-slate-800 shrink-0">
+                  <span className="text-xs text-slate-500">
+                    Нийт <span className="text-slate-400 font-medium">{filteredTrades.length}</span> арилжааны{' '}
+                    <span className="text-slate-400">{(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filteredTrades.length)}</span> харагдаж байна
+                  </span>
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={safePage === 1}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+
+                      {getPages().map((p, i) =>
+                        p === '…' ? (
+                          <span key={`e${i}`} className="w-8 h-8 flex items-center justify-center text-slate-600 text-sm">…</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => setPage(p)}
+                            className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                              p === safePage
+                                ? 'bg-accent text-slate-950 font-bold shadow-[0_0_12px_rgba(200,240,122,0.3)]'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      )}
+
+                      <button
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={safePage === totalPages}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {/* Modals */}
