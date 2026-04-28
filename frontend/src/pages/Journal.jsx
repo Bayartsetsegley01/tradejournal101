@@ -74,6 +74,18 @@ export function JournalPage() {
     }
   };
 
+  const handlePatch = async (id, changes) => {
+    const trade = trades.find(t => t.id === id);
+    if (!trade) return;
+    setTrades(prev => prev.map(t => t.id === id ? { ...t, ...changes } : t));
+    try {
+      await tradeService.updateTrade(id, { ...trade, ...changes });
+    } catch (err) {
+      setTrades(prev => prev.map(t => t.id === id ? trade : t));
+      throw err;
+    }
+  };
+
   const handleCloseAddModal = () => {
     setIsAddModalOpen(false);
     setEditingTrade(null);
@@ -186,12 +198,13 @@ export function JournalPage() {
             Алдаа гарлаа: {error}
           </div>
         ) : (
-          <TradeTable 
-            trades={filteredTrades} 
-            onRowClick={(trade) => setSelectedTrade(trade)} 
+          <TradeTable
+            trades={filteredTrades}
+            onRowClick={(trade) => setSelectedTrade(trade)}
             onEdit={handleEdit}
             onDuplicate={handleDuplicate}
             onDelete={handleDelete}
+            onPatch={handlePatch}
           />
         )}
       </div>
