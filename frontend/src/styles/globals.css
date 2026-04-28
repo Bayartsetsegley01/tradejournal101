@@ -57,3 +57,7 @@
 .animate-fade-slide-in  { animation: fadeSlideIn 0.28s ease forwards; }
 .animate-fade-slide-out { animation: fadeSlideOut 0.2s ease forwards; }
 .animate-float          { animation: float 6s ease-in-out infinite; }
+
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type='number'] { -moz-appearance: textfield; }
