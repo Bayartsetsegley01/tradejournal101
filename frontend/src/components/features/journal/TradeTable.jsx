@@ -302,8 +302,8 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
             const market = (t.market || t.market_type || 'forex').toLowerCase();
             const mConf = MARKET_CONFIG[market] || MARKET_CONFIG.forex;
             const MIcon = mConf.icon;
-            const emotBefore = t.emotionBefore || t.emotion_before || '';
-            const emotAfter  = t.emotionAfter  || t.emotion_after  || '';
+            const emotBefore = t.emotion_before || t.emotionBefore || '';
+            const emotAfter  = t.emotion_after  || t.emotionAfter  || '';
             const notesRaw = [t.why_entered, t.what_happened, t.lessons_learned].filter(Boolean).join(' · ');
             const notesPreview = notesRaw.length > 50 ? notesRaw.slice(0, 50) + '…' : notesRaw;
 
