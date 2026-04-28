@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { query, getDbStatus } from '../db/index.js';
+import { query, getDbStatus } from '../config/database.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev';
 const verificationCodes = new Map();

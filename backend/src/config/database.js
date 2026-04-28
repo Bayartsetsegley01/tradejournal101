@@ -32,14 +32,13 @@ export const initDb = async () => {
     const client = await pool.connect();
     isConnected = true;
     console.log('Connected to PostgreSQL database');
-    
-    // Read and execute schema.sql
+
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
-    
+
     await client.query(schema);
     console.log('Database schema initialized');
-    
+
     client.release();
   } catch (err) {
     console.error('Failed to initialize database:', err);

@@ -1,4 +1,4 @@
-import { query, getDbStatus } from '../db/index.js';
+import { query, getDbStatus } from '../config/database.js';
 
 export const getEmotions = async (req, res) => {
   try {

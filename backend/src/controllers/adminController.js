@@ -1,4 +1,4 @@
-import { query } from '../db/index.js';
+import { query } from '../config/database.js';
 
 // ─── Dashboard Stats ──────────────────────────────────────────────────────────
 

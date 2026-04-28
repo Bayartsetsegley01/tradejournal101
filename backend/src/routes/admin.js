@@ -1,6 +1,6 @@
 import express from 'express';
-import { authenticateToken } from '../utils/authMiddleware.js';
-import { requireAdmin } from '../utils/adminMiddleware.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/admin.js';
 import {
   getDashboardStats,
   getUsers, updateUserStatus, deleteUser,

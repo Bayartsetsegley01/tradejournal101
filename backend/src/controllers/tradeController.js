@@ -1,4 +1,4 @@
-import { query, getDbStatus } from '../db/index.js';
+import { query, getDbStatus } from '../config/database.js';
 import cloudinary from '../config/cloudinary.js';
 
 export const getTrades = async (req, res) => {

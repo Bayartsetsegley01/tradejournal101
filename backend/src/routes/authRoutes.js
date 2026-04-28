@@ -1,12 +1,12 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import passport from '../utils/passport.js';
+import passport from '../services/passport.js';
 import {
   register, login, logout, getMe,
   sendCode, verifyCode, googleAuth, completeOnboarding,
 } from '../controllers/authController.js';
-import { authenticateToken } from '../utils/authMiddleware.js';
-import { query } from '../db/index.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { query } from '../config/database.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev';

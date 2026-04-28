@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import app from "./app.js";
-import { initDb } from "./db/index.js";
+import { initDb } from "./config/database.js";
 const PORT = process.env.PORT || process.env.BACKEND_PORT || 3001;
 initDb().then(() => {
   app.listen(PORT, "0.0.0.0", () => {

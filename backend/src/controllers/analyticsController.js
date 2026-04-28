@@ -1,4 +1,4 @@
-import { query, getDbStatus } from '../db/index.js';
+import { query, getDbStatus } from '../config/database.js';
 
 const getDateFilter = (timeRange, paramStart = 2) => {
   if (!timeRange || timeRange === 'all') return { sql: '', params: [] };

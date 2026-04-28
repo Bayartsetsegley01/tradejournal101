@@ -1,4 +1,4 @@
-import { query } from '../db/index.js';
+import { query } from '../config/database.js';
 
 // Check DB role directly — handles the case where role was set after token was issued
 export const requireAdmin = async (req, res, next) => {
@@ -10,7 +10,6 @@ export const requireAdmin = async (req, res, next) => {
     }
     next();
   } catch {
-    // DB unavailable — fall back to JWT role
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
     next();
   }

@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { query, getDbStatus } from '../db/index.js';
+import { query, getDbStatus } from '../config/database.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 

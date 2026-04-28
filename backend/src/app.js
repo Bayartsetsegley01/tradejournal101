@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import passport from './utils/passport.js';
+import passport from './services/passport.js';
 import tradesRoutes from './routes/trades.js';
 import analyticsRoutes from './routes/analytics.js';
 import journalRoutes from './routes/journal.js';
@@ -11,7 +11,7 @@ import emotionsRoutes from './routes/emotions.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/admin.js';
 import feedbackRoutes from './routes/feedback.js';
-import { authenticateToken } from './utils/authMiddleware.js';
+import { authenticateToken } from './middleware/auth.js';
 import importRoutes from './routes/import.js';
 
 const app = express();
@@ -30,7 +30,7 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
 app.get('/api/status', async (req, res) => {
   try {
-    const { query } = await import('./db/index.js');
+    const { query } = await import('./config/database.js');
     const r = await query("SELECT key, value FROM app_config WHERE key IN ('maintenance_mode','maintenance_message')");
     const cfg = Object.fromEntries(r.rows.map(row => [row.key, row.value]));
     res.json({ maintenance: cfg.maintenance_mode === 'true', message: cfg.maintenance_message || '' });
