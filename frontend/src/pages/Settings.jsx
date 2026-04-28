@@ -1,23 +1,40 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { User, Palette, Globe, Bell, Shield, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function SettingsPage() {
   const location = useLocation();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  
+
   useEffect(() => {
     if (location.state?.activeTab) {
       setActiveTab(location.state.activeTab);
     }
   }, [location.state]);
 
-  // Form states
+  // Form states — name/email always come from the authenticated user
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem('app_profile');
-    return saved ? JSON.parse(saved) : { name: "Bayartsetseg", email: "bayartsetsegley@gmail.com", avatar: null, age: "", gender: "other", phone: "" };
+    const extra = saved ? JSON.parse(saved) : {};
+    return {
+      avatar: extra.avatar ?? null,
+      age: extra.age ?? '',
+      gender: extra.gender ?? 'other',
+      phone: extra.phone ?? '',
+      name: user?.name ?? extra.name ?? '',
+      email: user?.email ?? extra.email ?? '',
+    };
   });
+
+  // Sync name/email whenever the authenticated user changes
+  useEffect(() => {
+    if (user) {
+      setProfile(p => ({ ...p, name: user.name ?? p.name, email: user.email ?? p.email }));
+    }
+  }, [user?.id]);
   const [appearance, setAppearance] = useState(() => {
     const saved = localStorage.getItem('app_appearance');
     return saved ? JSON.parse(saved) : { theme: "dark" };
@@ -31,9 +48,10 @@ export function SettingsPage() {
     return saved ? JSON.parse(saved) : { email: true, push: false, tradeAlerts: true };
   });
 
-  // Auto-save effects
+  // Auto-save extra profile fields only (name/email live in DB, not localStorage)
   useEffect(() => {
-    localStorage.setItem('app_profile', JSON.stringify(profile));
+    const { name: _n, email: _e, ...extra } = profile;
+    localStorage.setItem('app_profile', JSON.stringify(extra));
   }, [profile]);
 
   useEffect(() => {
