@@ -111,26 +111,6 @@ function MediaCell({ trade, onMediaUpdate }) {
           </div>
         )}
 
-        {/* Has images + can add: small round camera button */}
-        {mediaUrls.length > 0 && canAdd && (
-          <button
-            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
-            onDragLeave={(e) => { e.stopPropagation(); setDragOver(false); }}
-            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleUpload(f); }}
-            onClick={() => inputRef.current?.click()}
-            title="Зураг нэмэх"
-            className={[
-              'w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0',
-              dragOver ? 'border-accent bg-accent/20 scale-110' : 'border-slate-700 bg-slate-800/60 hover:border-accent/60 hover:bg-accent/10',
-              uploading ? 'opacity-50 pointer-events-none' : '',
-            ].filter(Boolean).join(' ')}
-          >
-            {uploading
-              ? <Loader2 className="w-3 h-3 text-slate-400 animate-spin" />
-              : <Camera className="w-3 h-3 text-slate-500 group-hover:text-accent" />
-            }
-          </button>
-        )}
 
         {/* Hidden file input shared by both add buttons */}
         <input ref={inputRef} type="file" accept="image/*" className="hidden"
