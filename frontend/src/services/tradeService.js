@@ -84,10 +84,27 @@ export const tradeService = {
     });
     return r.json();
   },
-  addMedia: async (id, d) => {
+  uploadMedia: async (id, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const token = localStorage.getItem('token');
     const r = await fetch(`${API_BASE_URL}/trades/${id}/media`, {
-      method: 'POST', headers: getHeaders(), credentials: 'include', body: JSON.stringify(d)
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
+      body: formData,
     });
-    return r.json();
-  }
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Upload failed');
+    return data;
+  },
+  removeMedia: async (id, url) => {
+    const r = await fetch(`${API_BASE_URL}/trades/${id}/media`, {
+      method: 'DELETE', headers: getHeaders(), credentials: 'include',
+      body: JSON.stringify({ url }),
+    });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Remove failed');
+    return data;
+  },
 };

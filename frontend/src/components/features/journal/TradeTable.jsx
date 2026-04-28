@@ -1,31 +1,28 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
-  Image, FileText, ArrowUpRight, ArrowDownRight,
+  FileText, ArrowUpRight, ArrowDownRight,
   Bitcoin, DollarSign, LineChart, Coins, Box, Activity, Clock, Layers,
-  MoreHorizontal, Edit2, Copy, Trash2, Pencil, CheckCircle2, XCircle, X,
+  MoreHorizontal, Edit2, Copy, Trash2, Pencil, CheckCircle2, XCircle,
+  X, Camera, Loader2,
 } from "lucide-react";
 import { EMOTIONS, MARKET_TYPES } from "@/lib/constants";
 import { safeFormatDate } from "@/lib/utils";
+import { DateTimePicker } from "@/components/ui/DateTimePicker";
+import { MarketSelect } from "@/components/ui/MarketSelect";
+import { tradeService } from "@/services/tradeService";
 
 const MARKET_CONFIG = {
-  crypto:      { icon: Bitcoin,   color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20' },
-  forex:       { icon: DollarSign,color: 'text-emerald-400',bg: 'bg-emerald-500/10',border: 'border-emerald-500/20' },
-  stock:       { icon: LineChart, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
-  gold:        { icon: Coins,     color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20' },
-  commodities: { icon: Box,       color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
-  indices:     { icon: Activity,  color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-  futures:     { icon: Clock,     color: 'text-cyan-400',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/20' },
-  options:     { icon: Layers,    color: 'text-pink-400',   bg: 'bg-pink-500/10',   border: 'border-pink-500/20' },
+  crypto:      { icon: Bitcoin,    color: 'text-blue-400',    bg: 'bg-blue-500/10',    border: 'border-blue-500/20' },
+  forex:       { icon: DollarSign, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  stock:       { icon: LineChart,  color: 'text-indigo-400',  bg: 'bg-indigo-500/10',  border: 'border-indigo-500/20' },
+  gold:        { icon: Coins,      color: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/20' },
+  commodities: { icon: Box,        color: 'text-orange-400',  bg: 'bg-orange-500/10',  border: 'border-orange-500/20' },
+  indices:     { icon: Activity,   color: 'text-purple-400',  bg: 'bg-purple-500/10',  border: 'border-purple-500/20' },
+  futures:     { icon: Clock,      color: 'text-cyan-400',    bg: 'bg-cyan-500/10',    border: 'border-cyan-500/20' },
+  options:     { icon: Layers,     color: 'text-pink-400',    bg: 'bg-pink-500/10',    border: 'border-pink-500/20' },
 };
 
-const toDatetimeLocal = (iso) => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-};
-
-// type="text" — no spinner arrows
 const NUM_INPUT = "w-24 bg-slate-950 border border-accent/60 rounded-lg px-2 py-1.5 text-right text-white text-sm outline-none focus:ring-1 focus:ring-accent/30 font-mono";
 
 const NOTE_FIELDS = [
@@ -34,14 +31,128 @@ const NOTE_FIELDS = [
   { key: 'lessons_learned',label: 'Юу сурсан бэ?',     placeholder: 'Дараагийн удаа анхаарах зүйл...' },
 ];
 
-export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, onPatch }) {
+// ── Media cell ───────────────────────────────────────────────────────────────
+function MediaCell({ trade, onMediaUpdate }) {
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [lightbox, setLightbox] = useState(null);
+  const inputRef = useRef(null);
+
+  const mediaUrls = trade.media_urls || [];
+  const canAdd = mediaUrls.length < 3;
+
+  const handleUpload = async (file) => {
+    if (!file.type.startsWith('image/')) return;
+    if (!canAdd) return;
+    setUploading(true);
+    try {
+      const result = await tradeService.uploadMedia(trade.id, file);
+      onMediaUpdate(trade.id, result.data.media_urls);
+    } catch (e) {
+      console.error('Upload failed', e);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemove = async (e, url) => {
+    e.stopPropagation();
+    try {
+      const result = await tradeService.removeMedia(trade.id, url);
+      onMediaUpdate(trade.id, result.data.media_urls);
+    } catch (e) {
+      console.error('Remove failed', e);
+    }
+  };
+
+  return (
+    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-col gap-1.5 items-center min-w-[90px]">
+        {/* Thumbnails */}
+        {mediaUrls.length > 0 && (
+          <div className="flex gap-1 flex-wrap justify-center">
+            {mediaUrls.map((url, i) => (
+              <div key={i} className="relative group/thumb w-11 h-11 shrink-0">
+                <img
+                  src={url}
+                  alt=""
+                  className="w-full h-full object-cover rounded-lg cursor-zoom-in border border-slate-700"
+                  onClick={() => setLightbox(url)}
+                />
+                <button
+                  onClick={(e) => handleRemove(e, url)}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 hover:bg-rose-400 rounded-full flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity shadow-md"
+                >
+                  <X className="w-2.5 h-2.5 text-white" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Drop zone */}
+        {canAdd && (
+          <div
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+            onDragLeave={(e) => { e.stopPropagation(); setDragOver(false); }}
+            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleUpload(f); }}
+            onClick={() => inputRef.current?.click()}
+            className={[
+              'border-2 border-dashed rounded-lg px-3 py-2.5 flex flex-col items-center gap-1 cursor-pointer transition-all w-full',
+              dragOver ? 'border-accent bg-accent/10 scale-[1.02]' : 'border-slate-700 hover:border-slate-500',
+              uploading ? 'opacity-50 pointer-events-none' : '',
+            ].filter(Boolean).join(' ')}
+          >
+            {uploading ? (
+              <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+            ) : (
+              <>
+                <Camera className="w-4 h-4 text-slate-500" />
+                <span className="text-[10px] text-slate-600 leading-tight text-center whitespace-nowrap">
+                  {mediaUrls.length === 0 ? 'Зураг оруулах' : 'Нэмэх'}
+                </span>
+              </>
+            )}
+            <input ref={inputRef} type="file" accept="image/*" className="hidden"
+              onChange={(e) => { const f = e.target.files[0]; if (f) { handleUpload(f); e.target.value = ''; } }} />
+          </div>
+        )}
+      </div>
+
+      {/* Lightbox */}
+      {lightbox && createPortal(
+        <div
+          className="fixed inset-0 z-[10000] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <img
+            src={lightbox}
+            alt=""
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>,
+        document.body
+      )}
+    </td>
+  );
+}
+
+// ── Main table ────────────────────────────────────────────────────────────────
+export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, onPatch, onMediaUpdate }) {
   const [editingCell, setEditingCell] = useState(null);
   const [vals, setVals] = useState({});
   const [flashes, setFlashes] = useState({});
   const [openMenuId, setOpenMenuId] = useState(null);
 
   // Notes popup
-  const [notePopup, setNotePopup] = useState(null); // { id, top, left }
+  const [notePopup, setNotePopup] = useState(null);
   const [noteVals, setNoteVals] = useState({});
   const [noteSaved, setNoteSaved] = useState(null);
   const notePopupRef = useRef(null);
@@ -64,7 +175,6 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
     return () => window.removeEventListener('keydown', h);
   }, []);
 
-  // Close note popup on outside click — auto-save
   useEffect(() => {
     if (!notePopup) return;
     const h = (e) => {
@@ -103,7 +213,7 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
     } catch {}
   };
 
-  // ── Inline cell edit helpers ─────────────────────────────────────────────────
+  // ── Inline cell edit helpers ─────────────────────────────────────────────
 
   const startEdit = (e, id, field, initVal) => {
     e.stopPropagation();
@@ -196,10 +306,8 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
             const MIcon = mConf.icon;
             const emotBefore = t.emotionBefore || t.emotion_before || '';
             const emotAfter  = t.emotionAfter  || t.emotion_after  || '';
-
             const notesRaw = [t.why_entered, t.what_happened, t.lessons_learned].filter(Boolean).join(' · ');
             const notesPreview = notesRaw.length > 50 ? notesRaw.slice(0, 50) + '…' : notesRaw;
-            const hasNotes = notesRaw.length > 0;
 
             return (
               <tr
@@ -208,20 +316,17 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
               >
 
                 {/* ── DATE ──────────────────────── */}
-                <td className={cellCls(t.id, 'entry_date')} onClick={(e) => startEdit(e, t.id, 'entry_date', toDatetimeLocal(t.entry_date || t.date))}>
+                <td className={cellCls(t.id, 'entry_date')} onClick={(e) => startEdit(e, t.id, 'entry_date', t.entry_date || t.date || null)}>
                   {isEdit(t.id, 'entry_date') ? (
-                    <input
-                      type="datetime-local" autoFocus
-                      defaultValue={gv(t.id, 'entry_date')}
-                      onChange={(e) => sv(t.id, 'entry_date', e.target.value)}
-                      onBlur={(e) => saveField(t.id, 'entry_date', { entry_date: e.target.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveField(t.id, 'entry_date', { entry_date: gv(t.id, 'entry_date') });
-                        if (e.key === 'Escape') setEditingCell(null);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="bg-slate-950 border border-accent/60 rounded-lg px-2 py-1.5 text-white text-xs outline-none focus:ring-1 focus:ring-accent/30 w-44"
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <DateTimePicker
+                        value={gv(t.id, 'entry_date') ?? (t.entry_date || t.date || null)}
+                        onChange={(iso) => {
+                          sv(t.id, 'entry_date', iso);
+                          saveField(t.id, 'entry_date', { entry_date: iso });
+                        }}
+                      />
+                    </div>
                   ) : (
                     <>
                       <div className="text-slate-300 font-medium text-sm">{safeFormatDate(t.entry_date || t.date, "MMM dd, HH:mm")}</div>
@@ -235,13 +340,10 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
                 <td className={cellCls(t.id, 'market_symbol')} onClick={(e) => startEdit(e, t.id, 'market_symbol', { market, symbol: t.symbol || '' })}>
                   {isEdit(t.id, 'market_symbol') ? (
                     <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <select
+                      <MarketSelect
                         value={gv(t.id, 'market') ?? market}
-                        onChange={(e) => sv(t.id, 'market', e.target.value)}
-                        className="bg-slate-950 border border-accent/60 rounded-lg px-2 py-1 text-white text-xs outline-none w-32"
-                      >
-                        {MARKET_TYPES.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
-                      </select>
+                        onChange={(v) => sv(t.id, 'market', v)}
+                      />
                       <input
                         type="text" autoFocus placeholder="EURUSD"
                         value={gv(t.id, 'symbol') ?? t.symbol ?? ''}
@@ -250,7 +352,8 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
                           if (e.key === 'Enter') saveField(t.id, 'market_symbol', { market_type: gv(t.id, 'market'), symbol: gv(t.id, 'symbol') });
                           if (e.key === 'Escape') setEditingCell(null);
                         }}
-                        className="bg-slate-950 border border-accent/60 rounded-lg px-2 py-1 text-white text-xs outline-none w-32 uppercase font-mono focus:ring-1 focus:ring-accent/30"
+                        onBlur={() => saveField(t.id, 'market_symbol', { market_type: gv(t.id, 'market') ?? market, symbol: gv(t.id, 'symbol') ?? t.symbol })}
+                        className="bg-slate-950 border border-accent/60 rounded-lg px-2 py-1 text-white text-xs outline-none w-36 uppercase font-mono focus:ring-1 focus:ring-accent/30"
                       />
                     </div>
                   ) : (
@@ -382,9 +485,9 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
                       {['OPEN', 'CLOSED', 'CANCELLED'].map((s) => (
                         <button key={s} onClick={() => saveField(t.id, 'status', { status: s })}
                           className={`w-24 py-1 rounded-md text-[11px] font-semibold border transition-all ${
-                            s === 'OPEN'      ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30' :
-                            s === 'CLOSED'    ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700' :
-                                               'bg-slate-800/30 text-slate-500 border-slate-700/50 hover:bg-slate-700/50'
+                            s === 'OPEN'   ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30' :
+                            s === 'CLOSED' ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700' :
+                                            'bg-slate-800/30 text-slate-500 border-slate-700/50 hover:bg-slate-700/50'
                           } ${t.status === s ? 'ring-1 ring-current' : ''}`}>
                           {s}
                         </button>
@@ -447,45 +550,14 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
                 </td>
 
                 {/* ── MEDIA ────────────────────── */}
-                <td className={cellCls(t.id, 'media', 'text-center')} onClick={(e) => startEdit(e, t.id, 'media', null)}>
-                  {isEdit(t.id, 'media') ? (
-                    <div className="flex flex-col items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <label className="px-2 py-1.5 bg-accent/10 border border-accent/30 text-accent text-xs rounded-lg cursor-pointer hover:bg-accent/20 transition-colors flex items-center gap-1.5">
-                        <Image className="w-3.5 h-3.5" /> Зураг оруулах
-                        <input type="file" accept="image/*" className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onloadend = () => saveField(t.id, 'media', { screenshot_url: reader.result });
-                            reader.readAsDataURL(file);
-                          }} />
-                      </label>
-                      {t.screenshot_url && (
-                        <button onClick={() => saveField(t.id, 'media', { screenshot_url: null })}
-                          className="text-[10px] text-rose-400 hover:text-rose-300 transition-colors">
-                          Устгах
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-center gap-2">
-                        <div className={`w-7 h-7 rounded flex items-center justify-center transition-colors ${t.screenshot_url ? 'bg-accent/10 border border-accent/20 text-accent' : 'text-slate-700'}`}>
-                          <Image className="w-3.5 h-3.5" />
-                        </div>
-                      </div>
-                      <FlashOverlay id={t.id} field="media" />
-                    </>
-                  )}
-                </td>
+                <MediaCell trade={t} onMediaUpdate={onMediaUpdate} />
 
                 {/* ── NOTES ────────────────────── */}
                 <td
                   className="px-5 py-4 relative group/cell cursor-pointer transition-colors hover:bg-slate-800/20 min-w-[160px] max-w-[220px]"
                   onClick={(e) => openNotePopup(e, t)}
                 >
-                  {hasNotes ? (
+                  {notesRaw ? (
                     <span className="text-slate-400 text-sm leading-relaxed line-clamp-2 block">{notesPreview}</span>
                   ) : (
                     <span className="text-slate-600 text-sm italic">Тэмдэглэл нэм...</span>
@@ -523,7 +595,7 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
         </tbody>
       </table>
 
-      {/* ── Notes popup (fixed, outside overflow context) ───────────────────── */}
+      {/* ── Notes popup ─────────────────────────────────────────────────────── */}
       {notePopup && createPortal(
         <div
           ref={notePopupRef}
@@ -536,26 +608,17 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
               <FileText className="w-4 h-4 text-accent" />
               <span className="text-sm font-semibold">Тэмдэглэл</span>
             </div>
-            <button
-              onClick={() => setNotePopup(null)}
-              className="p-1 text-slate-500 hover:text-slate-300 rounded transition-colors"
-            >
+            <button onClick={() => setNotePopup(null)} className="p-1 text-slate-500 hover:text-slate-300 rounded transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
-
           <div className="grid grid-cols-3 gap-4">
             {NOTE_FIELDS.map(({ key, label, placeholder }) => (
               <div key={key} className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{label}</label>
                 <textarea
                   value={noteVals[notePopup.id]?.[key] ?? ''}
-                  onChange={(e) =>
-                    setNoteVals(prev => ({
-                      ...prev,
-                      [notePopup.id]: { ...prev[notePopup.id], [key]: e.target.value },
-                    }))
-                  }
+                  onChange={(e) => setNoteVals(prev => ({ ...prev, [notePopup.id]: { ...prev[notePopup.id], [key]: e.target.value } }))}
                   placeholder={placeholder}
                   rows={5}
                   className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-300 placeholder-slate-600 outline-none focus:ring-1 focus:ring-accent/30 focus:border-accent/40 resize-none transition-colors"
@@ -563,7 +626,6 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
               </div>
             ))}
           </div>
-
           <div className="mt-4 flex items-center justify-end gap-3">
             {noteSaved === notePopup.id && (
               <div className="flex items-center gap-1.5 text-emerald-400 text-sm">

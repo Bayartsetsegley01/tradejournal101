@@ -1,4 +1,5 @@
 import { query, getDbStatus } from '../db/index.js';
+import cloudinary from '../config/cloudinary.js';
 
 export const getTrades = async (req, res) => {
   try {
@@ -204,10 +205,53 @@ export const addTradeMedia = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
     const { id } = req.params;
-    const { file_url, file_type } = req.body;
-    const result = await query('INSERT INTO trade_media (trade_id, file_url, file_type) VALUES ($1,$2,$3) RETURNING *', [id, file_url, file_type]);
-    res.status(201).json({ success: true, data: result.rows[0] });
+    const userId = req.user.id;
+
+    if (!req.file) return res.status(400).json({ success: false, error: 'Файл байхгүй байна' });
+
+    const current = await query('SELECT media_urls FROM trades WHERE id=$1 AND user_id=$2', [id, userId]);
+    if (!current.rows[0]) return res.status(404).json({ success: false, error: 'Trade not found' });
+    const existing = current.rows[0].media_urls || [];
+    if (existing.length >= 3) return res.status(400).json({ success: false, error: 'Хамгийн ихдээ 3 зураг оруулах боломжтой' });
+
+    const url = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: 'tradejournal', resource_type: 'image', transformation: [{ width: 1920, height: 1080, crop: 'limit', quality: 'auto:good' }] },
+        (err, result) => { if (err) reject(err); else resolve(result.secure_url); }
+      ).end(req.file.buffer);
+    });
+
+    const result = await query(
+      `UPDATE trades SET media_urls = array_append(COALESCE(media_urls, '{}'), $1) WHERE id=$2 AND user_id=$3 RETURNING media_urls`,
+      [url, id, userId]
+    );
+    res.json({ success: true, data: { media_urls: result.rows[0].media_urls, url } });
   } catch (error) {
+    console.error('addTradeMedia error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const removeTradeMedia = async (req, res) => {
+  try {
+    if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
+    const { id } = req.params;
+    const { url } = req.body;
+    const userId = req.user.id;
+
+    // Delete from Cloudinary (non-fatal)
+    try {
+      const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z]+$/);
+      if (match) await cloudinary.uploader.destroy(match[1]);
+    } catch {}
+
+    const result = await query(
+      `UPDATE trades SET media_urls = array_remove(COALESCE(media_urls, '{}'), $1) WHERE id=$2 AND user_id=$3 RETURNING media_urls`,
+      [url, id, userId]
+    );
+    res.json({ success: true, data: { media_urls: result.rows[0]?.media_urls || [] } });
+  } catch (error) {
+    console.error('removeTradeMedia error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -74,6 +74,10 @@ export function JournalPage() {
     }
   };
 
+  const handleMediaUpdate = (id, mediaUrls) => {
+    setTrades(prev => prev.map(t => t.id === id ? { ...t, media_urls: mediaUrls } : t));
+  };
+
   const handlePatch = async (id, changes) => {
     const trade = trades.find(t => t.id === id);
     if (!trade) return;
@@ -205,6 +209,7 @@ export function JournalPage() {
             onDuplicate={handleDuplicate}
             onDelete={handleDelete}
             onPatch={handlePatch}
+            onMediaUpdate={handleMediaUpdate}
           />
         )}
       </div>

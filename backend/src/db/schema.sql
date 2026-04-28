@@ -346,6 +346,14 @@ INSERT INTO app_config (key, value) VALUES
   ('maintenance_message', 'Системд засвар хийгдэж байна. Удахгүй буцаж ирнэ.')
 ON CONFLICT (key) DO NOTHING;
 
+-- ─── Guaranteed trades media column migration ────────────────────────────────
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='media_urls') THEN
+    ALTER TABLE trades ADD COLUMN media_urls TEXT[] DEFAULT '{}';
+  END IF;
+END $$;
+
 -- ─── Guaranteed trades note column migrations ────────────────────────────────
 DO $$
 BEGIN
