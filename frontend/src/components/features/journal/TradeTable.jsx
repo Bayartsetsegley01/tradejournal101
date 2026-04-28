@@ -66,31 +66,28 @@ function MediaCell({ trade, onMediaUpdate }) {
   };
 
   return (
-    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-      <div className="flex flex-col gap-1.5 items-center min-w-[90px]">
+    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+      {/* Single flex-wrap row: [img1] [img2] [+ Нэмэх] */}
+      <div className="flex flex-wrap gap-1.5 items-center">
         {/* Thumbnails */}
-        {mediaUrls.length > 0 && (
-          <div className="flex gap-1 flex-wrap justify-center">
-            {mediaUrls.map((url, i) => (
-              <div key={i} className="relative group/thumb w-11 h-11 shrink-0">
-                <img
-                  src={url}
-                  alt=""
-                  className="w-full h-full object-cover rounded-lg cursor-zoom-in border border-slate-700"
-                  onClick={() => setLightbox(url)}
-                />
-                <button
-                  onClick={(e) => handleRemove(e, url)}
-                  className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 hover:bg-rose-400 rounded-full flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity shadow-md"
-                >
-                  <X className="w-2.5 h-2.5 text-white" />
-                </button>
-              </div>
-            ))}
+        {mediaUrls.map((url, i) => (
+          <div key={i} className="relative group/thumb w-[72px] h-[72px] shrink-0">
+            <img
+              src={url}
+              alt=""
+              className="w-full h-full object-cover rounded-lg cursor-zoom-in border border-slate-700 hover:border-slate-500 transition-colors"
+              onClick={() => setLightbox(url)}
+            />
+            <button
+              onClick={(e) => handleRemove(e, url)}
+              className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 hover:bg-rose-400 rounded-full flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity shadow-md"
+            >
+              <X className="w-2.5 h-2.5 text-white" />
+            </button>
           </div>
-        )}
+        ))}
 
-        {/* Drop zone */}
+        {/* Add button — same size as thumbnail, shown only when < 3 images */}
         {canAdd && (
           <div
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
@@ -98,18 +95,18 @@ function MediaCell({ trade, onMediaUpdate }) {
             onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleUpload(f); }}
             onClick={() => inputRef.current?.click()}
             className={[
-              'border-2 border-dashed rounded-lg px-3 py-2.5 flex flex-col items-center gap-1 cursor-pointer transition-all w-full',
-              dragOver ? 'border-accent bg-accent/10 scale-[1.02]' : 'border-slate-700 hover:border-slate-500',
+              'w-[72px] h-[72px] shrink-0 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-1 cursor-pointer transition-all',
+              dragOver ? 'border-accent bg-accent/10 scale-[1.02]' : 'border-slate-700 hover:border-slate-500 hover:bg-slate-800/40',
               uploading ? 'opacity-50 pointer-events-none' : '',
             ].filter(Boolean).join(' ')}
           >
             {uploading ? (
-              <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+              <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
             ) : (
               <>
-                <Camera className="w-4 h-4 text-slate-500" />
-                <span className="text-[10px] text-slate-600 leading-tight text-center whitespace-nowrap">
-                  {mediaUrls.length === 0 ? 'Зураг оруулах' : 'Нэмэх'}
+                <Camera className="w-5 h-5 text-slate-500" />
+                <span className="text-[9px] text-slate-600 leading-tight text-center">
+                  {mediaUrls.length === 0 ? 'Зураг\nоруулах' : 'Нэмэх'}
                 </span>
               </>
             )}
