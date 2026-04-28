@@ -15,10 +15,10 @@ const getDateFilter = (timeRange, paramStart = 2) => {
     const start = new Date(s), end = new Date(e);
     if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
       if (e.length<=10) end.setHours(23,59,59,999);
-      return { sql: ` AND exit_date >= $${paramStart} AND exit_date <= $${paramStart+1}`, params: [start.toISOString(), end.toISOString()] };
+      return { sql: ` AND entry_date >= $${paramStart} AND entry_date <= $${paramStart+1}`, params: [start.toISOString(), end.toISOString()] };
     }
   }
-  return { sql: ` AND exit_date >= $${paramStart}`, params: [startDate.toISOString()] };
+  return { sql: ` AND entry_date >= $${paramStart}`, params: [startDate.toISOString()] };
 };
 
 export const getSummary = async (req, res) => {
@@ -46,11 +46,11 @@ export const getCharts = async (req, res) => {
     const userId = req.user.id;
     const filter = getDateFilter(req.query.range || req.query.timeRange);
     const result = await query(
-      `SELECT exit_date, pnl FROM trades WHERE user_id=$1 AND status='CLOSED' AND exit_date IS NOT NULL ${filter.sql} ORDER BY exit_date ASC`,
+      `SELECT entry_date, exit_date, pnl FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date IS NOT NULL ${filter.sql} ORDER BY entry_date ASC`,
       [userId, ...filter.params]
     );
     let cum = 0;
-    const equityCurve = result.rows.map(r => { cum += parseFloat(r.pnl)||0; return { date: r.exit_date, pnl: parseFloat(r.pnl)||0, equity: cum }; });
+    const equityCurve = result.rows.map(r => { cum += parseFloat(r.pnl)||0; return { date: r.exit_date || r.entry_date, pnl: parseFloat(r.pnl)||0, equity: cum }; });
     res.json({ success: true, data: { equityCurve } });
   } catch (error) {
     console.error('getCharts error:', error);
@@ -66,7 +66,7 @@ export const getMistakes = async (req, res) => {
     const filter = getDateFilter(req.query.range || req.query.timeRange);
     const result = await query(
       `SELECT mistake_tags, positive_tags, emotion_before, emotion_after, pnl
-       FROM trades WHERE user_id=$1 AND status='CLOSED' ${filter.sql}`,
+       FROM trades WHERE user_id=$1 ${filter.sql}`,
       [userId, ...filter.params]
     );
     const rows = result.rows;
@@ -130,8 +130,8 @@ export const getPerformance = async (req, res) => {
 
     const result = await query(
       `SELECT market_type, strategy, direction, pnl, rr_ratio,
-              EXTRACT(DOW FROM exit_date) as day_of_week
-       FROM trades WHERE user_id=$1 AND status='CLOSED' AND exit_date IS NOT NULL ${filter.sql}`,
+              EXTRACT(DOW FROM entry_date) as day_of_week
+       FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date IS NOT NULL ${filter.sql}`,
       [userId, ...filter.params]
     );
     const rows = result.rows;
@@ -211,7 +211,7 @@ export const getWeeklyReview = async (req, res) => {
     const start = req.query.start ? new Date(req.query.start) : weekStart;
     const end = req.query.end ? new Date(req.query.end) : weekEnd;
     const result = await query(
-      `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND exit_date >= $2 AND exit_date <= $3 ORDER BY exit_date ASC`,
+      `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date >= $2 AND entry_date <= $3 ORDER BY entry_date ASC`,
       [userId, start.toISOString(), end.toISOString()]
     );
     res.json({ success: true, data: buildReview(result.rows, 'weekly', start, end) });
@@ -231,7 +231,7 @@ export const getMonthlyReview = async (req, res) => {
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59, 999);
     const result = await query(
-      `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND exit_date >= $2 AND exit_date <= $3 ORDER BY exit_date ASC`,
+      `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date >= $2 AND entry_date <= $3 ORDER BY entry_date ASC`,
       [userId, start.toISOString(), end.toISOString()]
     );
     res.json({ success: true, data: buildReview(result.rows, 'monthly', start, end) });
@@ -274,7 +274,7 @@ function buildReview(trades, type, start, end) {
   const topPositiveTags = Object.entries(positiveCount).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([tag,count])=>({tag,count}));
   const dailyMap = {};
   trades.forEach(t => {
-    const day = (t.exit_date||t.entry_date||'').toString().slice(0,10); if (!day) return;
+    const day = (t.entry_date||t.exit_date||'').toString().slice(0,10); if (!day) return;
     if (!dailyMap[day]) dailyMap[day] = { date: day, trades: 0, pnl: 0, wins: 0 };
     dailyMap[day].trades++; dailyMap[day].pnl += parseFloat(t.pnl)||0;
     if (parseFloat(t.pnl) > 0) dailyMap[day].wins++;
