@@ -107,6 +107,7 @@ export function TradeFilters({ filters, setFilters }) {
       hasScreenshot: false,
       hasNotes: false,
     });
+    localStorage.setItem('analytics_time_range', 'all');
   };
 
   const hasActiveFilters = 
@@ -233,24 +234,6 @@ export function TradeFilters({ filters, setFilters }) {
             )}
           </div>
 
-          {/* Time Range */}
-          <div className="relative shrink-0">
-            <select 
-              className={`bg-slate-900/50 border rounded-xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 appearance-none min-w-[130px] cursor-pointer transition-all hover:bg-slate-900 ${filters.timeRange !== 'all' ? 'border-accent/50 text-accent' : 'border-slate-800 text-slate-300'}`}
-              value={filters.timeRange}
-              onChange={(e) => setFilters({ ...filters, timeRange: e.target.value })}
-            >
-              <option value="all">Бүх хугацаа</option>
-              <option value="today">Өнөөдөр</option>
-              <option value="7d">7 хоног</option>
-              <option value="1m">1 сар</option>
-              <option value="3m">3 сар</option>
-              <option value="6m">6 сар</option>
-              <option value="1y">1 жил</option>
-            </select>
-            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-          </div>
-
           {/* Status */}
           <div className="relative shrink-0">
             <select 
@@ -300,16 +283,31 @@ export function TradeFilters({ filters, setFilters }) {
             {/* Session */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Сешн</label>
-              <select 
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-accent/50"
-                value={filters.session}
-                onChange={(e) => setFilters({ ...filters, session: e.target.value })}
-              >
-                <option value="all">Бүх сешн</option>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setFilters({ ...filters, session: 'all' })}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                    filters.session === 'all'
+                      ? 'bg-accent/20 border-accent/50 text-accent'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                  }`}
+                >
+                  Бүгд
+                </button>
                 {SESSIONS.map(s => (
-                  <option key={s.id} value={s.id}>{s.label}</option>
+                  <button
+                    key={s.id}
+                    onClick={() => setFilters({ ...filters, session: s.id })}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                      filters.session === s.id
+                        ? 'bg-accent/20 border-accent/50 text-accent'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             {/* Media & Notes */}

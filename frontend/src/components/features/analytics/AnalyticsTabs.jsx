@@ -1,13 +1,16 @@
 import { cn } from "@/lib/utils";
-
-const tabs = [
-  { id: "overview", label: "Overview" },
-  { id: "detailed", label: "Detailed Reports" },
-  { id: "mistakes", label: "Mistakes & Psych" },
-  { id: "calendar", label: "Calendar" },
-];
+import { useLang } from "@/contexts/LanguageContext";
 
 export function AnalyticsTabs({ activeTab, onChange }) {
+  const { t } = useLang();
+
+  const tabs = [
+    { id: "overview",  label: t('tabOverview') },
+    { id: "detailed",  label: t('tabDetailed') },
+    { id: "mistakes",  label: t('tabMistakes') },
+    { id: "calendar",  label: t('tabCalendar') },
+  ];
+
   return (
     <div className="flex items-center gap-6 border-b border-slate-800 mb-6 relative">
       {tabs.map((tab) => (

@@ -72,8 +72,11 @@ input[type='number'] { -moz-appearance: textfield; }
 .react-datepicker__day--today { font-weight:700; border:1px solid #3f3f46!important; }
 .react-datepicker__day--outside-month { color:#475569!important; }
 .react-datepicker__day--disabled { color:#3f3f46!important; }
-.react-datepicker__navigation-icon::before { border-color:#64748b!important; }
+.react-datepicker__navigation-icon::before { border-color:#64748b!important; border-width:3px 3px 0 0!important; width:10px!important; height:10px!important; }
 .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before { border-color:#c8f07a!important; }
+.react-datepicker__navigation { width:36px!important; height:36px!important; top:6px!important; }
+.react-datepicker__popper { min-width:280px!important; }
+.react-datepicker { min-width:280px!important; }
 .react-datepicker__triangle { display:none!important; }
 .react-datepicker__time-container { border-left:1px solid #3f3f46!important; }
 .react-datepicker__time { background:#121214!important; }

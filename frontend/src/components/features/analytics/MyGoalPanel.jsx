@@ -39,7 +39,7 @@ export function MyGoalPanel() {
 
   if (isEditing) {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden group">
+      <div className="bg-slate-900 border border-accent/30 rounded-2xl p-6 relative overflow-hidden group shadow-[0_0_20px_rgba(200,240,122,0.06)]">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <Target className="w-5 h-5 text-accent" />

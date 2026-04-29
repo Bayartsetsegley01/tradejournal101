@@ -5,7 +5,9 @@ import { AddTradeModal } from "@/components/features/journal/AddTradeModal";
 import { TradeDetailModal } from "@/components/features/journal/TradeDetailModal";
 import { ExportModal } from "@/components/features/journal/ExportModal";
 import { ImportModal } from "@/components/features/journal/ImportModal";
+import { TimeFilter } from "@/components/features/analytics/TimeFilter";
 import { Plus, Download, Loader2, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { SESSIONS } from "@/lib/constants";
 
 const PAGE_SIZE = 10;
 import { tradeService } from "@/services/tradeService";
@@ -23,17 +25,25 @@ export function JournalPage() {
   const [page, setPage] = useState(1);
   
   
-  // Filters state
-  const [filters, setFilters] = useState({
+  // Filters state — init timeRange from localStorage (shared with Analytics)
+  const [filters, setFilters] = useState(() => ({
     search: '',
-    timeRange: 'all',
+    timeRange: localStorage.getItem('analytics_time_range') || 'all',
     status: 'all',
-    markets: [], // Empty means all markets
+    markets: [],
     direction: 'all',
     session: 'all',
     hasScreenshot: false,
     hasNotes: false,
+  }));
+  const [customRange, setCustomRange] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('analytics_custom_range')); } catch { return null; }
   });
+
+  // Keep localStorage in sync when timeRange changes
+  useEffect(() => {
+    localStorage.setItem('analytics_time_range', filters.timeRange);
+  }, [filters.timeRange]);
 
   
   const fetchTrades = async () => {
@@ -126,8 +136,12 @@ export function JournalPage() {
     // Direction filter
     if (filters.direction !== 'all' && trade.direction !== filters.direction) return false;
     
-    // Session filter
-    if (filters.session !== 'all' && trade.session !== filters.session) return false;
+    // Session filter (case-insensitive, match by id or label)
+    if (filters.session !== 'all') {
+      const sess = SESSIONS.find(s => s.id === filters.session);
+      const ts = (trade.session || '').toLowerCase();
+      if (ts !== filters.session.toLowerCase() && (!sess || ts !== sess.label.toLowerCase())) return false;
+    }
 
     // Markets filter
     if (filters.markets.length > 0 && !filters.markets.includes(trade.market_type)) return false;
@@ -148,6 +162,11 @@ export function JournalPage() {
         if (now - tradeDate > 180 * 24 * 60 * 60 * 1000) return false;
       } else if (filters.timeRange === '1y') {
         if (now - tradeDate > 365 * 24 * 60 * 60 * 1000) return false;
+      } else if (filters.timeRange === 'custom' && customRange?.start && customRange?.end) {
+        const start = new Date(customRange.start);
+        const end = new Date(customRange.end);
+        end.setHours(23, 59, 59, 999);
+        if (tradeDate < start || tradeDate > end) return false;
       }
     }
 
@@ -163,34 +182,49 @@ export function JournalPage() {
   return (
     <div className="p-8 max-w-[1600px] mx-auto w-full flex flex-col gap-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Арилжааны тэмдэглэл</h1>
-          <p className="text-sm text-slate-400 mt-1">Бүх төрлийн зах зээлийн арилжаагаа нэг дор хянах</p>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Арилжааны тэмдэглэл</h1>
+            <p className="text-sm text-slate-400 mt-1">Бүх төрлийн зах зээлийн арилжаагаа нэг дор хянах</p>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button
+              onClick={() => setIsExportModalOpen(true)}
+              className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
+            >
+              <Upload className="w-4 h-4" />
+              CSV Import
+            </button>
+            <button
+              onClick={() => { setEditingTrade(null); setIsAddModalOpen(true); }}
+              className="flex-1 sm:flex-none bg-accent hover:bg-accent-hover text-slate-950 text-sm font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(200,240,122,0.15)] hover:shadow-[0_0_20px_rgba(200,240,122,0.25)]"
+            >
+              <Plus className="w-4 h-4" />
+              Шинэ арилжаа
+            </button>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <button 
-            onClick={() => setIsImportModalOpen(true)}
-            className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
-          >
-            <Upload className="w-4 h-4" />
-            CSV Import
-          </button>
-          <button 
-            onClick={() => setIsExportModalOpen(true)}
-            className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
-          >
-            <Download className="w-4 h-4" />
-            Export
-          </button>
-          <button 
-            onClick={() => { setEditingTrade(null); setIsAddModalOpen(true); }}
-            className="flex-1 sm:flex-none bg-accent hover:bg-accent-hover text-slate-950 text-sm font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(200,240,122,0.15)] hover:shadow-[0_0_20px_rgba(200,240,122,0.25)]"
-          >
-            <Plus className="w-4 h-4" />
-            Шинэ арилжаа
-          </button>
+
+        {/* Time Filter — shared with Analytics */}
+        <div className="overflow-x-auto">
+          <TimeFilter
+            value={filters.timeRange}
+            onChange={(v) => setFilters(f => ({ ...f, timeRange: v }))}
+            customRange={customRange}
+            onCustomRangeChange={(r) => {
+              setCustomRange(r);
+              if (r) localStorage.setItem('analytics_custom_range', JSON.stringify(r));
+            }}
+          />
         </div>
       </div>
 

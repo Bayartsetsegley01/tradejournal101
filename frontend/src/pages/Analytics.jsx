@@ -14,8 +14,10 @@ import { AlertTriangle, Brain } from "lucide-react";
 
 export function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [timeRange, setTimeRange] = useState("7d");
-  const [customRange, setCustomRange] = useState(null);
+  const [timeRange, setTimeRange] = useState(() => localStorage.getItem('analytics_time_range') || '7d');
+  const [customRange, setCustomRange] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('analytics_custom_range')); } catch { return null; }
+  });
   
   const [summary, setSummary] = useState(null);
   const [charts, setCharts] = useState(null);
@@ -98,11 +100,14 @@ export function AnalyticsPage() {
       {/* Sticky Top Header */}
       <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 px-8 h-16 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-white tracking-tight">Анализ</h1>
-        <TimeFilter 
-          value={timeRange} 
-          onChange={setTimeRange} 
+        <TimeFilter
+          value={timeRange}
+          onChange={(v) => { setTimeRange(v); localStorage.setItem('analytics_time_range', v); }}
           customRange={customRange}
-          onCustomRangeChange={setCustomRange}
+          onCustomRangeChange={(r) => {
+            setCustomRange(r);
+            if (r) localStorage.setItem('analytics_custom_range', JSON.stringify(r));
+          }}
         />
       </header>
 
@@ -136,7 +141,7 @@ export function AnalyticsPage() {
           {activeTab === "overview" && !loading && summary && charts && summary.totalTrades > 0 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Row 1: Summary Cards */}
-              <SummaryCards data={summary} />
+              <SummaryCards data={summary} timeRange={timeRange} />
 
               {/* Row 2: Main Charts & AI */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

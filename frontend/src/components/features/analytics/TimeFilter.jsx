@@ -1,64 +1,131 @@
 import { useState, useRef, useEffect } from "react";
-import { Calendar, X } from "lucide-react";
+import { Calendar, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
+const LS_RANGE = 'analytics_time_range';
+const LS_CUSTOM = 'analytics_custom_range';
+
+// Reversed order: Custom → Бүх → 1жил → 6сар → 3сар → 1сар → 7хоног → Өнөөдөр
 const filters = [
+  { id: "1y",    label: "1 жил" },
+  { id: "6m",    label: "6 сар" },
+  { id: "3m",    label: "3 сар" },
+  { id: "1m",    label: "1 сар" },
+  { id: "7d",    label: "7 хоног" },
   { id: "today", label: "Өнөөдөр" },
-  { id: "7d", label: "7 хоног" },
-  { id: "1m", label: "1 сар" },
-  { id: "3m", label: "3 сар" },
-  { id: "6m", label: "6 сар" },
-  { id: "1y", label: "1 жил" },
-  { id: "all", label: "Бүх" },
 ];
+
+function getLast7Days() {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 7);
+  return { start, end };
+}
 
 export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [tempRange, setTempRange] = useState(customRange || { start: '', end: '', startTime: '', endTime: '' });
+  const [startDate, setStartDate] = useState(() => {
+    if (customRange?.startDate) return new Date(customRange.startDate);
+    return getLast7Days().start;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    if (customRange?.endDate) return new Date(customRange.endDate);
+    return getLast7Days().end;
+  });
   const popoverRef = useRef(null);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
+    const handleClickOutside = (e) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) setIsOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleRangeChange = (id) => {
+    onChange(id);
+    localStorage.setItem(LS_RANGE, id);
+  };
+
+  const handleOpenCustom = () => {
+    // Load last saved custom range or default to last 7 days
+    const saved = (() => { try { return JSON.parse(localStorage.getItem(LS_CUSTOM)); } catch { return null; } })();
+    if (saved?.startDate) setStartDate(new Date(saved.startDate));
+    else setStartDate(getLast7Days().start);
+    if (saved?.endDate) setEndDate(new Date(saved.endDate));
+    else setEndDate(getLast7Days().end);
+    setIsOpen(!isOpen);
+  };
+
+  const handleDateChange = (dates) => {
+    const [s, e] = dates;
+    setStartDate(s);
+    setEndDate(e);
+  };
+
   const handleApply = () => {
-    onCustomRangeChange(tempRange);
+    if (!startDate || !endDate) return;
+    const range = {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      start: startDate.toISOString().slice(0, 10),
+      end: endDate.toISOString().slice(0, 10),
+    };
+    onCustomRangeChange(range);
     onChange('custom');
+    localStorage.setItem(LS_RANGE, 'custom');
+    localStorage.setItem(LS_CUSTOM, JSON.stringify(range));
     setIsOpen(false);
   };
 
   const handleClear = () => {
-    setTempRange({ start: '', end: '', startTime: '', endTime: '' });
+    setStartDate(getLast7Days().start);
+    setEndDate(getLast7Days().end);
     onCustomRangeChange(null);
-    onChange('7d');
+    onChange('all');
+    localStorage.setItem(LS_RANGE, 'all');
     setIsOpen(false);
   };
 
+  const customLabel = value === 'custom' && customRange?.start && customRange?.end
+    ? `${customRange.start} – ${customRange.end}`
+    : 'Custom';
+
   return (
     <div className="relative flex items-center gap-1 bg-slate-900/50 p-1 rounded-lg border border-slate-800">
-      {filters.map((filter) => (
+      {/* Бүх — leftmost */}
+      <button
+        onClick={() => handleRangeChange('all')}
+        className={cn(
+          "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+          value === 'all' ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+        )}
+      >
+        Бүх
+      </button>
+
+      <div className="w-px h-4 bg-slate-800 mx-0.5" />
+
+      {filters.map((f) => (
         <button
-          key={filter.id}
-          onClick={() => onChange(filter.id)}
+          key={f.id}
+          onClick={() => handleRangeChange(f.id)}
           className={cn(
             "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-            value === filter.id
-              ? "bg-slate-800 text-white shadow-sm"
-              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+            value === f.id ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
           )}
         >
-          {filter.label}
+          {f.label}
         </button>
       ))}
-      <div className="w-px h-4 bg-slate-800 mx-1" />
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
+
+      <div className="w-px h-4 bg-slate-800 mx-0.5" />
+
+      {/* Custom button — rightmost */}
+      <button
+        onClick={handleOpenCustom}
         className={cn(
           "px-3 py-1.5 text-xs font-medium rounded-md flex items-center gap-1.5 transition-colors",
           value === 'custom' || isOpen
@@ -67,72 +134,52 @@ export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }
         )}
       >
         <Calendar className="w-3.5 h-3.5" />
-        {value === 'custom' && customRange?.start && customRange?.end 
-          ? `${customRange.start} - ${customRange.end}`
-          : 'Custom'}
+        {customLabel}
       </button>
 
+      {/* Custom date picker popup */}
       {isOpen && (
-        <div ref={popoverRef} className="absolute top-full right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-white">Хугацаа сонгох</h3>
-            <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white">
+        <div
+          ref={popoverRef}
+          className="absolute top-full right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">Хугацаа сонгох</h3>
+            <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Эхлэх (From)</label>
-              <div className="flex gap-2">
-                <input 
-                  type="date" 
-                  value={tempRange?.start || ''}
-                  onChange={(e) => setTempRange({...tempRange, start: e.target.value})}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:border-accent/50 focus:ring-1 focus:ring-accent/50 outline-none"
-                />
-                <input 
-                  type="time" 
-                  value={tempRange?.startTime || ''}
-                  onChange={(e) => setTempRange({...tempRange, startTime: e.target.value})}
-                  className="w-24 bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-sm text-white focus:border-accent/50 focus:ring-1 focus:ring-accent/50 outline-none"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Дуусах (To)</label>
-              <div className="flex gap-2">
-                <input 
-                  type="date" 
-                  value={tempRange?.end || ''}
-                  onChange={(e) => setTempRange({...tempRange, end: e.target.value})}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:border-accent/50 focus:ring-1 focus:ring-accent/50 outline-none"
-                />
-                <input 
-                  type="time" 
-                  value={tempRange?.endTime || ''}
-                  onChange={(e) => setTempRange({...tempRange, endTime: e.target.value})}
-                  className="w-24 bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-sm text-white focus:border-accent/50 focus:ring-1 focus:ring-accent/50 outline-none"
-                />
-              </div>
-            </div>
 
-            <div className="flex gap-2 pt-2">
-              <button 
-                onClick={handleClear}
-                className="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                Цэвэрлэх
-              </button>
-              <button 
-                onClick={handleApply}
-                disabled={!tempRange.start || !tempRange.end}
-                className="flex-1 px-3 py-2 bg-accent hover:bg-accent-hover text-slate-950 text-sm font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Хэрэгжүүлэх
-              </button>
-            </div>
+          <DatePicker
+            selected={startDate}
+            onChange={handleDateChange}
+            startDate={startDate}
+            endDate={endDate}
+            selectsRange
+            inline
+            calendarClassName="custom-range-picker"
+          />
+
+          {startDate && endDate && (
+            <p className="text-xs text-slate-400 text-center mt-2">
+              {startDate.toLocaleDateString('mn-MN')} – {endDate.toLocaleDateString('mn-MN')}
+            </p>
+          )}
+
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={handleClear}
+              className="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              Цэвэрлэх
+            </button>
+            <button
+              onClick={handleApply}
+              disabled={!startDate || !endDate}
+              className="flex-1 px-3 py-2 bg-accent hover:bg-accent-hover text-slate-950 text-xs font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Хэрэгжүүлэх
+            </button>
           </div>
         </div>
       )}

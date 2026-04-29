@@ -18,16 +18,23 @@ export function Sidebar() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const profileRef = useRef(null);
 
   const primaryMenu = [
-    { key: "analytics", icon: BarChart2, path: "/app/analytics" },
-    { key: "journal", icon: BookOpen, path: "/app/journal" },
-    { key: "mistakes", icon: BrainCircuit, path: "/app/mistakes" },
-    { key: "aiAdvisor", icon: Sparkles, path: "/app/ai-advisor" },
+    { key: "analytics",    icon: BarChart2,    path: "/app/analytics" },
+    { key: "journal",      icon: BookOpen,     path: "/app/journal" },
+    { key: "mistakes",     icon: BrainCircuit, path: "/app/mistakes" },
+    { key: "aiAdvisor",    icon: Sparkles,     path: "/app/ai-advisor" },
     { key: "weeklyReview", icon: CalendarDays, path: "/app/weekly-review" },
-    { key: "settings", icon: Settings, path: "/app/settings" },
+    { key: "settings",     icon: Settings,     path: "/app/settings" },
   ];
+
+  useEffect(() => {
+    // Trigger enter animation after mount
+    const id = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(id);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -70,17 +77,22 @@ export function Sidebar() {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-          {primaryMenu.map(item => {
+          {primaryMenu.map((item, i) => {
             const isActive = location.pathname.startsWith(item.path);
             const Icon = item.icon;
             return (
               <Link
                 key={item.key}
                 to={item.path}
+                style={{
+                  opacity: mounted ? 1 : 0,
+                  transform: mounted ? 'translateX(0)' : 'translateX(-16px)',
+                  transition: `opacity 300ms ease ${i * 50}ms, transform 300ms ease ${i * 50}ms`,
+                }}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150",
                   isActive
-                    ? "bg-accent/10 text-accent"
+                    ? "bg-accent/10 text-accent border-l-2 border-accent pl-[calc(0.75rem-2px)]"
                     : "text-slate-400 hover:text-white hover:bg-slate-800/60"
                 )}
               >
@@ -93,8 +105,10 @@ export function Sidebar() {
 
         {/* Feedback button */}
         <div className="px-3 pb-2">
-          <button onClick={() => setIsFeedbackOpen(true)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
+          <button
+            onClick={() => setIsFeedbackOpen(true)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all"
+          >
             <MessageSquare className="w-4 h-4 shrink-0" />
             Санал, хүсэлт
           </button>
@@ -107,7 +121,9 @@ export function Sidebar() {
             className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-slate-800/60 transition-colors text-left"
           >
             <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-sm shrink-0">
-              {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+              {user?.avatar_url
+                ? <img src={user.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
+                : (user?.name?.charAt(0) || user?.email?.charAt(0) || 'U')}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
@@ -116,7 +132,7 @@ export function Sidebar() {
           </button>
 
           {isProfileOpen && (
-            <div className="mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden">
+            <div className="mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
               <Link
                 to="/app/settings"
                 state={{ activeTab: 'profile' }}
@@ -148,8 +164,16 @@ export function Sidebar() {
           const isActive = location.pathname.startsWith(item.path);
           const Icon = item.icon;
           return (
-            <Link key={item.key} to={item.path}
-              className={cn("flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all", isActive ? "text-accent" : "text-slate-500")}>
+            <Link
+              key={item.key}
+              to={item.path}
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all",
+                isActive
+                  ? "text-accent"
+                  : "text-slate-500 hover:text-slate-300"
+              )}
+            >
               <Icon className="w-5 h-5" />
               <span className="text-[10px] font-medium">{t(item.key).split(' ')[0]}</span>
             </Link>
