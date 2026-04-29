@@ -11,6 +11,9 @@ export const translations = {
     aiAdvisor: "AI Зөвлөх",
     weeklyReview: "Долоо хоногийн дүгнэлт",
     settings: "Тохиргоо",
+    // Layout
+    feedback: "Санал, хүсэлт",
+    logout: "Гарах",
     // Analytics tabs
     tabOverview: "Ерөнхий",
     tabDetailed: "Дэлгэрэнгүй",
@@ -18,11 +21,49 @@ export const translations = {
     tabCalendar: "Календар",
     // Analytics summary cards
     equityCurve: "Өсөлтийн муруй",
+    equitySubtitle: "Нийт дансны өсөлт",
     netPnlLabel: "Цэвэр ашиг/алдагдал",
     winRateLabel: "Ялалтын хувь",
     profitFactorLabel: "Ашгийн харьцаа",
     totalTradesLabel: "Нийт арилжаа",
-    // Journal
+    noDataChart: "Хангалттай дата байхгүй байна",
+    // SummaryCards
+    positive: "Эерэг",
+    negative: "Сөрөг",
+    periodResult: "арилжааны үр дүн",
+    rangeToday: "Өнөөдрийн",
+    range7d: "7 хоногийн",
+    range1m: "1 сарын",
+    range3m: "3 сарын",
+    range6m: "6 сарын",
+    range1y: "1 жилийн",
+    rangeAll: "Бүх хугацааны",
+    rangeCustom: "Сонгосон хугацааны",
+    // Analytics page
+    analyticsTitle: "Анализ",
+    noDataTitle: "Мэдээлэл олдсонгүй",
+    noDataDesc: "Сонгосон хугацаанд хамаарах өгөгдөл байхгүй байна.",
+    previewMode: "Preview Mode",
+    previewModeDesc: "PostgreSQL өгөгдлийн сантай холбогдож чадсангүй. Одоогоор Mock (жишээ) дата ашиглаж байна.",
+    errorConnecting: "Сервертэй холбогдоход алдаа гарлаа.",
+    commonMistakes: "Түгээмэл алдаанууд",
+    emotions: "Сэтгэл хөдлөл",
+    psychMistakes: "Сэтгэл зүй & Алдаа",
+    timesCount: "удаа",
+    // TimeFilter
+    selectDateRange: "Хугацаа сонгох",
+    apply: "Хэрэгжүүлэх",
+    clear: "Цэвэрлэх",
+    filterAll: "Бүх",
+    filterToday: "Өнөөдөр",
+    filter7d: "7 хоног",
+    filter1m: "1 сар",
+    filter3m: "3 сар",
+    filter6m: "6 сар",
+    filter1y: "1 жил",
+    // Journal page
+    journalTitle: "Арилжааны тэмдэглэл",
+    journalSubtitle: "Бүх төрлийн зах зээлийн арилжаагаа нэг дор хянах",
     newTrade: "Шинэ арилжаа",
     editTrade: "Арилжаа засах",
     import: "Импорт",
@@ -31,6 +72,26 @@ export const translations = {
     cancel: "Цуцлах",
     delete: "Устгах",
     saveDraft: "Ноорог хадгалах",
+    // Filters
+    searchPlaceholder: "Хайх (Symbol, Strategy, Tag)...",
+    recentSearches: "Сүүлд хайсан",
+    suggestions: "Санал болгох",
+    allMarkets: "Бүх зах зээл",
+    marketsLabel: "Зах зээл",
+    allStatus: "Бүх төлөв",
+    allSessions: "Бүх сешн",
+    advanced: "Дэлгэрэнгүй",
+    allLabel: "Бүгд",
+    additional: "Нэмэлт",
+    hasScreenshot: "Screenshot-той",
+    hasNotes: "Тэмдэглэлтэй",
+    activeFilters: "Идэвхтэй шүүлтүүр:",
+    clearAll: "Бүгдийг цэвэрлэх",
+    allTimeLabel: "Бүх хугацаа",
+    timeFilterLabel: "Хугацаа",
+    statusFilterLabel: "Төлөв",
+    directionFilterLabel: "Чиглэл",
+    sessionFilterLabel: "Сешн",
     // Trade form tabs
     setupMarket: "Setup & Market",
     executionRisk: "Execution & Risk",
@@ -112,31 +173,93 @@ export const translations = {
     noMistakes: "Алдааны tag бүртгэгдээгүй байна.",
     noPositive: "Positive tag бүртгэгдээгүй байна.",
     noEmotions: "Сэтгэл зүйн tag бүртгэгдээгүй байна.",
-    // AI
+    // AI Advisor
     aiTitle: "AI Зөвлөх",
     aiDesc: "Таны арилжааны түүхэнд суурилсан хувийн зөвлөмжүүд болон чат",
+    aiLoading: "AI анализ хийж байна...",
+    aiWelcome: "Сайн байна уу? Би таны арилжааны AI зөвлөх байна. Арилжааны дүн шинжилгээ, сэтгэл зүй, стратегийн талаар асуулт тавьж болно.",
+    aiErrorReply: "Уучлаарай, хариулт авахад алдаа гарлаа.",
+    aiErrorConnect: "Сервертэй холбогдоход алдаа гарлаа.",
+    aiInputPlaceholder: "Асуултаа бичнэ үү...",
+    aiChatTitle: "AI Зөвлөх",
+    quickQ1: "Миний хамгийн сайн стратеги юу вэ?",
+    quickQ2: "Ямар өдрүүдэд хамгийн их алддаг вэ?",
+    quickQ3: "Сэтгэл зүйн анализ хийж өг",
+    quickQ4: "Энэ сарын арилжааг дүгнэ",
     overallSummary: "Ерөнхий дүгнэлт",
     mistakes_ai: "Алдаанууд",
     strengths: "Давуу талууд",
     nextStep: "Дараагийн алхам",
     aiChat: "AI Чат",
+    // MyGoalPanel
+    editGoal: "Зорилгоо засах",
+    goalImage: "Зорилгын зураг",
+    changeImage: "Зураг солих",
+    goalText: "Зорилгын текст",
+    goalPlaceholder: "Таны хамгийн том зорилго юу вэ?",
+    myGoal: "Миний зорилго",
   },
   en: {
+    // Nav
     analytics: "Analytics",
     journal: "Journal",
     mistakes: "Mistakes & Psychology",
     aiAdvisor: "AI Advisor",
     weeklyReview: "Weekly Review",
     settings: "Settings",
+    // Layout
+    feedback: "Feedback",
+    logout: "Log Out",
+    // Analytics tabs
     tabOverview: "Overview",
     tabDetailed: "Detailed Reports",
     tabMistakes: "Mistakes & Psych",
     tabCalendar: "Calendar",
+    // Analytics summary cards
     equityCurve: "Equity Curve",
+    equitySubtitle: "Cumulative account growth",
     netPnlLabel: "Net P&L",
     winRateLabel: "Win Rate",
     profitFactorLabel: "Profit Factor",
     totalTradesLabel: "Total Trades",
+    noDataChart: "Not enough data",
+    // SummaryCards
+    positive: "Positive",
+    negative: "Negative",
+    periodResult: "trading results",
+    rangeToday: "Today's",
+    range7d: "7-Day",
+    range1m: "1-Month",
+    range3m: "3-Month",
+    range6m: "6-Month",
+    range1y: "1-Year",
+    rangeAll: "All-Time",
+    rangeCustom: "Selected Period",
+    // Analytics page
+    analyticsTitle: "Analytics",
+    noDataTitle: "No Data Found",
+    noDataDesc: "No data found for the selected period.",
+    previewMode: "Preview Mode",
+    previewModeDesc: "Could not connect to PostgreSQL. Using mock (demo) data.",
+    errorConnecting: "Failed to connect to server.",
+    commonMistakes: "Common Mistakes",
+    emotions: "Emotions",
+    psychMistakes: "Psychology & Mistakes",
+    timesCount: "times",
+    // TimeFilter
+    selectDateRange: "Select Date Range",
+    apply: "Apply",
+    clear: "Clear",
+    filterAll: "All",
+    filterToday: "Today",
+    filter7d: "7D",
+    filter1m: "1M",
+    filter3m: "3M",
+    filter6m: "6M",
+    filter1y: "1Y",
+    // Journal page
+    journalTitle: "Trade Journal",
+    journalSubtitle: "Track all your trades across all markets in one place",
     newTrade: "New Trade",
     editTrade: "Edit Trade",
     import: "Import",
@@ -145,10 +268,32 @@ export const translations = {
     cancel: "Cancel",
     delete: "Delete",
     saveDraft: "Save Draft",
+    // Filters
+    searchPlaceholder: "Search (Symbol, Strategy, Tag)...",
+    recentSearches: "Recent Searches",
+    suggestions: "Suggestions",
+    allMarkets: "All Markets",
+    marketsLabel: "Markets",
+    allStatus: "All Status",
+    allSessions: "All Sessions",
+    advanced: "Advanced",
+    allLabel: "All",
+    additional: "Additional",
+    hasScreenshot: "Has Screenshot",
+    hasNotes: "Has Notes",
+    activeFilters: "Active filters:",
+    clearAll: "Clear All",
+    allTimeLabel: "All Time",
+    timeFilterLabel: "Time",
+    statusFilterLabel: "Status",
+    directionFilterLabel: "Direction",
+    sessionFilterLabel: "Session",
+    // Trade form tabs
     setupMarket: "Setup & Market",
     executionRisk: "Execution & Risk",
     psychologyTags: "Psychology & Tags",
     journalMedia: "Journal & Media",
+    // Trade form fields
     date: "Date",
     status: "Status",
     market: "Market",
@@ -164,11 +309,13 @@ export const translations = {
     strategy: "Strategy",
     rr: "Risk/Reward (R/R)",
     pnl: "Est. P&L",
+    // Psychology
     emotionBefore: "Emotion Before Trade",
     emotionAfter: "Emotion After Trade",
     positiveTags: "Positive Tags",
     mistakeTags: "Mistake Tags",
     addCustom: "+ Add Custom",
+    // Journal fields
     setupDesc: "Setup Description",
     whyEntered: "Why did you enter?",
     whatHappened: "What happened?",
@@ -177,6 +324,7 @@ export const translations = {
     lessonLearned: "Lesson Learned",
     screenshot: "Screenshot",
     uploadImage: "Upload image or Drag & Drop",
+    // Table headers
     date_col: "Date",
     marketSymbol: "Market & Symbol",
     ls: "L/S",
@@ -186,15 +334,18 @@ export const translations = {
     psychology: "Psychology",
     media: "Media",
     actions: "Actions",
+    // Status
     closed: "Closed",
     open: "Open",
     planned: "Planned",
     draft: "Draft",
+    // Misc
     noData: "No data found",
     loading: "Loading...",
     aiAnalyzing: "AI is analyzing...",
     askAI: "Ask about your trades...",
     send: "Send",
+    // Weekly review
     weeklyTitle: "Weekly Review",
     monthlyTitle: "Monthly Review",
     totalTrades: "Total Trades",
@@ -211,19 +362,38 @@ export const translations = {
     emotionEffect: "Emotion Impact",
     dailyBreakdown: "Daily Breakdown",
     noTradesInPeriod: "No trades in this period.",
+    // Mistakes page
     topMistakesTitle: "Most Common Mistakes",
     positiveTagsTitle: "Positive Tags",
     emotionStats: "Emotion Impact",
     noMistakes: "No mistake tags recorded.",
     noPositive: "No positive tags recorded.",
     noEmotions: "No emotion tags recorded.",
+    // AI Advisor
     aiTitle: "AI Advisor",
     aiDesc: "Personalized insights and chat based on your trading history",
+    aiLoading: "AI is analyzing...",
+    aiWelcome: "Hello! I'm your AI trading advisor. Ask me about trade analysis, psychology, or strategy.",
+    aiErrorReply: "Sorry, there was an error getting a response.",
+    aiErrorConnect: "Failed to connect to server.",
+    aiInputPlaceholder: "Type your question...",
+    aiChatTitle: "AI Advisor",
+    quickQ1: "What is my best strategy?",
+    quickQ2: "Which days do I lose the most?",
+    quickQ3: "Give me a psychology analysis",
+    quickQ4: "Summarize this month's trades",
     overallSummary: "Overall Summary",
     mistakes_ai: "Mistakes",
     strengths: "Strengths",
     nextStep: "Next Step",
     aiChat: "AI Chat",
+    // MyGoalPanel
+    editGoal: "Edit My Goal",
+    goalImage: "Goal Image",
+    changeImage: "Change Image",
+    goalText: "Goal Text",
+    goalPlaceholder: "What is your biggest trading goal?",
+    myGoal: "My Goal",
   }
 };
 
@@ -231,22 +401,22 @@ export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(() => {
     try {
       const prefs = JSON.parse(localStorage.getItem('app_preferences') || '{}');
-      return prefs.language || 'mn';
-    } catch { return 'mn'; }
+      return prefs.language || 'en';
+    } catch { return 'en'; }
   });
 
   useEffect(() => {
     const handler = () => {
       try {
         const prefs = JSON.parse(localStorage.getItem('app_preferences') || '{}');
-        setLang(prefs.language || 'mn');
+        setLang(prefs.language || 'en');
       } catch {}
     };
     window.addEventListener('language-changed', handler);
     return () => window.removeEventListener('language-changed', handler);
   }, []);
 
-  const t = (key) => translations[lang]?.[key] || translations['mn']?.[key] || key;
+  const t = (key) => translations[lang]?.[key] || translations['en']?.[key] || key;
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>

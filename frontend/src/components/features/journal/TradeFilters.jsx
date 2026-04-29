@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Filter, ChevronDown, X, Check, SlidersHorizontal, History, Trash2 } from "lucide-react";
+import { Search, ChevronDown, X, Check, SlidersHorizontal, History, Trash2 } from "lucide-react";
 import { MARKET_TYPES, SESSIONS } from "@/lib/constants";
+import { useLang } from "@/contexts/LanguageContext";
 
 export function TradeFilters({ filters, setFilters }) {
+  const { t } = useLang();
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isMarketDropdownOpen, setIsMarketDropdownOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -128,7 +130,7 @@ export function TradeFilters({ filters, setFilters }) {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input 
             type="text" 
-            placeholder="Хайх (Symbol, Strategy, Tag)..." 
+            placeholder={t('searchPlaceholder')}
             className="w-full bg-slate-900/50 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all hover:bg-slate-900"
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
@@ -144,7 +146,7 @@ export function TradeFilters({ filters, setFilters }) {
                 {/* Search History */}
                 {!filters.search && searchHistory.length > 0 && (
                   <div className="mb-2">
-                    <div className="px-4 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">Сүүлд хайсан</div>
+                    <div className="px-4 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('recentSearches')}</div>
                     {searchHistory.map((item, index) => (
                       <button
                         key={`hist-${index}`}
@@ -172,7 +174,7 @@ export function TradeFilters({ filters, setFilters }) {
                 {/* Suggestions */}
                 {filters.search && searchSuggestions.length > 0 && (
                   <div>
-                    <div className="px-4 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">Санал болгох</div>
+                    <div className="px-4 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">{t('suggestions')}</div>
                     {searchSuggestions.map((suggestion, index) => (
                       <button
                         key={`sug-${index}`}
@@ -203,16 +205,16 @@ export function TradeFilters({ filters, setFilters }) {
               onClick={() => setIsMarketDropdownOpen(!isMarketDropdownOpen)}
               className={`flex items-center gap-2 bg-slate-900/50 border rounded-xl pl-4 pr-3 py-2.5 text-sm transition-all hover:bg-slate-900 ${filters.markets.length > 0 ? 'border-accent/50 text-accent' : 'border-slate-800 text-slate-300'}`}
             >
-              {filters.markets.length === 0 ? 'Бүх зах зээл' : `${filters.markets.length} зах зээл`}
+              {filters.markets.length === 0 ? t('allMarkets') : `${filters.markets.length} ${t('marketsLabel').toLowerCase()}`}
               <ChevronDown className="w-4 h-4 opacity-50" />
             </button>
             
             {isMarketDropdownOpen && (
               <div className="absolute top-full left-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="px-3 pb-2 mb-2 border-b border-slate-700/50 flex justify-between items-center">
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Зах зээл</span>
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('marketsLabel')}</span>
                   {filters.markets.length > 0 && (
-                    <button onClick={() => setFilters(prev => ({...prev, markets: []}))} className="text-xs text-slate-400 hover:text-white">Цэвэрлэх</button>
+                    <button onClick={() => setFilters(prev => ({...prev, markets: []}))} className="text-xs text-slate-400 hover:text-white">{t('clear')}</button>
                   )}
                 </div>
                 <div className="max-h-60 overflow-y-auto custom-scrollbar">
@@ -241,10 +243,10 @@ export function TradeFilters({ filters, setFilters }) {
               value={filters.status}
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
             >
-              <option value="all">Бүх төлөв</option>
-              <option value="PLANNED">Planned</option>
-              <option value="OPEN">Open</option>
-              <option value="CLOSED">Closed</option>
+              <option value="all">{t('allStatus')}</option>
+              <option value="PLANNED">{t('planned')}</option>
+              <option value="OPEN">{t('open')}</option>
+              <option value="CLOSED">{t('closed')}</option>
             </select>
             <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
           </div>
@@ -255,7 +257,7 @@ export function TradeFilters({ filters, setFilters }) {
             className={`bg-slate-900/50 hover:bg-slate-800 border rounded-xl px-4 py-2.5 text-sm transition-all flex items-center gap-2 shrink-0 ${isAdvancedOpen ? 'border-accent/50 text-accent' : 'border-slate-800 text-slate-300'}`}
           >
             <SlidersHorizontal className="w-4 h-4" />
-            Дэлгэрэнгүй
+            {t('advanced')}
           </button>
         </div>
       </div>
@@ -266,7 +268,7 @@ export function TradeFilters({ filters, setFilters }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Direction */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Чиглэл</label>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t('directionFilterLabel')}</label>
               <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800">
                 {['all', 'LONG', 'SHORT'].map(dir => (
                   <button
@@ -274,7 +276,7 @@ export function TradeFilters({ filters, setFilters }) {
                     onClick={() => setFilters({ ...filters, direction: dir })}
                     className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${filters.direction === dir ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-300'}`}
                   >
-                    {dir === 'all' ? 'Бүгд' : dir}
+                    {dir === 'all' ? t('allLabel') : dir}
                   </button>
                 ))}
               </div>
@@ -282,7 +284,7 @@ export function TradeFilters({ filters, setFilters }) {
 
             {/* Session */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Сешн</label>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t('sessionFilterLabel')}</label>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setFilters({ ...filters, session: 'all' })}
@@ -292,7 +294,7 @@ export function TradeFilters({ filters, setFilters }) {
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-600'
                   }`}
                 >
-                  Бүгд
+                  {t('allLabel')}
                 </button>
                 {SESSIONS.map(s => (
                   <button
@@ -312,13 +314,13 @@ export function TradeFilters({ filters, setFilters }) {
 
             {/* Media & Notes */}
             <div className="sm:col-span-2 lg:col-span-2">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Нэмэлт</label>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t('additional')}</label>
               <div className="flex flex-wrap gap-4 mt-2">
                 <label className="flex items-center gap-2 cursor-pointer group">
                   <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${filters.hasScreenshot ? 'bg-accent border-accent' : 'bg-slate-950 border-slate-700 group-hover:border-slate-500'}`}>
                     {filters.hasScreenshot && <Check className="w-3.5 h-3.5 text-slate-950" />}
                   </div>
-                  <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Screenshot-той</span>
+                  <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{t('hasScreenshot')}</span>
                   <input 
                     type="checkbox" 
                     className="hidden" 
@@ -331,7 +333,7 @@ export function TradeFilters({ filters, setFilters }) {
                   <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${filters.hasNotes ? 'bg-accent border-accent' : 'bg-slate-950 border-slate-700 group-hover:border-slate-500'}`}>
                     {filters.hasNotes && <Check className="w-3.5 h-3.5 text-slate-950" />}
                   </div>
-                  <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Тэмдэглэлтэй</span>
+                  <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{t('hasNotes')}</span>
                   <input 
                     type="checkbox" 
                     className="hidden" 
@@ -348,7 +350,7 @@ export function TradeFilters({ filters, setFilters }) {
       {/* Active Filters Summary */}
       {hasActiveFilters && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-slate-500 mr-1">Идэвхтэй шүүлтүүр:</span>
+          <span className="text-xs text-slate-500 mr-1">{t('activeFilters')}</span>
           
           {filters.markets.map(mId => {
             const market = MARKET_TYPES.find(m => m.id === mId);
@@ -362,51 +364,51 @@ export function TradeFilters({ filters, setFilters }) {
 
           {filters.timeRange !== 'all' && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium">
-              Хугацаа: {filters.timeRange}
+              {t('timeFilterLabel')}: {filters.timeRange}
               <button onClick={() => removeFilter('timeRange')} className="hover:bg-slate-700 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
             </span>
           )}
 
           {filters.status !== 'all' && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">
-              Төлөв: {filters.status}
+              {t('statusFilterLabel')}: {filters.status}
               <button onClick={() => removeFilter('status')} className="hover:bg-amber-500/20 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
             </span>
           )}
 
           {filters.direction !== 'all' && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/20 text-accent text-xs font-medium">
-              Чиглэл: {filters.direction}
+              {t('directionFilterLabel')}: {filters.direction}
               <button onClick={() => removeFilter('direction')} className="hover:bg-accent/20 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
             </span>
           )}
 
           {filters.session !== 'all' && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-medium">
-              Сешн: {SESSIONS.find(s => s.id === filters.session)?.label || filters.session}
+              {t('sessionFilterLabel')}: {SESSIONS.find(s => s.id === filters.session)?.label || filters.session}
               <button onClick={() => removeFilter('session')} className="hover:bg-purple-500/20 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
             </span>
           )}
 
           {filters.hasScreenshot && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/20 text-accent text-xs font-medium">
-              Screenshot-той
+              {t('hasScreenshot')}
               <button onClick={() => removeFilter('hasScreenshot')} className="hover:bg-accent/20 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
             </span>
           )}
 
           {filters.hasNotes && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 border border-accent/20 text-accent text-xs font-medium">
-              Тэмдэглэлтэй
+              {t('hasNotes')}
               <button onClick={() => removeFilter('hasNotes')} className="hover:bg-accent/20 rounded-full p-0.5 transition-colors"><X className="w-3 h-3" /></button>
             </span>
           )}
 
-          <button 
+          <button
             onClick={clearAllFilters}
             className="text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 ml-2 transition-colors"
           >
-            Бүгдийг цэвэрлэх
+            {t('clearAll')}
           </button>
         </div>
       )}

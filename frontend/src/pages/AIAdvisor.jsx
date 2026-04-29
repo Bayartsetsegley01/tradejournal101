@@ -2,6 +2,7 @@ import { Brain, TrendingUp, AlertTriangle, Lightbulb, Loader2, Send, Bot, User }
 import { useState, useEffect, useRef } from "react";
 import { aiService } from "@/services/aiService";
 import { tradeService } from "@/services/tradeService";
+import { useLang } from "@/contexts/LanguageContext";
 
 function MessageContent({ content }) {
   return (
@@ -23,11 +24,12 @@ function MessageContent({ content }) {
 }
 
 export function AIAdvisorPage() {
+  const { t } = useLang();
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [chatMessages, setChatMessages] = useState([
-    { role: 'assistant', content: 'Сайн байна уу? Би таны арилжааны AI зөвлөх байна. Арилжааны дүн шинжилгээ, сэтгэл зүй, стратегийн талаар асуулт тавьж болно.' }
+  const [chatMessages, setChatMessages] = useState(() => [
+    { role: 'assistant', content: t('aiWelcome') }
   ]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -43,7 +45,7 @@ export function AIAdvisorPage() {
         if (response.success) setInsights(response.data);
         else setError(response.error || "Failed to fetch insights");
       } catch (err) {
-        setError("Сервертэй холбогдоход алдаа гарлаа.");
+        setError(t('errorConnecting'));
       } finally {
         setLoading(false);
       }
@@ -71,29 +73,29 @@ export function AIAdvisorPage() {
       if (data.success && data.reply) {
         setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
       } else {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: 'Уучлаарай, хариулт авахад алдаа гарлаа.' }]);
+        setChatMessages(prev => [...prev, { role: 'assistant', content: t('aiErrorReply') }]);
       }
     } catch (err) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Сервертэй холбогдоход алдаа гарлаа.' }]);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: t('aiErrorConnect') }]);
     } finally {
       setIsChatLoading(false);
     }
   };
 
-  const quickQuestions = ["Миний хамгийн сайн стратеги юу вэ?", "Ямар өдрүүдэд хамгийн их алддаг вэ?", "Сэтгэл зүйн анализ хийж өг", "Энэ сарын арилжааг дүгнэ"];
+  const quickQuestions = [t('quickQ1'), t('quickQ2'), t('quickQ3'), t('quickQ4')];
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto w-full flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-          <Brain className="w-6 h-6 text-accent" /> AI Зөвлөх
+          <Brain className="w-6 h-6 text-accent" /> {t('aiTitle')}
         </h1>
-        <p className="text-sm text-slate-400 mt-1">Таны арилжааны түүхэнд суурилсан хувийн зөвлөмжүүд болон чат</p>
+        <p className="text-sm text-slate-400 mt-1">{t('aiDesc')}</p>
       </div>
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 text-accent animate-spin" />
-          <span className="ml-3 text-slate-400">AI анализ хийж байна...</span>
+          <span className="ml-3 text-slate-400">{t('aiLoading')}</span>
         </div>
       ) : error ? (
         <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-sm">{error}</div>
@@ -101,22 +103,22 @@ export function AIAdvisorPage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-2 flex flex-col gap-4">
             <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-5">
-              <h2 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2"><Lightbulb className="w-4 h-4" /> Ерөнхий дүгнэлт</h2>
+              <h2 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2"><Lightbulb className="w-4 h-4" /> {t('overallSummary')}</h2>
               <p className="text-sm text-slate-300 leading-relaxed">{insights.summary}</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-5">
-                <h3 className="text-xs font-semibold text-rose-400 uppercase tracking-wider mb-3 flex items-center gap-2"><AlertTriangle className="w-3.5 h-3.5" /> Алдаанууд</h3>
+                <h3 className="text-xs font-semibold text-rose-400 uppercase tracking-wider mb-3 flex items-center gap-2"><AlertTriangle className="w-3.5 h-3.5" /> {t('mistakes_ai')}</h3>
                 <ul className="space-y-2">{insights.mistakes?.map((m, i) => (<li key={i} className="flex items-start gap-2"><span className="text-rose-400 text-xs font-bold mt-0.5">{i+1}</span><span className="text-xs text-slate-300">{m}</span></li>))}</ul>
               </div>
               <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-5">
-                <h3 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2"><TrendingUp className="w-3.5 h-3.5" /> Давуу талууд</h3>
+                <h3 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2"><TrendingUp className="w-3.5 h-3.5" /> {t('strengths')}</h3>
                 <ul className="space-y-2">{insights.strengths?.map((s, i) => (<li key={i} className="flex items-start gap-2"><span className="text-emerald-400 text-xs font-bold mt-0.5">{i+1}</span><span className="text-xs text-slate-300">{s}</span></li>))}</ul>
               </div>
             </div>
             {insights.advice && (
               <div className="bg-accent/5 border border-accent/20 rounded-2xl p-5">
-                <h3 className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">Дараагийн алхам</h3>
+                <h3 className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">{t('nextStep')}</h3>
                 <p className="text-sm text-slate-300 leading-relaxed">{insights.advice}</p>
               </div>
             )}
@@ -124,7 +126,7 @@ export function AIAdvisorPage() {
           <div className="lg:col-span-3 flex flex-col bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden" style={{ height: '680px' }}>
             <div className="px-5 py-4 border-b border-slate-800 flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center"><Bot className="w-5 h-5 text-accent" /></div>
-              <div><h3 className="text-sm font-bold text-white">AI Зөвлөх</h3><p className="text-xs text-emerald-400">Claude AI</p></div>
+              <div><h3 className="text-sm font-bold text-white">{t('aiChatTitle')}</h3><p className="text-xs text-emerald-400">Claude AI</p></div>
             </div>
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {chatMessages.map((msg, idx) => (
@@ -158,7 +160,7 @@ export function AIAdvisorPage() {
             )}
             <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-800">
               <div className="flex gap-2">
-                <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Асуултаа бичнэ үү..." className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all placeholder:text-slate-500" />
+                <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder={t('aiInputPlaceholder')} className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all placeholder:text-slate-500" />
                 <button type="submit" disabled={!chatInput.trim() || isChatLoading} className="w-11 h-11 rounded-xl bg-accent hover:bg-accent-hover text-slate-950 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"><Send className="w-4 h-4" /></button>
               </div>
             </form>

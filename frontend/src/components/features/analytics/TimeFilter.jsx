@@ -1,21 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { Calendar, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useLang } from "@/contexts/LanguageContext";
 
 const LS_RANGE = 'analytics_time_range';
 const LS_CUSTOM = 'analytics_custom_range';
-
-// Reversed order: Custom → Бүх → 1жил → 6сар → 3сар → 1сар → 7хоног → Өнөөдөр
-const filters = [
-  { id: "1y",    label: "1 жил" },
-  { id: "6m",    label: "6 сар" },
-  { id: "3m",    label: "3 сар" },
-  { id: "1m",    label: "1 сар" },
-  { id: "7d",    label: "7 хоног" },
-  { id: "today", label: "Өнөөдөр" },
-];
 
 function getLast7Days() {
   const end = new Date();
@@ -25,6 +16,15 @@ function getLast7Days() {
 }
 
 export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }) {
+  const { t } = useLang();
+  const filters = [
+    { id: "1y",    label: t('filter1y') },
+    { id: "6m",    label: t('filter6m') },
+    { id: "3m",    label: t('filter3m') },
+    { id: "1m",    label: t('filter1m') },
+    { id: "7d",    label: t('filter7d') },
+    { id: "today", label: t('filterToday') },
+  ];
   const [isOpen, setIsOpen] = useState(false);
   const [startDate, setStartDate] = useState(() => {
     if (customRange?.startDate) return new Date(customRange.startDate);
@@ -91,11 +91,11 @@ export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }
 
   const customLabel = value === 'custom' && customRange?.start && customRange?.end
     ? `${customRange.start} – ${customRange.end}`
-    : 'Custom';
+    : t('selectDateRange');
 
   return (
     <div className="relative flex items-center gap-1 bg-slate-900/50 p-1 rounded-lg border border-slate-800">
-      {/* Бүх — leftmost */}
+      {/* All — leftmost */}
       <button
         onClick={() => handleRangeChange('all')}
         className={cn(
@@ -103,7 +103,7 @@ export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }
           value === 'all' ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
         )}
       >
-        Бүх
+        {t('filterAll')}
       </button>
 
       <div className="w-px h-4 bg-slate-800 mx-0.5" />
@@ -144,7 +144,7 @@ export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }
           className="absolute top-full right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
         >
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-white">Хугацаа сонгох</h3>
+            <h3 className="text-sm font-semibold text-white">{t('selectDateRange')}</h3>
             <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
               <X className="w-4 h-4" />
             </button>
@@ -171,14 +171,14 @@ export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }
               onClick={handleClear}
               className="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium rounded-lg transition-colors"
             >
-              Цэвэрлэх
+              {t('clear')}
             </button>
             <button
               onClick={handleApply}
               disabled={!startDate || !endDate}
               className="flex-1 px-3 py-2 bg-accent hover:bg-accent-hover text-slate-950 text-xs font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Хэрэгжүүлэх
+              {t('apply')}
             </button>
           </div>
         </div>

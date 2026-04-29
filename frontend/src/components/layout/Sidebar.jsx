@@ -110,7 +110,7 @@ export function Sidebar() {
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all"
           >
             <MessageSquare className="w-4 h-4 shrink-0" />
-            Санал, хүсэлт
+            {t('feedback')}
           </button>
         </div>
 
@@ -151,7 +151,7 @@ export function Sidebar() {
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
               >
-                <LogOut className="w-4 h-4" /> Гарах
+                <LogOut className="w-4 h-4" /> {t('logout')}
               </button>
             </div>
           )}

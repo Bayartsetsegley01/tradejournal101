@@ -8,11 +8,13 @@ import { ImportModal } from "@/components/features/journal/ImportModal";
 import { TimeFilter } from "@/components/features/analytics/TimeFilter";
 import { Plus, Download, Loader2, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { SESSIONS } from "@/lib/constants";
+import { useLang } from "@/contexts/LanguageContext";
 
 const PAGE_SIZE = 10;
 import { tradeService } from "@/services/tradeService";
 
 export function JournalPage() {
+  const { t } = useLang();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -185,8 +187,8 @@ export function JournalPage() {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Арилжааны тэмдэглэл</h1>
-            <p className="text-sm text-slate-400 mt-1">Бүх төрлийн зах зээлийн арилжаагаа нэг дор хянах</p>
+            <h1 className="text-2xl font-bold text-white tracking-tight">{t('journalTitle')}</h1>
+            <p className="text-sm text-slate-400 mt-1">{t('journalSubtitle')}</p>
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -195,37 +197,35 @@ export function JournalPage() {
               className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
             >
               <Download className="w-4 h-4" />
-              Export
+              {t('export')}
             </button>
             <button
               onClick={() => setIsImportModalOpen(true)}
               className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
             >
               <Upload className="w-4 h-4" />
-              CSV Import
+              {t('import')}
             </button>
             <button
               onClick={() => { setEditingTrade(null); setIsAddModalOpen(true); }}
               className="flex-1 sm:flex-none bg-accent hover:bg-accent-hover text-slate-950 text-sm font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(200,240,122,0.15)] hover:shadow-[0_0_20px_rgba(200,240,122,0.25)]"
             >
               <Plus className="w-4 h-4" />
-              Шинэ арилжаа
+              {t('newTrade')}
             </button>
           </div>
         </div>
 
         {/* Time Filter — shared with Analytics */}
-        <div className="overflow-x-auto">
-          <TimeFilter
-            value={filters.timeRange}
-            onChange={(v) => setFilters(f => ({ ...f, timeRange: v }))}
-            customRange={customRange}
-            onCustomRangeChange={(r) => {
-              setCustomRange(r);
-              if (r) localStorage.setItem('analytics_custom_range', JSON.stringify(r));
-            }}
-          />
-        </div>
+        <TimeFilter
+          value={filters.timeRange}
+          onChange={(v) => setFilters(f => ({ ...f, timeRange: v }))}
+          customRange={customRange}
+          onCustomRangeChange={(r) => {
+            setCustomRange(r);
+            if (r) localStorage.setItem('analytics_custom_range', JSON.stringify(r));
+          }}
+        />
       </div>
 
       {/* Filters */}

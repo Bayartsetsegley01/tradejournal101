@@ -34,7 +34,7 @@ export function EquityChart({ data }) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-white">{t('equityCurve')}</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Нийт дансны өсөлт</p>
+          <p className="text-xs text-slate-500 mt-0.5">{t('equitySubtitle')}</p>
         </div>
         {formattedData.length > 0 && (
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
@@ -89,7 +89,7 @@ export function EquityChart({ data }) {
           </ResponsiveContainer>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-500 text-sm">
-            Хангалттай дата байхгүй байна
+            {t('noDataChart')}
           </div>
         )}
       </div>

@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { Target, Edit2, Image as ImageIcon, Save, X } from "lucide-react";
+import { useLang } from "@/contexts/LanguageContext";
 
 export function MyGoalPanel() {
+  const { t } = useLang();
   const [isEditing, setIsEditing] = useState(false);
   const [goalData, setGoalData] = useState({
     text: "Санхүүгийн эрх чөлөөнд хүрч, гэр бүлдээ илүү их цаг зарцуулах.",
@@ -43,7 +45,7 @@ export function MyGoalPanel() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <Target className="w-5 h-5 text-accent" />
-            Зорилгоо засах
+            {t('editGoal')}
           </h3>
           <button onClick={() => setIsEditing(false)} className="text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
@@ -52,14 +54,14 @@ export function MyGoalPanel() {
         
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Зорилгын зураг</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">{t('goalImage')}</label>
             <div className="relative h-32 rounded-xl overflow-hidden border-2 border-dashed border-slate-700 hover:border-accent/50 transition-colors flex items-center justify-center bg-slate-950">
               {editForm.imageUrl ? (
                 <>
                   <img src={editForm.imageUrl} alt="Goal" className="w-full h-full object-cover opacity-50" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <label className="cursor-pointer bg-slate-900/80 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 backdrop-blur-sm transition-colors">
-                      <ImageIcon className="w-4 h-4" /> Зураг солих
+                      <ImageIcon className="w-4 h-4" /> {t('changeImage')}
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                     </label>
                   </div>
@@ -67,7 +69,7 @@ export function MyGoalPanel() {
               ) : (
                 <label className="cursor-pointer text-slate-400 hover:text-accent flex flex-col items-center gap-2 transition-colors">
                   <ImageIcon className="w-6 h-6" />
-                  <span className="text-sm font-medium">Зураг оруулах</span>
+                  <span className="text-sm font-medium">{t('changeImage')}</span>
                   <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                 </label>
               )}
@@ -75,11 +77,11 @@ export function MyGoalPanel() {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Зорилгын текст</label>
-            <textarea 
+            <label className="block text-sm font-medium text-slate-400 mb-2">{t('goalText')}</label>
+            <textarea
               rows={3}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
-              placeholder="Таны хамгийн том зорилго юу вэ?"
+              placeholder={t('goalPlaceholder')}
               value={editForm.text}
               onChange={(e) => setEditForm({ ...editForm, text: e.target.value })}
             />
@@ -89,7 +91,7 @@ export function MyGoalPanel() {
             onClick={handleSave}
             className="w-full bg-accent hover:bg-accent-hover text-slate-950 text-sm font-bold py-3 px-4 rounded-xl transition-all shadow-[0_0_15px_rgba(200,240,122,0.2)] flex items-center justify-center gap-2"
           >
-            <Save className="w-4 h-4" /> Хадгалах
+            <Save className="w-4 h-4" /> {t('save')}
           </button>
         </div>
       </div>
@@ -109,7 +111,7 @@ export function MyGoalPanel() {
         <div className="flex items-center justify-between mb-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/50 border border-slate-800/50 backdrop-blur-md">
             <Target className="w-4 h-4 text-accent" />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">Миний зорилго</span>
+            <span className="text-xs font-bold text-white uppercase tracking-wider">{t('myGoal')}</span>
           </div>
           <button 
             onClick={() => setIsEditing(true)}

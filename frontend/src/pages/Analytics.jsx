@@ -11,8 +11,10 @@ import { TradeCalendar } from "@/components/features/analytics/TradeCalendar";
 import { analyticsService } from "@/services/analyticsService";
 import { tradeService } from "@/services/tradeService";
 import { AlertTriangle, Brain } from "lucide-react";
+import { useLang } from "@/contexts/LanguageContext";
 
 export function AnalyticsPage() {
+  const { t } = useLang();
   const [activeTab, setActiveTab] = useState("overview");
   const [timeRange, setTimeRange] = useState(() => localStorage.getItem('analytics_time_range') || '7d');
   const [customRange, setCustomRange] = useState(() => {
@@ -99,7 +101,7 @@ export function AnalyticsPage() {
     <div className="flex flex-col">
       {/* Sticky Top Header */}
       <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 px-8 h-16 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-white tracking-tight">Анализ</h1>
+        <h1 className="text-xl font-semibold text-white tracking-tight">{t('analytics')}</h1>
         <TimeFilter
           value={timeRange}
           onChange={(v) => { setTimeRange(v); localStorage.setItem('analytics_time_range', v); }}
@@ -126,15 +128,15 @@ export function AnalyticsPage() {
           {!error && mode === 'mock' && (
             <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-4 rounded-xl text-sm flex items-center justify-between">
               <span>
-                <strong>Preview Mode:</strong> PostgreSQL өгөгдлийн сантай холбогдож чадсангүй. Одоогоор Mock (жишээ) дата ашиглаж байна.
+                <strong>{t('previewMode')}:</strong> {t('previewModeDesc')}
               </span>
             </div>
           )}
 
           {!loading && !error && (!summary || !charts || summary.totalTrades === 0) && (
             <div className="flex flex-col items-center justify-center h-64 border border-dashed border-slate-800 rounded-xl text-slate-500 animate-in fade-in duration-300">
-              <p className="text-lg font-medium text-white mb-2">Мэдээлэл олдсонгүй</p>
-              <p className="text-sm">Сонгосон хугацаанд хамаарах өгөгдөл байхгүй байна.</p>
+              <p className="text-lg font-medium text-white mb-2">{t('noDataTitle')}</p>
+              <p className="text-sm">{t('noDataDesc')}</p>
             </div>
           )}
 
@@ -170,18 +172,18 @@ export function AnalyticsPage() {
                   <AiInsightPanel />
                 </div>
                 <div className="lg:col-span-2 bg-slate-900 rounded-xl border border-slate-800 p-6 flex flex-col gap-4">
-                  <h3 className="text-lg font-medium text-white">Сэтгэл зүй & Алдаа</h3>
+                  <h3 className="text-lg font-medium text-white">{t('psychMistakes')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 border border-slate-800 rounded-lg bg-slate-950/50 hover:border-accent/30 transition-colors">
                       <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
                         <AlertTriangle className="w-4 h-4 text-rose-400" />
-                        Түгээмэл алдаанууд
+                        {t('commonMistakes')}
                       </h4>
                       <ul className="space-y-3 text-sm text-slate-400">
                         {mistakesData?.mistakes?.map((m, i) => (
                           <li key={i} className="flex justify-between items-center group">
                             <span className="group-hover:text-slate-300 transition-colors">{m.name}</span>
-                            <span className="text-rose-400 font-medium bg-rose-400/10 px-2 py-0.5 rounded">{m.count} удаа</span>
+                            <span className="text-rose-400 font-medium bg-rose-400/10 px-2 py-0.5 rounded">{m.count} {t('timesCount')}</span>
                           </li>
                         ))}
                       </ul>
@@ -189,7 +191,7 @@ export function AnalyticsPage() {
                     <div className="p-4 border border-slate-800 rounded-lg bg-slate-950/50 hover:border-accent/30 transition-colors">
                       <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
                         <Brain className="w-4 h-4 text-amber-400" />
-                        Сэтгэл хөдлөл
+                        {t('emotions')}
                       </h4>
                       <ul className="space-y-3 text-sm text-slate-400">
                         {mistakesData?.emotions?.map((e, i) => (
