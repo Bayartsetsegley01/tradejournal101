@@ -1,15 +1,7 @@
 import { Brain, TrendingUp, AlertTriangle, Lightbulb, Loader2, Send, Bot, User } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { analyticsService } from "@/services/analyticsService";
+import { aiService } from "@/services/aiService";
 import { tradeService } from "@/services/tradeService";
-
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '') + '/api';
-const getHeaders = () => {
-  const token = localStorage.getItem('token');
-  const h = { 'Content-Type': 'application/json' };
-  if (token) h['Authorization'] = `Bearer ${token}`;
-  return h;
-};
 
 function MessageContent({ content }) {
   return (
@@ -47,7 +39,7 @@ export function AIAdvisorPage() {
         setLoading(true);
         const tradesRes = await tradeService.getTrades();
         const trades = tradesRes.data || [];
-        const response = await analyticsService.getAiInsights(trades);
+        const response = await aiService.getInsights(trades);
         if (response.success) setInsights(response.data);
         else setError(response.error || "Failed to fetch insights");
       } catch (err) {
@@ -75,13 +67,7 @@ export function AIAdvisorPage() {
       const apiMessages = newMessages
         .filter(m => m.role === 'user' || m.role === 'assistant')
         .map(m => ({ role: m.role, content: m.content }));
-      const res = await fetch(`${API_BASE_URL}/ai/chat`, {
-        method: 'POST',
-        headers: getHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({ message: userMsg, history: apiMessages })
-      });
-      const data = await res.json();
+      const data = await aiService.sendChat(userMsg, apiMessages);
       if (data.success && data.reply) {
         setChatMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
       } else {

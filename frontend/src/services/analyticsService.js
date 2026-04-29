@@ -18,8 +18,7 @@ export const analyticsService = {
   getCharts: async (range = '7d') => safeFetch(`${API_BASE_URL}/analytics/charts?range=${range}`),
   getMistakes: async (range = '7d') => safeFetch(`${API_BASE_URL}/analytics/mistakes?range=${range}`),
   getPerformance: async (range = '7d') => safeFetch(`${API_BASE_URL}/analytics/performance?range=${range}`),
-  getAiInsights: async (trades = []) => safeFetch(`${API_BASE_URL}/ai/insights`, { method: 'POST', body: JSON.stringify(trades) }),
-  getWeeklyReview: async (start, end) => {
+getWeeklyReview: async (start, end) => {
     const params = new URLSearchParams();
     if (start) params.append('start', start);
     if (end) params.append('end', end);
