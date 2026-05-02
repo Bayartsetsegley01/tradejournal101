@@ -1,4 +1,4 @@
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import { useLang } from "@/contexts/LanguageContext";
 
 function CustomTooltip({ active, payload, label }) {
@@ -73,6 +73,7 @@ export function EquityChart({ data }) {
                 tick={{ fill: '#64748b' }}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#c8f07a', strokeWidth: 1, strokeDasharray: '4 4' }} />
+              <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" strokeWidth={1} />
               <Area
                 type="monotone"
                 dataKey="value"

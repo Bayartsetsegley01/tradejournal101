@@ -103,6 +103,19 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
     }
   }, [initialData]);
 
+  // Ctrl+Enter to save
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSave(false);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, formData]);
+
   // Smart TP Suggestion and Auto Lot Size
   useEffect(() => {
     if (formData.entry && formData.stopLoss) {

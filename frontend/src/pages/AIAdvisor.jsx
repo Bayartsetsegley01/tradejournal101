@@ -28,12 +28,25 @@ export function AIAdvisorPage() {
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [chatMode, setChatMode] = useState('analysis');
   const [chatMessages, setChatMessages] = useState(() => [
     { role: 'assistant', content: t('aiWelcome') }
   ]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef(null);
+
+  const MODES = [
+    { id: 'analysis',  label: 'Analysis',  color: 'text-accent' },
+    { id: 'advice',    label: 'Advice',    color: 'text-emerald-400' },
+    { id: 'learning',  label: 'Learning',  color: 'text-blue-400' },
+  ];
+
+  const modeQuickQ = {
+    analysis: [t('quickQ1'), t('quickQ2')],
+    advice:   [t('quickQ3'), t('quickQ4'), 'How to improve my risk management?'],
+    learning: ['Explain risk/reward ratio', 'What is a trading journal?', 'Explain win rate'],
+  };
 
   useEffect(() => {
     const fetchInsights = async () => {
@@ -82,7 +95,7 @@ export function AIAdvisorPage() {
     }
   };
 
-  const quickQuestions = [t('quickQ1'), t('quickQ2'), t('quickQ3'), t('quickQ4')];
+  const quickQuestions = modeQuickQ[chatMode] || [];
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto w-full flex flex-col gap-6">
@@ -124,9 +137,22 @@ export function AIAdvisorPage() {
             )}
           </div>
           <div className="lg:col-span-3 flex flex-col bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden" style={{ height: '680px' }}>
-            <div className="px-5 py-4 border-b border-slate-800 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center"><Bot className="w-5 h-5 text-accent" /></div>
-              <div><h3 className="text-sm font-bold text-white">{t('aiChatTitle')}</h3><p className="text-xs text-emerald-400">Claude AI</p></div>
+            <div className="px-5 py-3 border-b border-slate-800">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center"><Bot className="w-5 h-5 text-accent" /></div>
+                <div><h3 className="text-sm font-bold text-white">{t('aiChatTitle')}</h3><p className="text-xs text-emerald-400">Claude AI</p></div>
+              </div>
+              <div className="flex gap-1 bg-slate-950/50 rounded-xl p-1">
+                {MODES.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => setChatMode(m.id)}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${chatMode === m.id ? `bg-slate-800 ${m.color} shadow-sm` : 'text-slate-500 hover:text-slate-300'}`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {chatMessages.map((msg, idx) => (

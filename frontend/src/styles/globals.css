@@ -87,3 +87,19 @@ input[type='number'] { -moz-appearance: textfield; }
 .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list { background:#121214!important; }
 .react-datepicker__header--time { background:#0a0a0b!important; border-bottom:1px solid #3f3f46!important; }
 .react-datepicker-time__header { color:#94a3b8!important; }
+
+/* ── Custom scrollbar ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(200,240,122,0.25); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(200,240,122,0.5); }
+
+/* ── Page entry animation ─────────────────────────────────────────────────── */
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-page-enter { animation: pageEnter 300ms ease forwards; }
+
+/* ── Focus ring ────────────────────────────────────────────────────────────── */
+*:focus-visible { outline: 2px solid rgba(200,240,122,0.5); outline-offset: 2px; }

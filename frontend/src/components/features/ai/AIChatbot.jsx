@@ -51,6 +51,7 @@ export function AIChatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [tradeContext, setTradeContext] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -65,10 +66,18 @@ export function AIChatbot() {
   useEffect(() => {
     if (isOpen && !isMinimized) {
       inputRef.current?.focus();
-      // Load trade context
+      setUnreadCount(0);
       fetchTradeContext();
     }
   }, [isOpen, isMinimized]);
+
+  useEffect(() => {
+    if (messages.length <= 1) return;
+    const last = messages[messages.length - 1];
+    if (last.role === 'assistant' && (!isOpen || isMinimized)) {
+      setUnreadCount(prev => prev + 1);
+    }
+  }, [messages]);
 
   const fetchTradeContext = async () => {
     try {
@@ -204,8 +213,6 @@ ${tradeContext ? `\nХэрэглэгчийн арилжааны мэдээлэл
     return new Date(date).toLocaleTimeString('mn-MN', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const unreadCount = 0; // Could track new messages
-
   return (
     <>
       {/* Floating Button */}
@@ -214,10 +221,16 @@ ${tradeContext ? `\nХэрэглэгчийн арилжааны мэдээлэл
         className={`fixed bottom-6 right-6 w-14 h-14 bg-accent hover:bg-accent-hover text-slate-950 rounded-full shadow-[0_4px_24px_rgba(200,240,122,0.4)] flex items-center justify-center transition-all duration-300 hover:scale-110 z-40 ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'}`}
       >
         <MessageSquare className="w-6 h-6" />
-        <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full flex items-center justify-center">
-          <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping absolute" />
-          <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full relative" />
-        </span>
+        {unreadCount > 0 ? (
+          <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 bg-rose-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white px-1 shadow-lg">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        ) : (
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full flex items-center justify-center">
+            <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping absolute" />
+            <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full relative" />
+          </span>
+        )}
       </button>
 
       {/* Chat Window */}
