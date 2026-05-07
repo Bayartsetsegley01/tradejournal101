@@ -8,28 +8,41 @@ const getHeaders = () => {
   return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) };
 };
 
+const COLUMNS = ['date', 'symbol', 'direction', 'entry', 'exit', 'rr', 'pnl', 'status', 'psychology', 'media', 'note'];
+
+const splitCSVLine = (line) => {
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+  for (const char of line) {
+    if (char === '"') { inQuotes = !inQuotes; }
+    else if (char === ',' && !inQuotes) { values.push(current.trim()); current = ''; }
+    else { current += char; }
+  }
+  values.push(current.trim());
+  return values;
+};
+
 const parseCSV = (text) => {
-  const lines = text.trim().split('\n');
+  const lines = text.trim().split('\n').filter(l => l.trim() !== '');
   if (lines.length < 2) return [];
-  
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, '').replace(/\s+/g, '_'));
-  
-  return lines.slice(1).map(line => {
-    const values = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (const char of line) {
-      if (char === '"') inQuotes = !inQuotes;
-      else if (char === ',' && !inQuotes) { values.push(current.trim()); current = ''; }
-      else current += char;
-    }
-    values.push(current.trim());
-    
+
+  // Detect and skip header row
+  const firstRow = splitCSVLine(lines[0]).map(v => v.toLowerCase().replace(/['"]/g, '').trim());
+  const isHeader = firstRow.some(v => ['date', 'symbol', 'direction', 'entry'].includes(v));
+  const dataLines = isHeader ? lines.slice(1) : lines.slice(1);
+
+  return dataLines.map(line => {
+    const values = splitCSVLine(line);
     const obj = {};
-    headers.forEach((h, i) => { obj[h] = values[i] || ''; });
+    COLUMNS.forEach((col, i) => {
+      let val = (values[i] || '').replace(/^"|"$/g, '').trim();
+      if (col === 'direction') val = val.toUpperCase();
+      if (col === 'status') val = val.toUpperCase();
+      obj[col] = val;
+    });
     return obj;
-  }).filter(row => Object.values(row).some(v => v !== ''));
+  }).filter(row => row.symbol !== '');
 };
 
 export function ImportModal({ isOpen, onClose, onImportComplete }) {
@@ -94,7 +107,11 @@ export function ImportModal({ isOpen, onClose, onImportComplete }) {
   };
 
   const downloadTemplate = () => {
-    const csv = 'symbol,direction,market_type,entry_date,exit_date,entry_price,exit_price,stop_loss,take_profit,position_size,pnl,strategy,notes\nEURUSD,LONG,forex,2025-01-15 10:30,2025-01-15 14:00,1.0850,1.0920,1.0820,1.0950,1.0,70,Breakout,Good setup\nBTCUSDT,SHORT,crypto,2025-01-16 09:00,2025-01-16 12:00,43500,43200,43800,43000,0.5,150,Trend Following,Followed plan';
+    const csv = [
+      'date,symbol,direction,entry,exit,rr,pnl,status,psychology,media,note',
+      '2025-01-15,EURUSD,LONG,1.0850,1.0920,2.0,70,CLOSED,calm,,Followed plan',
+      '2025-01-16,BTCUSDT,SHORT,43500,43200,1.5,150,CLOSED,confident,,Good entry',
+    ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

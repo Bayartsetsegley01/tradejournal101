@@ -30,4 +30,8 @@ getWeeklyReview: async (start, end) => {
     if (month) params.append('month', month);
     return safeFetch(`${API_BASE_URL}/analytics/monthly-review?${params}`);
   },
+  getAiInsights: async (trades = []) => safeFetch(`${API_BASE_URL}/ai/insights`, {
+    method: 'POST',
+    body: JSON.stringify(trades),
+  }),
 };

@@ -1,6 +1,6 @@
 import { Sparkles, ArrowRight, AlertTriangle, CheckCircle2, Lightbulb } from "lucide-react";
 import { useState, useEffect } from "react";
-import { analyticsService } from "@/services/analyticsService";
+import { aiService } from "@/services/aiService";
 
 export function AiInsightPanel() {
   const [insights, setInsights] = useState(null);
@@ -11,7 +11,7 @@ export function AiInsightPanel() {
       try {
         setLoading(true);
         // Pass empty array to let backend fetch from DB
-        const response = await analyticsService.getAiInsights([]);
+        const response = await aiService.getInsights([]);
         if (response.success) {
           setInsights(response.data);
         } else {

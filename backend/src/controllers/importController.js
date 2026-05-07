@@ -1,5 +1,8 @@
 import { query, getDbStatus } from '../config/database.js';
 
+const VALID_DIRECTIONS = new Set(['LONG', 'SHORT']);
+const VALID_STATUSES = new Set(['OPEN', 'CLOSED']);
+
 export const importTrades = async (req, res) => {
   try {
     if (!getDbStatus()) {
@@ -14,35 +17,47 @@ export const importTrades = async (req, res) => {
     }
 
     let imported = 0;
-    let errors = [];
+    const errors = [];
 
     for (let i = 0; i < trades.length; i++) {
       const t = trades[i];
       try {
+        // Resolve column aliases: new format uses short names
+        const symbol = (t.symbol || t.pair || t.ticker || '').trim();
+        if (!symbol) throw new Error('symbol is required');
+
+        const direction = (t.direction || t.side || '').toUpperCase();
+        if (!VALID_DIRECTIONS.has(direction)) throw new Error(`direction must be LONG or SHORT, got "${t.direction}"`);
+
+        const status = (t.status || 'CLOSED').toUpperCase();
+        if (!VALID_STATUSES.has(status)) throw new Error(`status must be OPEN or CLOSED, got "${t.status}"`);
+
+        // Short-name columns (new format): entry, exit, rr, note
+        // Long-name columns (legacy): entry_price, exit_price, rr_ratio, notes
+        const entryDate = t.date || t.entry_date || t.open_date || null;
+        const exitDate  = t.exit_date || t.close_date || null;
+        const entryPrice = parseFloat(t.entry || t.entry_price || t.open_price || 0) || null;
+        const exitPrice  = parseFloat(t.exit  || t.exit_price  || t.close_price || 0) || null;
+        const rrRatio    = parseFloat(t.rr    || t.rr_ratio    || 0) || null;
+        const pnl        = parseFloat(t.pnl   || t.profit      || t.pl || 0) || null;
+        const notes      = (t.note || t.notes || t.comment || t.description || '').trim();
+        const strategy   = (t.strategy || t.psychology || '').trim();
+        const stopLoss   = parseFloat(t.stop_loss || t.sl || 0) || null;
+        const takeProfit = parseFloat(t.take_profit || t.tp || 0) || null;
+        const positionSize = parseFloat(t.position_size || t.quantity || t.size || t.lot || 0) || null;
+        const marketType = (t.market_type || t.market || '').trim() || null;
+
         await query(
           `INSERT INTO trades (user_id, status, symbol, market_type, direction, strategy, session,
             entry_date, exit_date, entry_price, exit_price, stop_loss, take_profit,
             position_size, pnl, rr_ratio, notes, lessons_learned)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
           [
-            userId,
-            t.status || 'CLOSED',
-            t.symbol || t.pair || t.ticker || '',
-            t.market_type || t.market || t.type || 'forex',
-            t.direction || t.side || (t.type === 'BUY' ? 'LONG' : t.type === 'SELL' ? 'SHORT' : 'LONG'),
-            t.strategy || '',
-            t.session || '',
-            t.entry_date || t.open_date || t.date || null,
-            t.exit_date || t.close_date || null,
-            parseFloat(t.entry_price || t.open_price || t.entry || 0) || null,
-            parseFloat(t.exit_price || t.close_price || t.exit || 0) || null,
-            parseFloat(t.stop_loss || t.sl || 0) || null,
-            parseFloat(t.take_profit || t.tp || 0) || null,
-            parseFloat(t.position_size || t.quantity || t.size || t.lot || 0) || null,
-            parseFloat(t.pnl || t.profit || t.pl || t.profit_loss || 0) || null,
-            parseFloat(t.rr_ratio || t.rr || 0) || null,
-            t.notes || t.comment || t.description || '',
-            t.lessons_learned || t.lessons || ''
+            userId, status, symbol, marketType, direction, strategy,
+            t.session || null,
+            entryDate, exitDate, entryPrice, exitPrice,
+            stopLoss, takeProfit, positionSize, pnl, rrRatio,
+            notes, (t.lessons_learned || t.lessons || '').trim()
           ]
         );
         imported++;
