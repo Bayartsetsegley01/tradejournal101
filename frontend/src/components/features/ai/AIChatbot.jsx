@@ -254,7 +254,7 @@ ${tradeContext ? `\nХэрэглэгчийн арилжааны мэдээлэл
               <div>
                 <h3 className="text-sm font-bold text-white leading-none">AI Зөвлөх</h3>
                 <p className="text-[11px] text-emerald-400 mt-0.5">
-                  {tradeContext ? `${tradeContext.totalTrades} арилжаа шинжилж байна` : 'Онлайн'}
+                  Онлайн
                 </p>
               </div>
             </div>
