@@ -27,6 +27,7 @@ export function AIAdvisorPage() {
   const { t } = useLang();
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tradeCount, setTradeCount] = useState(0);
   const [error, setError] = useState(null);
   const [chatMode, setChatMode] = useState('analysis');
   const [chatMessages, setChatMessages] = useState(() => [
@@ -54,6 +55,7 @@ export function AIAdvisorPage() {
         setLoading(true);
         const tradesRes = await tradeService.getTrades();
         const trades = tradesRes.data || [];
+        setTradeCount(trades.length);
         const response = await aiService.getInsights(trades);
         if (response.success) setInsights(response.data);
         else setError(response.error || "Failed to fetch insights");
@@ -106,9 +108,13 @@ export function AIAdvisorPage() {
         <p className="text-sm text-slate-400 mt-1">{t('aiDesc')}</p>
       </div>
       {loading ? (
-        <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
           <Loader2 className="w-8 h-8 text-accent animate-spin" />
-          <span className="ml-3 text-slate-400">{t('aiLoading')}</span>
+          <span className="text-slate-400 text-sm">
+            {tradeCount > 0
+              ? `${tradeCount} арилжаа шинжилж байна...`
+              : t('aiLoading')}
+          </span>
         </div>
       ) : error ? (
         <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-sm">{error}</div>
