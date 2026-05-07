@@ -21,21 +21,21 @@ export const EMOTIONS = [
 ];
 
 export const POSITIVE_TAGS = [
-  { id: 'well-managed', label: 'Сайн удирдсан' },
-  { id: 'perfect-entry', label: 'Төгс оролт' },
-  { id: 'patient', label: 'Тэвчээртэй хүлээсэн' },
-  { id: 'plan-follow', label: 'Төлөвлөгөө дагасан' },
-  { id: 'disciplined', label: 'Сахилга баттай' },
+  { id: 'well-managed', label: 'Сайн удирдсан', emoji: '✅' },
+  { id: 'perfect-entry', label: 'Төгс оролт', emoji: '🎯' },
+  { id: 'patient', label: 'Тэвчээртэй хүлээсэн', emoji: '⏳' },
+  { id: 'plan-follow', label: 'Төлөвлөгөө дагасан', emoji: '📋' },
+  { id: 'disciplined', label: 'Сахилга баттай', emoji: '💪' },
 ];
 
 export const MISTAKE_TAGS = [
-  { id: 'impulsive', label: 'Сэтгэл хөдлөлөөр орсон' },
-  { id: 'revenge-trading', label: 'Өшөө авах арилжаа' },
-  { id: 'early-exit', label: 'Эрт хаасан' },
-  { id: 'overtrading', label: 'Хэт их арилжаа хийсэн' },
-  { id: 'no-stop-loss', label: 'Stop Loss тавиагүй' },
-  { id: 'fomo-entry', label: 'FOMO оролт' },
-  { id: 'bad-risk', label: 'Эрсдэл буруу тооцсон' },
+  { id: 'impulsive', label: 'Сэтгэл хөдлөлөөр орсон', emoji: '😤' },
+  { id: 'revenge-trading', label: 'Өшөө авах арилжаа', emoji: '😡' },
+  { id: 'early-exit', label: 'Эрт хаасан', emoji: '🏃' },
+  { id: 'overtrading', label: 'Хэт их арилжаа хийсэн', emoji: '🔄' },
+  { id: 'no-stop-loss', label: 'Stop Loss тавиагүй', emoji: '⛔' },
+  { id: 'fomo-entry', label: 'FOMO оролт', emoji: '🤯' },
+  { id: 'bad-risk', label: 'Эрсдэл буруу тооцсон', emoji: '📉' },
 ];
 
 export const SESSIONS = [

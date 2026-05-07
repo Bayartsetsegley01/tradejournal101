@@ -58,40 +58,75 @@ export const getCharts = async (req, res) => {
   }
 };
 
+// Fallback name maps for legacy string-ID tags stored before DB lookup was added
+const TAG_NAME_MAP = {
+  'well-managed': 'Сайн удирдсан', 'perfect-entry': 'Төгс оролт',
+  'patient': 'Тэвчээртэй хүлээсэн', 'plan-follow': 'Төлөвлөгөө дагасан',
+  'disciplined': 'Сахилга баттай', 'impulsive': 'Сэтгэл хөдлөлөөр орсон',
+  'revenge-trading': 'Өшөө авах арилжаа', 'early-exit': 'Эрт хаасан',
+  'overtrading': 'Хэт их арилжаа хийсэн', 'no-stop-loss': 'Stop Loss тавиагүй',
+  'fomo-entry': 'FOMO оролт', 'bad-risk': 'Эрсдэл буруу тооцсон',
+};
+const EMOTION_NAME_MAP = {
+  'calm': 'Тайван 😌', 'confident': 'Итгэлтэй 💪', 'planned': 'Төлөвлөсөн 😎',
+  'scared': 'Айсан 😨', 'fomo': 'FOMO 🤯', 'angry': 'Ууртай 😡',
+  'stressed': 'Стресстэй 😵', 'doubtful': 'Эргэлзсэн 😞',
+};
+
 // Бодит mistake_tags, positive_tags, emotion_before дата-г буцаана
 export const getMistakes = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
     const userId = req.user.id;
     const filter = getDateFilter(req.query.range || req.query.timeRange);
-    const result = await query(
-      `SELECT mistake_tags, positive_tags, emotion_before, emotion_after, pnl
-       FROM trades WHERE user_id=$1 ${filter.sql}`,
-      [userId, ...filter.params]
-    );
-    const rows = result.rows;
 
-    // mistake tag frequency
+    // Build ID→name lookup from DB for both tags and emotions
+    const [tradesRes, tagDefsRes, emotionDefsRes] = await Promise.all([
+      query(
+        `SELECT mistake_tags, positive_tags, emotion_before, emotion_after, pnl
+         FROM trades WHERE user_id=$1 ${filter.sql}`,
+        [userId, ...filter.params]
+      ),
+      query('SELECT id, name FROM tag_definitions'),
+      query('SELECT id, name, emoji FROM emotion_tags'),
+    ]);
+
+    const dbTagMap = {};
+    tagDefsRes.rows.forEach(t => { dbTagMap[t.id] = t.name; });
+
+    const dbEmotionMap = {};
+    emotionDefsRes.rows.forEach(e => {
+      dbEmotionMap[e.id] = e.emoji ? `${e.name} ${e.emoji}` : e.name;
+    });
+
+    const resolveTag = (id) => dbTagMap[id] || TAG_NAME_MAP[id] || String(id);
+    const resolveEmotion = (id) => dbEmotionMap[id] || EMOTION_NAME_MAP[id] || String(id);
+
+    const rows = tradesRes.rows;
     const mistakeCount = {};
     const positiveCount = {};
     const emotionCount = {};
     const emotionPnl = {};
 
     rows.forEach(t => {
-      // mistake tags
       let mt = t.mistake_tags;
       if (typeof mt === 'string') { try { mt = JSON.parse(mt); } catch { mt = []; } }
-      (mt || []).forEach(tag => { mistakeCount[tag] = (mistakeCount[tag] || 0) + 1; });
+      (mt || []).forEach(tag => {
+        const name = resolveTag(tag);
+        mistakeCount[name] = (mistakeCount[name] || 0) + 1;
+      });
 
-      // positive tags
       let pt = t.positive_tags;
       if (typeof pt === 'string') { try { pt = JSON.parse(pt); } catch { pt = []; } }
-      (pt || []).forEach(tag => { positiveCount[tag] = (positiveCount[tag] || 0) + 1; });
+      (pt || []).forEach(tag => {
+        const name = resolveTag(tag);
+        positiveCount[name] = (positiveCount[name] || 0) + 1;
+      });
 
-      // emotion
       if (t.emotion_before) {
-        emotionCount[t.emotion_before] = (emotionCount[t.emotion_before] || 0) + 1;
-        emotionPnl[t.emotion_before] = (emotionPnl[t.emotion_before] || 0) + (parseFloat(t.pnl) || 0);
+        const eName = resolveEmotion(t.emotion_before);
+        emotionCount[eName] = (emotionCount[eName] || 0) + 1;
+        emotionPnl[eName] = (emotionPnl[eName] || 0) + (parseFloat(t.pnl) || 0);
       }
     });
 

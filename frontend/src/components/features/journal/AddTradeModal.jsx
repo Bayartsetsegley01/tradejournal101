@@ -246,9 +246,15 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
     return null;
   };
 
+  const resolveTagNames = (tagIds, allTags) =>
+    tagIds.map(id => {
+      const found = allTags.find(t => String(t.id) === String(id));
+      return found ? found.label : String(id);
+    });
+
   const handleSave = async (isDraft = false) => {
     setSaveError(null);
-    
+
     const validationError = validateForm();
     if (!isDraft && validationError) {
       setSaveError(validationError);
@@ -256,13 +262,15 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
     }
 
     setIsSaving(true);
-    
+
     try {
       const payload = {
         ...formData,
         status: isDraft ? 'DRAFT' : (formData.status || 'CLOSED'),
         market_type: formData.market,
         entry_date: formData.date,
+        positiveTags: resolveTagNames(formData.positiveTags, allPositiveTags),
+        mistakeTags: resolveTagNames(formData.mistakeTags, allMistakeTags),
       };
 
       if (payload.id) {
@@ -795,16 +803,16 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
                       <div className="flex flex-wrap gap-2">
                         {allPositiveTags.map(t => {
                           const isSelected = formData.positiveTags.includes(t.id);
-                          const colorClass = t.isCustom 
-                            ? (isSelected ? `bg-${t.color}-500/20 border-${t.color}-500/50 text-${t.color}-400` : `bg-slate-950 border-slate-800 text-slate-400 hover:border-${t.color}-500/30`)
-                            : (isSelected ? 'bg-accent/10 border-accent/50 text-accent' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600');
-                          
+                          const colorClass = isSelected
+                            ? 'bg-accent/10 border-accent/50 text-accent'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600';
                           return (
                             <button
                               key={t.id}
                               onClick={() => toggleTag('positiveTags', t.id)}
-                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${colorClass}`}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border flex items-center gap-1.5 ${colorClass}`}
                             >
+                              {t.emoji && <span className="text-base leading-none">{t.emoji}</span>}
                               {t.label}
                             </button>
                           );
@@ -825,16 +833,16 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
                       <div className="flex flex-wrap gap-2">
                         {allMistakeTags.map(t => {
                           const isSelected = formData.mistakeTags.includes(t.id);
-                          const colorClass = t.isCustom 
-                            ? (isSelected ? `bg-${t.color}-500/20 border-${t.color}-500/50 text-${t.color}-400` : `bg-slate-950 border-slate-800 text-slate-400 hover:border-${t.color}-500/30`)
-                            : (isSelected ? 'bg-rose-500/10 border-rose-500/50 text-rose-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600');
-                          
+                          const colorClass = isSelected
+                            ? 'bg-rose-500/10 border-rose-500/50 text-rose-400'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600';
                           return (
                             <button
                               key={t.id}
                               onClick={() => toggleTag('mistakeTags', t.id)}
-                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${colorClass}`}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border flex items-center gap-1.5 ${colorClass}`}
                             >
+                              {t.emoji && <span className="text-base leading-none">{t.emoji}</span>}
                               {t.label}
                             </button>
                           );
