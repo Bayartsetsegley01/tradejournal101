@@ -75,8 +75,27 @@ export const tradeService = {
     const r = await fetch(`${API_BASE_URL}/trades/${id}/notes`, { method:'PATCH', headers: getHeaders(), credentials:'include', body: JSON.stringify(d) });
     return r.json();
   },
-  addMedia: async (id, d) => {
-    const r = await fetch(`${API_BASE_URL}/trades/${id}/media`, { method:'POST', headers: getHeaders(), credentials:'include', body: JSON.stringify(d) });
+  uploadMedia: async (id, file) => {
+    const fd = new FormData();
+    fd.append('image', file);
+    const token = localStorage.getItem('token');
+    const r = await fetch(`${API_BASE_URL}/trades/${id}/media`, {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      credentials: 'include',
+      body: fd,
+    });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Upload failed');
+    return data;
+  },
+  removeMedia: async (id, url) => {
+    const r = await fetch(`${API_BASE_URL}/trades/${id}/media`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ url }),
+    });
     return r.json();
-  }
+  },
 };

@@ -1,6 +1,22 @@
 import { query, getDbStatus } from '../config/database.js';
 import cloudinary from '../config/cloudinary.js';
 
+const uploadBase64 = (dataUrl) => new Promise((resolve, reject) => {
+  cloudinary.uploader.upload(dataUrl,
+    { folder: 'tradejournal', resource_type: 'image',
+      transformation: [{ width: 1920, height: 1080, crop: 'limit', quality: 'auto:good' }] },
+    (err, result) => { if (err) reject(err); else resolve(result.secure_url); }
+  );
+});
+
+const resolveScreenshot = async (raw) => {
+  if (!raw) return null;
+  if (raw.startsWith('data:')) {
+    try { return await uploadBase64(raw); } catch (e) { console.error('Screenshot upload failed:', e); return null; }
+  }
+  return raw;
+};
+
 export const getTrades = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
@@ -70,6 +86,8 @@ export const addTrade = async (req, res) => {
       }
     }
 
+    const screenshotUrl = await resolveScreenshot(b.screenshot_url || null);
+
     const result = await query(
       `INSERT INTO trades (user_id, status, symbol, market_type, direction, strategy, session,
         entry_date, exit_date, entry_price, exit_price, stop_loss, take_profit,
@@ -81,7 +99,7 @@ export const addTrade = async (req, res) => {
       [userId, b.status||'CLOSED', b.symbol, marketType, b.direction, b.strategy, b.session,
         entryDate?new Date(entryDate):null, exitDate?new Date(exitDate):null,
         entryPrice, exitPrice, stopLoss, takeProfit,
-        positionSize, pnl, rrRatio, notes, lessonsLearned, b.screenshot_url||null,
+        positionSize, pnl, rrRatio, notes, lessonsLearned, screenshotUrl,
         emotionBefore, emotionAfter,
         typeof positiveTags === 'string' ? positiveTags : JSON.stringify(positiveTags),
         typeof mistakeTags === 'string' ? mistakeTags : JSON.stringify(mistakeTags),
@@ -139,6 +157,8 @@ export const updateTrade = async (req, res) => {
       }
     }
 
+    const screenshotUrl = await resolveScreenshot(b.screenshot_url || null);
+
     const result = await query(
       `UPDATE trades SET status=$1, symbol=$2, market_type=$3, direction=$4, strategy=$5, session=$6,
         entry_date=$7, exit_date=$8, entry_price=$9, exit_price=$10, stop_loss=$11, take_profit=$12,
@@ -149,7 +169,7 @@ export const updateTrade = async (req, res) => {
       [b.status||'CLOSED', b.symbol, marketType, b.direction, b.strategy, b.session,
         entryDate?new Date(entryDate):null, exitDate?new Date(exitDate):null,
         entryPrice, exitPrice, stopLoss, takeProfit,
-        positionSize, pnl, rrRatio, notes, lessonsLearned, b.screenshot_url||null,
+        positionSize, pnl, rrRatio, notes, lessonsLearned, screenshotUrl,
         emotionBefore, emotionAfter,
         typeof positiveTags === 'string' ? positiveTags : JSON.stringify(positiveTags),
         typeof mistakeTags === 'string' ? mistakeTags : JSON.stringify(mistakeTags),

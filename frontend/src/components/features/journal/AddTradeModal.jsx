@@ -44,8 +44,11 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
+  const toLocalISO = (d = new Date()) =>
+    new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().slice(0, 16),
+    date: toLocalISO(),
     status: 'PLANNED',
     market: 'forex',
     symbol: '',
@@ -139,40 +142,60 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
 
   useEffect(() => {
     if (initialData) {
-      // Safely format date for datetime-local input
-      let formattedDate = new Date().toISOString().slice(0, 16);
+      let formattedDate = toLocalISO();
       try {
-        if (initialData.date) {
-          const d = new Date(initialData.date);
-          if (!isNaN(d.getTime())) formattedDate = d.toISOString().slice(0, 16);
-        } else if (initialData.entry_date) {
-          const d = new Date(initialData.entry_date);
-          if (!isNaN(d.getTime())) formattedDate = d.toISOString().slice(0, 16);
+        const raw = initialData.date || initialData.entry_date;
+        if (raw) {
+          const d = new Date(raw);
+          if (!isNaN(d.getTime())) formattedDate = toLocalISO(d);
         }
       } catch (e) {
         console.warn("Invalid date format", e);
       }
 
-      let formattedExpiry = initialData.expiry || '';
-      if (formattedExpiry) {
-        try {
-          const d = new Date(formattedExpiry);
-          if (!isNaN(d.getTime())) {
-            formattedExpiry = d.toISOString().slice(0, 10);
-          } else {
-            formattedExpiry = '';
-          }
-        } catch (e) {
-          console.warn("Invalid expiry format", e);
-          formattedExpiry = '';
+      let formattedExpiry = '';
+      try {
+        const raw = initialData.expiry || initialData.expiry_date;
+        if (raw) {
+          const d = new Date(raw);
+          if (!isNaN(d.getTime())) formattedExpiry = d.toISOString().slice(0, 10);
         }
+      } catch (e) {
+        console.warn("Invalid expiry format", e);
       }
 
-      setFormData(prev => ({ 
-        ...prev, 
+      const parseTags = (v) => {
+        if (Array.isArray(v)) return v;
+        if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } }
+        return [];
+      };
+
+      setFormData(prev => ({
+        ...prev,
         ...initialData,
-        date: formattedDate,
-        expiry: formattedExpiry
+        // ─── DB snake_case → form camelCase (CRITICAL mapping) ───────────────
+        date:          formattedDate,
+        expiry:        formattedExpiry,
+        entry:         initialData.entry_price   ?? initialData.entry         ?? '',
+        exit:          initialData.exit_price    ?? initialData.exit          ?? '',
+        stopLoss:      initialData.stop_loss     ?? initialData.stopLoss      ?? '',
+        takeProfit:    initialData.take_profit   ?? initialData.takeProfit    ?? '',
+        quantity:      initialData.position_size ?? initialData.quantity      ?? '',
+        market:        initialData.market_type   || initialData.market        || 'forex',
+        // ─── Psychology / tags ───────────────────────────────────────────────
+        emotionBefore: initialData.emotionBefore || initialData.emotion_before || '',
+        emotionAfter:  initialData.emotionAfter  || initialData.emotion_after  || '',
+        positiveTags:  parseTags(initialData.positiveTags || initialData.positive_tags),
+        mistakeTags:   parseTags(initialData.mistakeTags  || initialData.mistake_tags),
+        // ─── Journal text ────────────────────────────────────────────────────
+        whyEntered:    initialData.whyEntered    || initialData.why_entered    || '',
+        whatHappened:  initialData.whatHappened  || initialData.what_happened  || '',
+        whatWentWell:  initialData.whatWentWell  || initialData.what_went_well || '',
+        mistakesMade:  initialData.mistakesMade  || initialData.mistakes_made  || '',
+        lessonLearned: initialData.lessonLearned || initialData.lessons_learned || '',
+        notes:         initialData.notes || '',
+        // ─── screenshot ──────────────────────────────────────────────────────
+        screenshot_url: initialData.screenshot_url || null,
       }));
     }
   }, [initialData]);
