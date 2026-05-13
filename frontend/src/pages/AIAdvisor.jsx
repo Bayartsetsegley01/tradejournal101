@@ -1,8 +1,9 @@
 import { Brain, TrendingUp, AlertTriangle, Lightbulb, Loader2, Send, Bot, User } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { aiService } from "@/services/aiService";
 import { tradeService } from "@/services/tradeService";
 import { useLang } from "@/contexts/LanguageContext";
+import { useTradesUpdated } from "@/lib/tradesSync";
 
 function MessageContent({ content }) {
   return (
@@ -48,23 +49,24 @@ export function AIAdvisorPage() {
     learning: ['Explain risk/reward ratio', 'What is a trading journal?', 'Explain win rate'],
   };
 
-  useEffect(() => {
-    const fetchInsights = async () => {
-      try {
-        setLoading(true);
-        const tradesRes = await tradeService.getTrades();
-        const trades = tradesRes.data || [];
-        const response = await aiService.getInsights(trades);
-        if (response.success) setInsights(response.data);
-        else setError(response.error || "Failed to fetch insights");
-      } catch (err) {
-        setError(t('errorConnecting'));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchInsights();
-  }, []);
+  const fetchInsights = useCallback(async () => {
+    try {
+      setLoading(true);
+      const tradesRes = await tradeService.getTrades();
+      const trades = tradesRes.data || [];
+      const response = await aiService.getInsights(trades);
+      if (response.success) setInsights(response.data);
+      else setError(response.error || "Failed to fetch insights");
+    } catch (err) {
+      setError(t('errorConnecting'));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => { fetchInsights(); }, [fetchInsights]);
+
+  useTradesUpdated(fetchInsights);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

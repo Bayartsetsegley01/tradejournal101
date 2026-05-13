@@ -9,22 +9,20 @@ import { TimeFilter } from "@/components/features/analytics/TimeFilter";
 import { Plus, Download, Loader2, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { SESSIONS } from "@/lib/constants";
 import { useLang } from "@/contexts/LanguageContext";
+import { useTrades } from "@/contexts/TradesContext";
+import { tradeService } from "@/services/tradeService";
 
 const PAGE_SIZE = 10;
-import { tradeService } from "@/services/tradeService";
-import { notifyTradesUpdated } from "@/lib/tradesSync";
 
 export function JournalPage() {
   const { t } = useLang();
+  const { trades, loading: isLoading, invalidate, applyUpdate, applyRemove } = useTrades();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [editingTrade, setEditingTrade] = useState(null);
-  
-  const [trades, setTrades] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error] = useState(null);
   const [page, setPage] = useState(1);
   
   
@@ -49,23 +47,6 @@ export function JournalPage() {
   }, [filters.timeRange]);
 
   
-  const fetchTrades = async () => {
-    setIsLoading(true);
-    try {
-      const result = await tradeService.getTrades();
-      setTrades(result.data || []);
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTrades();
-  }, []);
-
   const handleEdit = (trade) => {
     setEditingTrade(trade);
     setIsAddModalOpen(true);
@@ -81,29 +62,30 @@ export function JournalPage() {
   };
 
   const handleDelete = async (id) => {
+    applyRemove(id);
     try {
       await tradeService.deleteTrade(id);
-      fetchTrades();
-      notifyTradesUpdated();
+      invalidate();
     } catch (err) {
       console.error("Failed to delete trade", err);
+      invalidate(); // revert by refreshing
       alert("Алдаа гарлаа. Устгаж чадсангүй.");
     }
   };
 
   const handleMediaUpdate = (id, mediaUrls) => {
-    setTrades(prev => prev.map(t => t.id === id ? { ...t, media_urls: mediaUrls } : t));
+    applyUpdate(id, { media_urls: mediaUrls });
   };
 
   const handlePatch = async (id, changes) => {
     const trade = trades.find(t => t.id === id);
     if (!trade) return;
-    setTrades(prev => prev.map(t => t.id === id ? { ...t, ...changes } : t));
+    applyUpdate(id, changes);
     try {
       await tradeService.updateTrade(id, { ...trade, ...changes });
-      notifyTradesUpdated();
+      invalidate();
     } catch (err) {
-      setTrades(prev => prev.map(t => t.id === id ? trade : t));
+      applyUpdate(id, trade); // revert
       throw err;
     }
   };
@@ -111,8 +93,7 @@ export function JournalPage() {
   const handleCloseAddModal = () => {
     setIsAddModalOpen(false);
     setEditingTrade(null);
-    fetchTrades();
-    notifyTradesUpdated();
+    invalidate();
   };
 
   // Reset to page 1 when filters change
@@ -347,10 +328,10 @@ export function JournalPage() {
         <ExportModal onClose={() => setIsExportModalOpen(false)} trades={filteredTrades} />
       )}
 
-      <ImportModal 
-        isOpen={isImportModalOpen} 
-        onClose={() => { setIsImportModalOpen(false); fetchTrades(); }} 
-        onImportComplete={fetchTrades} 
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => { setIsImportModalOpen(false); invalidate(); }}
+        onImportComplete={invalidate} 
       />
     </div>
   );

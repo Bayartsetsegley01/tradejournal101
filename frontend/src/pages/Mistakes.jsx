@@ -1,7 +1,8 @@
 import { useLang } from "@/contexts/LanguageContext";
 import { BrainCircuit, TrendingDown, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { analyticsService } from "@/services/analyticsService";
+import { useTradesUpdated } from "@/lib/tradesSync";
 
 export function MistakesPage() {
   const { t } = useLang();
@@ -9,7 +10,8 @@ export function MistakesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const fetchMistakes = useCallback(() => {
+    setLoading(true);
     analyticsService.getMistakes('all')
       .then(res => {
         if (res.success) setData(res.data);
@@ -18,6 +20,10 @@ export function MistakesPage() {
       .catch(() => setError("Сервертэй холбогдоход алдаа гарлаа."))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { fetchMistakes(); }, [fetchMistakes]);
+
+  useTradesUpdated(fetchMistakes);
 
   return (
     <div className="p-8 max-w-[1200px] mx-auto w-full flex flex-col gap-8">
