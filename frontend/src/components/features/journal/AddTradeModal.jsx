@@ -3,19 +3,17 @@ import { X, Image as ImageIcon, Target, LineChart, Brain, LayoutTemplate, Upload
 import { MARKET_TYPES, EMOTIONS, POSITIVE_TAGS, MISTAKE_TAGS, SESSIONS } from "@/lib/constants";
 import { CustomTagModal } from "./CustomTagModal";
 import { tradeService } from "@/services/tradeService";
-import { useLang } from "@/contexts/LanguageContext";
 import { tagService } from "@/services/tagService";
 import { emotionService } from "@/services/emotionService";
 
-export function AddTradeModal({ isOpen, onClose, initialData = null }) {
-  const { t } = useLang();
+const TABS = [
+  { id: 'setup', label: 'Setup & Market', icon: Target, description: 'Зах зээл болон чиглэл' },
+  { id: 'execution', label: 'Execution & Risk', icon: LineChart, description: 'Үнэ болон эрсдэл' },
+  { id: 'psychology', label: 'Psychology & Tags', icon: Brain, description: 'Сэтгэл зүй, алдаа' },
+  { id: 'journal', label: 'Journal & Media', icon: LayoutTemplate, description: 'Тэмдэглэл, зураг' },
+];
 
-  const TABS = [
-    { id: 'setup', label: t('setupMarket'), icon: Target, description: t('setupMarket') },
-    { id: 'execution', label: t('executionRisk'), icon: LineChart, description: t('executionRisk') },
-    { id: 'psychology', label: t('psychologyTags'), icon: Brain, description: t('psychologyTags') },
-    { id: 'journal', label: t('journalMedia'), icon: LayoutTemplate, description: t('journalMedia') },
-  ];
+export function AddTradeModal({ isOpen, onClose, initialData = null }) {
   const [activeTab, setActiveTab] = useState('setup');
   const [customTagModal, setCustomTagModal] = useState(null); // { type: 'emotion' | 'positive' | 'mistake' }
   
@@ -103,19 +101,6 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
     }
   }, [initialData]);
 
-  // Ctrl+Enter to save
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        handleSave(false);
-      }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [isOpen, formData]);
-
   // Smart TP Suggestion and Auto Lot Size
   useEffect(() => {
     if (formData.entry && formData.stopLoss) {
@@ -183,36 +168,11 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
         }
       }
 
-      // Parse tags from DB (stored as JSONB string or array)
-      const parseTags = (val) => {
-        if (!val) return [];
-        if (Array.isArray(val)) return val;
-        try { return JSON.parse(val); } catch { return []; }
-      };
-
-      setFormData(prev => ({
-        ...prev,
+      setFormData(prev => ({ 
+        ...prev, 
         ...initialData,
         date: formattedDate,
-        expiry: formattedExpiry,
-        // DB field → form field mapping
-        market: initialData.market_type || initialData.market || prev.market,
-        entry: initialData.entry_price || initialData.entry || '',
-        exit: initialData.exit_price || initialData.exit || '',
-        stopLoss: initialData.stop_loss || initialData.stopLoss || '',
-        takeProfit: initialData.take_profit || initialData.takeProfit || '',
-        quantity: initialData.position_size || initialData.quantity || '',
-        emotionBefore: initialData.emotion_before || initialData.emotionBefore || '',
-        emotionAfter: initialData.emotion_after || initialData.emotionAfter || '',
-        positiveTags: parseTags(initialData.positive_tags || initialData.positiveTags),
-        mistakeTags: parseTags(initialData.mistake_tags || initialData.mistakeTags),
-        whyEntered: initialData.why_entered || initialData.whyEntered || '',
-        whatHappened: initialData.what_happened || initialData.whatHappened || '',
-        whatWentWell: initialData.what_went_well || initialData.whatWentWell || '',
-        mistakesMade: initialData.mistakes_made || initialData.mistakesMade || '',
-        setupDescription: initialData.setup_description || initialData.setupDescription || '',
-        lessonLearned: initialData.lessons_learned || initialData.lessonLearned || '',
-        notes: initialData.notes || '',
+        expiry: formattedExpiry
       }));
     }
   }, [initialData]);
@@ -246,15 +206,9 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
     return null;
   };
 
-  const resolveTagNames = (tagIds, allTags) =>
-    tagIds.map(id => {
-      const found = allTags.find(t => String(t.id) === String(id));
-      return found ? found.label : String(id);
-    });
-
   const handleSave = async (isDraft = false) => {
     setSaveError(null);
-
+    
     const validationError = validateForm();
     if (!isDraft && validationError) {
       setSaveError(validationError);
@@ -262,15 +216,13 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
     }
 
     setIsSaving(true);
-
+    
     try {
       const payload = {
         ...formData,
         status: isDraft ? 'DRAFT' : (formData.status || 'CLOSED'),
         market_type: formData.market,
         entry_date: formData.date,
-        positiveTags: resolveTagNames(formData.positiveTags, allPositiveTags),
-        mistakeTags: resolveTagNames(formData.mistakeTags, allMistakeTags),
       };
 
       if (payload.id) {
@@ -315,13 +267,33 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
     const entry = parseFloat(formData.entry);
     const qty = parseFloat(formData.quantity);
     
-    // If trade is closed, use exit price. Otherwise use take profit for estimated PnL
-    const exitPrice = formData.status === 'CLOSED' && formData.exit ? parseFloat(formData.exit) : parseFloat(formData.takeProfit);
+    // CLOSED бол exit price, үгүй бол take profit ашиглана
+    const exitPrice = formData.status === 'CLOSED' && formData.exit 
+      ? parseFloat(formData.exit) 
+      : parseFloat(formData.takeProfit);
     
     if (isNaN(entry) || isNaN(exitPrice) || isNaN(qty)) return null;
 
-    const diff = formData.direction === 'LONG' ? exitPrice - entry : entry - exitPrice;
-    return (diff * qty).toFixed(2);
+    // LONG: exit > entry = ашиг, SHORT: entry > exit = ашиг
+    const diff = formData.direction === 'LONG' 
+      ? exitPrice - entry 
+      : entry - exitPrice;
+
+    // Forex pip multiplier (0.0001 = 1 pip, 1 lot = 100,000 units)
+    const market = (formData.market || 'forex').toLowerCase();
+    let multiplier = 1;
+    if (market === 'forex') {
+      // EURUSD, GBPUSD etc: price ~1.0xxx → multiply by 10000 for pip value
+      if (entry < 10) multiplier = 10000 * qty;
+      // USDJPY etc: price ~150.xx → multiply by 100
+      else if (entry < 500) multiplier = 100 * qty;
+      else multiplier = qty;
+    } else {
+      // Crypto, Stocks: шууд тооцоолно
+      multiplier = qty;
+    }
+
+    return (diff * multiplier).toFixed(2);
   };
 
   const calculateRiskAmount = () => {
@@ -803,16 +775,16 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
                       <div className="flex flex-wrap gap-2">
                         {allPositiveTags.map(t => {
                           const isSelected = formData.positiveTags.includes(t.id);
-                          const colorClass = isSelected
-                            ? 'bg-accent/10 border-accent/50 text-accent'
-                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600';
+                          const colorClass = t.isCustom 
+                            ? (isSelected ? `bg-${t.color}-500/20 border-${t.color}-500/50 text-${t.color}-400` : `bg-slate-950 border-slate-800 text-slate-400 hover:border-${t.color}-500/30`)
+                            : (isSelected ? 'bg-accent/10 border-accent/50 text-accent' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600');
+                          
                           return (
                             <button
                               key={t.id}
                               onClick={() => toggleTag('positiveTags', t.id)}
-                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border flex items-center gap-1.5 ${colorClass}`}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${colorClass}`}
                             >
-                              {t.emoji && <span className="text-base leading-none">{t.emoji}</span>}
                               {t.label}
                             </button>
                           );
@@ -833,16 +805,16 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
                       <div className="flex flex-wrap gap-2">
                         {allMistakeTags.map(t => {
                           const isSelected = formData.mistakeTags.includes(t.id);
-                          const colorClass = isSelected
-                            ? 'bg-rose-500/10 border-rose-500/50 text-rose-400'
-                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600';
+                          const colorClass = t.isCustom 
+                            ? (isSelected ? `bg-${t.color}-500/20 border-${t.color}-500/50 text-${t.color}-400` : `bg-slate-950 border-slate-800 text-slate-400 hover:border-${t.color}-500/30`)
+                            : (isSelected ? 'bg-rose-500/10 border-rose-500/50 text-rose-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600');
+                          
                           return (
                             <button
                               key={t.id}
                               onClick={() => toggleTag('mistakeTags', t.id)}
-                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border flex items-center gap-1.5 ${colorClass}`}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${colorClass}`}
                             >
-                              {t.emoji && <span className="text-base leading-none">{t.emoji}</span>}
                               {t.label}
                             </button>
                           );
