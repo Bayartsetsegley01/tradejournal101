@@ -106,39 +106,35 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
 
   // Smart TP Suggestion and Auto Lot Size
   useEffect(() => {
-    if (formData.entry && formData.stopLoss) {
-      const entry = parseFloat(formData.entry);
-      const sl = parseFloat(formData.stopLoss);
-      const riskPercent = parseFloat(formData.riskPercent);
-      const balance = parseFloat(formData.accountBalance);
+    if (!formData.entry || !formData.stopLoss) return;
+    const entry = parseFloat(formData.entry);
+    const sl = parseFloat(formData.stopLoss);
+    if (isNaN(entry) || isNaN(sl)) return;
 
-      if (!isNaN(entry) && !isNaN(sl)) {
-        // Smart TP Suggestion (if TP is empty)
-        if (!formData.takeProfit) {
-          const riskPerShare = Math.abs(entry - sl);
-          const suggestedTp = formData.direction === 'LONG' 
-            ? entry + (riskPerShare * 2) 
-            : entry - (riskPerShare * 2);
-          
-          if (suggestedTp > 0) {
-            setFormData(prev => ({ ...prev, takeProfit: suggestedTp.toFixed(5) }));
-          }
-        }
+    // TP suggestion: only for NEW trades (not edit), only if TP is still empty
+    if (!initialData && !formData.takeProfit) {
+      const riskPerShare = Math.abs(entry - sl);
+      const suggestedTp = formData.direction === 'LONG'
+        ? entry + (riskPerShare * 2)
+        : entry - (riskPerShare * 2);
+      if (suggestedTp > 0) {
+        setFormData(prev => ({ ...prev, takeProfit: suggestedTp.toFixed(5) }));
+      }
+    }
 
-        // Auto Lot Size
-        if (!isNaN(riskPercent) && !isNaN(balance) && riskPercent > 0 && balance > 0) {
-          const riskAmount = balance * (riskPercent / 100);
-          const riskPerShare = Math.abs(entry - sl);
-          if (riskPerShare > 0) {
-            const lotSize = riskAmount / riskPerShare;
-            if (!formData.quantity || formData.quantity === '') {
-              setFormData(prev => ({ ...prev, quantity: lotSize.toFixed(2) }));
-            }
-          }
+    // Auto lot size: only when quantity is empty (new or cleared)
+    const riskPercent = parseFloat(formData.riskPercent);
+    const balance = parseFloat(formData.accountBalance);
+    if (!isNaN(riskPercent) && !isNaN(balance) && riskPercent > 0 && balance > 0) {
+      if (!formData.quantity || formData.quantity === '') {
+        const riskAmount = balance * (riskPercent / 100);
+        const riskPerShare = Math.abs(entry - sl);
+        if (riskPerShare > 0) {
+          setFormData(prev => ({ ...prev, quantity: (riskAmount / riskPerShare).toFixed(2) }));
         }
       }
     }
-  }, [formData.entry, formData.stopLoss, formData.direction, formData.riskPercent, formData.accountBalance, formData.quantity, formData.takeProfit]);
+  }, [formData.entry, formData.stopLoss, formData.direction, formData.riskPercent, formData.accountBalance, formData.quantity, formData.takeProfit, initialData]);
 
   useEffect(() => {
     if (initialData) {
@@ -194,6 +190,8 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
         mistakesMade:  initialData.mistakesMade  || initialData.mistakes_made  || '',
         lessonLearned: initialData.lessonLearned || initialData.lessons_learned || '',
         notes:         initialData.notes || '',
+        // ─── risk % ──────────────────────────────────────────────────────────
+        riskPercent: initialData.riskPercent || (initialData.risk_percent != null ? String(initialData.risk_percent) : ''),
         // ─── screenshot ──────────────────────────────────────────────────────
         screenshot_url: initialData.screenshot_url || null,
       }));

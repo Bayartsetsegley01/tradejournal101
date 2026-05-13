@@ -352,6 +352,9 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='media_urls') THEN
     ALTER TABLE trades ADD COLUMN media_urls TEXT[] DEFAULT '{}';
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='risk_percent') THEN
+    ALTER TABLE trades ADD COLUMN risk_percent DECIMAL;
+  END IF;
 END $$;
 
 -- ─── Guaranteed trades note column migrations ────────────────────────────────

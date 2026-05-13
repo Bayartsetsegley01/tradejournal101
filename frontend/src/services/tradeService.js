@@ -37,6 +37,8 @@ const normalizeTrade = (t) => {
     exit_price:  t.exit_price  || t.exit  || null,
     pnl: parseFloat(t.pnl || 0),
     rr_ratio: t.rr_ratio || t.rr || null,
+    riskPercent: t.risk_percent != null ? String(t.risk_percent)
+                 : t.riskPercent != null ? String(t.riskPercent) : '',
   };
 };
 

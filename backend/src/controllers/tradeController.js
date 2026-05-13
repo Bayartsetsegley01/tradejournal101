@@ -65,7 +65,9 @@ export const addTrade = async (req, res) => {
     const whatWentWell = b.what_went_well || b.whatWentWell || null;
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
-    
+    const riskPercent = b.risk_percent != null ? b.risk_percent
+                        : b.riskPercent  != null ? b.riskPercent : null;
+
     // Calculate PnL if not provided
     let pnl = b.pnl != null ? b.pnl : null;
     if ((pnl === null || pnl === 0) && entryPrice && exitPrice && positionSize) {
@@ -88,23 +90,26 @@ export const addTrade = async (req, res) => {
 
     const screenshotUrl = await resolveScreenshot(b.screenshot_url || null);
 
+    console.log('[addTrade] payload:', { symbol: b.symbol, direction: b.direction, entryPrice, exitPrice, pnl, riskPercent, positionSize });
+
     const result = await query(
       `INSERT INTO trades (user_id, status, symbol, market_type, direction, strategy, session,
         entry_date, exit_date, entry_price, exit_price, stop_loss, take_profit,
-        position_size, pnl, rr_ratio, notes, lessons_learned, screenshot_url,
+        position_size, pnl, rr_ratio, risk_percent, notes, lessons_learned, screenshot_url,
         emotion_before, emotion_after, positive_tags, mistake_tags,
         why_entered, what_happened, what_went_well, mistakes_made, setup_description)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
-        $20,$21,$22,$23,$24,$25,$26,$27,$28) RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
+        $21,$22,$23,$24,$25,$26,$27,$28,$29) RETURNING *`,
       [userId, b.status||'CLOSED', b.symbol, marketType, b.direction, b.strategy, b.session,
         entryDate?new Date(entryDate):null, exitDate?new Date(exitDate):null,
         entryPrice, exitPrice, stopLoss, takeProfit,
-        positionSize, pnl, rrRatio, notes, lessonsLearned, screenshotUrl,
+        positionSize, pnl, rrRatio, riskPercent, notes, lessonsLearned, screenshotUrl,
         emotionBefore, emotionAfter,
         typeof positiveTags === 'string' ? positiveTags : JSON.stringify(positiveTags),
         typeof mistakeTags === 'string' ? mistakeTags : JSON.stringify(mistakeTags),
         whyEntered, whatHappened, whatWentWell, mistakesMade, setupDescription]
     );
+    console.log('[addTrade] saved:', { id: result.rows[0].id, pnl: result.rows[0].pnl, risk_percent: result.rows[0].risk_percent });
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('addTrade error:', error);
@@ -138,6 +143,8 @@ export const updateTrade = async (req, res) => {
     const whatWentWell = b.what_went_well || b.whatWentWell || null;
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
+    const riskPercent = b.risk_percent != null ? b.risk_percent
+                        : b.riskPercent  != null ? b.riskPercent : null;
 
     let pnl = b.pnl != null ? b.pnl : null;
     if ((pnl === null || pnl === 0) && entryPrice && exitPrice && positionSize) {
@@ -159,17 +166,19 @@ export const updateTrade = async (req, res) => {
 
     const screenshotUrl = await resolveScreenshot(b.screenshot_url || null);
 
+    console.log('[updateTrade] payload:', { id, symbol: b.symbol, direction: b.direction, entryPrice, exitPrice, pnl, riskPercent, positionSize });
+
     const result = await query(
       `UPDATE trades SET status=$1, symbol=$2, market_type=$3, direction=$4, strategy=$5, session=$6,
         entry_date=$7, exit_date=$8, entry_price=$9, exit_price=$10, stop_loss=$11, take_profit=$12,
-        position_size=$13, pnl=$14, rr_ratio=$15, notes=$16, lessons_learned=$17, screenshot_url=$18,
-        emotion_before=$19, emotion_after=$20, positive_tags=$21, mistake_tags=$22,
-        why_entered=$23, what_happened=$24, what_went_well=$25, mistakes_made=$26, setup_description=$27,
-        updated_at=CURRENT_TIMESTAMP WHERE id=$28 AND user_id=$29 RETURNING *`,
+        position_size=$13, pnl=$14, rr_ratio=$15, risk_percent=$16, notes=$17, lessons_learned=$18,
+        screenshot_url=$19, emotion_before=$20, emotion_after=$21, positive_tags=$22, mistake_tags=$23,
+        why_entered=$24, what_happened=$25, what_went_well=$26, mistakes_made=$27, setup_description=$28,
+        updated_at=CURRENT_TIMESTAMP WHERE id=$29 AND user_id=$30 RETURNING *`,
       [b.status||'CLOSED', b.symbol, marketType, b.direction, b.strategy, b.session,
         entryDate?new Date(entryDate):null, exitDate?new Date(exitDate):null,
         entryPrice, exitPrice, stopLoss, takeProfit,
-        positionSize, pnl, rrRatio, notes, lessonsLearned, screenshotUrl,
+        positionSize, pnl, rrRatio, riskPercent, notes, lessonsLearned, screenshotUrl,
         emotionBefore, emotionAfter,
         typeof positiveTags === 'string' ? positiveTags : JSON.stringify(positiveTags),
         typeof mistakeTags === 'string' ? mistakeTags : JSON.stringify(mistakeTags),
@@ -177,6 +186,7 @@ export const updateTrade = async (req, res) => {
         id, userId]
     );
     if (result.rows.length === 0) return res.status(404).json({ success: false, error: 'Trade not found' });
+    console.log('[updateTrade] saved:', { id: result.rows[0].id, pnl: result.rows[0].pnl, risk_percent: result.rows[0].risk_percent });
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('updateTrade error:', error);

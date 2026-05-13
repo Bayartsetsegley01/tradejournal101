@@ -122,80 +122,32 @@ export function AIChatbot() {
     setIsLoading(true);
 
     try {
-      const systemPrompt = `Та бол мэргэжлийн арилжааны зөвлөх AI юм. Монгол хэлээр богино, тодорхой хариулт өг.
-Хариултаа 3-5 өгүүлбэрт хэмжлэг. Markdown формат ашиглаж болно (**bold**).
-${tradeContext ? `\nХэрэглэгчийн арилжааны мэдээлэл:
-- Нийт хаасан арилжаа: ${tradeContext.totalTrades}
-- Win Rate: ${tradeContext.winRate}%
-- Нийт PnL: ${tradeContext.totalPnl}
-- Сүүлийн арилжаанууд: ${JSON.stringify(tradeContext.recentTrades)}` : ''}`;
-
-      const conversationHistory = messages
-        .filter(m => m.role !== 'system')
-        .map(m => ({ role: m.role, content: m.content }));
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const backendResponse = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
+        headers: getHeaders(),
+        credentials: 'include',
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: [
-            ...conversationHistory,
-            { role: 'user', content: messageText }
-          ]
+          message: messageText,
+          history: messages.slice(-6).map(m => ({ role: m.role, content: m.content })),
+          tradeContext
         })
       });
 
-      // Try backend proxy if direct fails
-      if (!response.ok) {
-        throw new Error('Direct API failed');
-      }
-
-      const data = await response.json();
-      const aiText = data.content?.[0]?.text || 'Хариулт авах боломжгүй байна.';
+      const data = await backendResponse.json();
+      if (!backendResponse.ok) throw new Error(data.error || 'Backend error');
 
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: aiText,
+        content: data.reply || data.message || 'Хариулт авах боломжгүй байна.',
         timestamp: new Date()
       }]);
     } catch (err) {
-      // Fallback to backend
-      try {
-        const backendResponse = await fetch(`${API_BASE_URL}/ai/chat`, {
-          method: 'POST',
-          headers: getHeaders(),
-          credentials: 'include',
-          body: JSON.stringify({
-            message: messageText,
-            history: messages.slice(-6).map(m => ({ role: m.role, content: m.content })),
-            tradeContext
-          })
-        });
-
-        if (backendResponse.ok) {
-          const data = await backendResponse.json();
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: data.reply || data.message || 'Хариулт авах боломжгүй байна.',
-            timestamp: new Date()
-          }]);
-        } else {
-          throw new Error('Backend also failed');
-        }
-      } catch (backendErr) {
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: '⚠️ Холболт алдаа гарлаа. Backend дэх `/api/ai/chat` endpoint ажиллаж байгаа эсэхийг шалгана уу.',
-          timestamp: new Date(),
-          isError: true
-        }]);
-      }
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: '⚠️ Холболт алдаа гарлаа. Дахин оролдоно уу.',
+        timestamp: new Date(),
+        isError: true
+      }]);
     } finally {
       setIsLoading(false);
     }
