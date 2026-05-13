@@ -68,13 +68,15 @@ export const addTrade = async (req, res) => {
     const riskPercent = b.risk_percent != null ? b.risk_percent
                         : b.riskPercent  != null ? b.riskPercent : null;
 
-    // Calculate PnL if not provided
-    let pnl = b.pnl != null ? b.pnl : null;
-    if ((pnl === null || pnl === 0) && entryPrice && exitPrice && positionSize) {
+    // Always recalculate PnL from price data when available (never trust frontend value)
+    let pnl = null;
+    if (entryPrice && exitPrice && positionSize) {
       pnl = calculatePnL(
         parseFloat(entryPrice), parseFloat(exitPrice),
         b.direction, parseFloat(positionSize), marketType
       );
+    } else if (b.pnl != null) {
+      pnl = b.pnl;
     }
 
     // Calculate R:R ratio
@@ -146,12 +148,15 @@ export const updateTrade = async (req, res) => {
     const riskPercent = b.risk_percent != null ? b.risk_percent
                         : b.riskPercent  != null ? b.riskPercent : null;
 
-    let pnl = b.pnl != null ? b.pnl : null;
-    if ((pnl === null || pnl === 0) && entryPrice && exitPrice && positionSize) {
+    // Always recalculate PnL from price data when available (never trust frontend value)
+    let pnl = null;
+    if (entryPrice && exitPrice && positionSize) {
       pnl = calculatePnL(
         parseFloat(entryPrice), parseFloat(exitPrice),
         b.direction, parseFloat(positionSize), marketType
       );
+    } else if (b.pnl != null) {
+      pnl = b.pnl;
     }
 
     let rrRatio = b.rr_ratio || null;
