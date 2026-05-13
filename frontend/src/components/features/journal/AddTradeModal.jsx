@@ -266,34 +266,33 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
     if (!formData.entry || !formData.quantity) return null;
     const entry = parseFloat(formData.entry);
     const qty = parseFloat(formData.quantity);
-    
-    // CLOSED бол exit price, үгүй бол take profit ашиглана
-    const exitPrice = formData.status === 'CLOSED' && formData.exit 
-      ? parseFloat(formData.exit) 
+
+    const exitPrice = formData.status === 'CLOSED' && formData.exit
+      ? parseFloat(formData.exit)
       : parseFloat(formData.takeProfit);
-    
+
     if (isNaN(entry) || isNaN(exitPrice) || isNaN(qty)) return null;
 
-    // LONG: exit > entry = ашиг, SHORT: entry > exit = ашиг
-    const diff = formData.direction === 'LONG' 
-      ? exitPrice - entry 
+    const diff = formData.direction === 'LONG'
+      ? exitPrice - entry
       : entry - exitPrice;
 
-    // Forex pip multiplier (0.0001 = 1 pip, 1 lot = 100,000 units)
     const market = (formData.market || 'forex').toLowerCase();
-    let multiplier = 1;
+
     if (market === 'forex') {
-      // EURUSD, GBPUSD etc: price ~1.0xxx → multiply by 10000 for pip value
-      if (entry < 10) multiplier = 10000 * qty;
-      // USDJPY etc: price ~150.xx → multiply by 100
-      else if (entry < 500) multiplier = 100 * qty;
-      else multiplier = qty;
-    } else {
-      // Crypto, Stocks: шууд тооцоолно
-      multiplier = qty;
+      if (entry < 10) {
+        // EURUSD, GBPUSD etc: 1 pip = 0.0001, 1 lot = $10/pip
+        const pips = diff / 0.0001;
+        return (pips * 10 * qty).toFixed(2);
+      } else if (entry < 500) {
+        // USDJPY etc: 1 pip = 0.01, 1 lot = $10/pip
+        const pips = diff / 0.01;
+        return (pips * 10 * qty).toFixed(2);
+      }
     }
 
-    return (diff * multiplier).toFixed(2);
+    // Crypto, Stocks: direct calculation
+    return (diff * qty).toFixed(2);
   };
 
   const calculateRiskAmount = () => {
