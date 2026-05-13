@@ -12,6 +12,7 @@ import { useLang } from "@/contexts/LanguageContext";
 
 const PAGE_SIZE = 10;
 import { tradeService } from "@/services/tradeService";
+import { notifyTradesUpdated } from "@/lib/tradesSync";
 
 export function JournalPage() {
   const { t } = useLang();
@@ -83,6 +84,7 @@ export function JournalPage() {
     try {
       await tradeService.deleteTrade(id);
       fetchTrades();
+      notifyTradesUpdated();
     } catch (err) {
       console.error("Failed to delete trade", err);
       alert("Алдаа гарлаа. Устгаж чадсангүй.");
@@ -99,6 +101,7 @@ export function JournalPage() {
     setTrades(prev => prev.map(t => t.id === id ? { ...t, ...changes } : t));
     try {
       await tradeService.updateTrade(id, { ...trade, ...changes });
+      notifyTradesUpdated();
     } catch (err) {
       setTrades(prev => prev.map(t => t.id === id ? trade : t));
       throw err;
@@ -109,6 +112,7 @@ export function JournalPage() {
     setIsAddModalOpen(false);
     setEditingTrade(null);
     fetchTrades();
+    notifyTradesUpdated();
   };
 
   // Reset to page 1 when filters change

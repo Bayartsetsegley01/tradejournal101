@@ -1,7 +1,8 @@
 import { useLang } from "@/contexts/LanguageContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CalendarDays, TrendingUp, TrendingDown, Target, Brain, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { analyticsService } from "@/services/analyticsService";
+import { useTradesUpdated } from "@/lib/tradesSync";
 
 function getWeekRange(offset = 0) {
   const now = new Date();
@@ -36,28 +37,29 @@ export function WeeklyReviewPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setData(null);
-      try {
-        let res;
-        if (mode === 'weekly') {
-          const { start, end } = getWeekRange(weekOffset);
-          res = await analyticsService.getWeeklyReview(start.toISOString(), end.toISOString());
-        } else {
-          const { year, month } = getMonthRange(monthOffset);
-          res = await analyticsService.getMonthlyReview(year, month);
-        }
-        if (res.success) setData(res.data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setData(null);
+    try {
+      let res;
+      if (mode === 'weekly') {
+        const { start, end } = getWeekRange(weekOffset);
+        res = await analyticsService.getWeeklyReview(start.toISOString(), end.toISOString());
+      } else {
+        const { year, month } = getMonthRange(monthOffset);
+        res = await analyticsService.getMonthlyReview(year, month);
       }
-    };
-    fetchData();
+      if (res.success) setData(res.data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   }, [mode, weekOffset, monthOffset]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  useTradesUpdated(fetchData);
 
   const weekRange = getWeekRange(weekOffset);
   const monthInfo = getMonthRange(monthOffset);

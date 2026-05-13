@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { TimeFilter } from "@/components/features/analytics/TimeFilter";
 import { AnalyticsTabs } from "@/components/features/analytics/AnalyticsTabs";
 import { SummaryCards } from "@/components/features/analytics/SummaryCards";
@@ -12,6 +12,7 @@ import { analyticsService } from "@/services/analyticsService";
 import { tradeService } from "@/services/tradeService";
 import { AlertTriangle, Brain } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
+import { useTradesUpdated } from "@/lib/tradesSync";
 
 export function AnalyticsPage() {
   const { t } = useLang();
@@ -29,73 +30,59 @@ export function AnalyticsPage() {
   const [error, setError] = useState(null);
   const [mode, setMode] = useState('database');
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        
-        if (timeRange === 'custom' && (!customRange || !customRange.start || !customRange.end)) {
-          setLoading(false);
-          return;
-        }
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
 
-        const fetchRange = timeRange === 'custom' ? `${customRange.start}_${customRange.end}` : timeRange;
-        
-        const [summaryRes, chartsRes, mistakesRes, tradesRes] = await Promise.all([
-          analyticsService.getSummary(fetchRange),
-          analyticsService.getCharts(fetchRange),
-          analyticsService.getMistakes(fetchRange),
-          tradeService.getTrades()
-        ]);
-
-        if (summaryRes.success && chartsRes.success) {
-          setSummary(summaryRes.data);
-          setCharts(chartsRes.data);
-          if (mistakesRes.success) setMistakesData(mistakesRes.data);
-          if (tradesRes.success) setTrades(tradesRes.data);
-          if (summaryRes.mode === 'mock') setMode('mock');
-        } else {
-          console.warn("Backend failed, using frontend fallback mock data");
-          setSummary({
-            netPnl: 1250.50,
-            winRate: 64.5,
-            profitFactor: 1.8,
-            totalTrades: 42
-          });
-          setCharts({
-            equityCurve: [
-              { date: '2023-10-01', pnl: 100, equity: 100 },
-              { date: '2023-10-05', pnl: -50, equity: 50 },
-              { date: '2023-10-10', pnl: 200, equity: 250 },
-              { date: '2023-10-15', pnl: 150, equity: 400 },
-              { date: '2023-10-20', pnl: -100, equity: 300 },
-              { date: '2023-10-25', pnl: 300, equity: 600 },
-            ]
-          });
-          setMistakesData({
-            mistakes: [
-              { name: 'FOMO', count: 12 },
-              { name: 'Төлөвлөгөө дагаагүй', count: 8 },
-              { name: 'Stop Loss хөдөлгөсөн', count: 5 }
-            ],
-            emotions: [
-              { name: 'Шунал', percentage: 30 },
-              { name: 'Айдас', percentage: 25 },
-              { name: 'Тэвчээргүй', percentage: 45 }
-            ]
-          });
-          setMode('mock');
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Сервертэй холбогдоход алдаа гарлаа.");
-      } finally {
+      if (timeRange === 'custom' && (!customRange || !customRange.start || !customRange.end)) {
         setLoading(false);
+        return;
       }
-    };
 
-    fetchDashboardData();
+      const fetchRange = timeRange === 'custom' ? `${customRange.start}_${customRange.end}` : timeRange;
+
+      const [summaryRes, chartsRes, mistakesRes, tradesRes] = await Promise.all([
+        analyticsService.getSummary(fetchRange),
+        analyticsService.getCharts(fetchRange),
+        analyticsService.getMistakes(fetchRange),
+        tradeService.getTrades(),
+      ]);
+
+      if (summaryRes.success && chartsRes.success) {
+        setSummary(summaryRes.data);
+        setCharts(chartsRes.data);
+        if (mistakesRes.success) setMistakesData(mistakesRes.data);
+        if (tradesRes.success) setTrades(tradesRes.data);
+        if (summaryRes.mode === 'mock') setMode('mock');
+      } else {
+        console.warn("Backend failed, using frontend fallback mock data");
+        setSummary({ netPnl: 1250.50, winRate: 64.5, profitFactor: 1.8, totalTrades: 42 });
+        setCharts({ equityCurve: [
+          { date: '2023-10-01', pnl: 100, equity: 100 },
+          { date: '2023-10-05', pnl: -50, equity: 50 },
+          { date: '2023-10-10', pnl: 200, equity: 250 },
+          { date: '2023-10-15', pnl: 150, equity: 400 },
+          { date: '2023-10-20', pnl: -100, equity: 300 },
+          { date: '2023-10-25', pnl: 300, equity: 600 },
+        ]});
+        setMistakesData({
+          mistakes: [{ name: 'FOMO', count: 12 }, { name: 'Төлөвлөгөө дагаагүй', count: 8 }, { name: 'Stop Loss хөдөлгөсөн', count: 5 }],
+          emotions: [{ name: 'Шунал', percentage: 30 }, { name: 'Айдас', percentage: 25 }, { name: 'Тэвчээргүй', percentage: 45 }],
+        });
+        setMode('mock');
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Сервертэй холбогдоход алдаа гарлаа.");
+    } finally {
+      setLoading(false);
+    }
   }, [timeRange, customRange]);
+
+  useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
+
+  // Refetch when any page mutates trade data (same tab or another tab)
+  useTradesUpdated(fetchDashboardData);
 
   return (
     <div className="flex flex-col">
