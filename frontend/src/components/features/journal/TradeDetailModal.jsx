@@ -10,6 +10,25 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
   const getPositiveTag = (id) => POSITIVE_TAGS.find(t => t.id === id);
   const getMistakeTag = (id) => MISTAKE_TAGS.find(t => t.id === id);
 
+  const eb = trade.emotionBefore || trade.emotion_before || null;
+  const ea = trade.emotionAfter  || trade.emotion_after  || null;
+
+  const parseTags = (v) => {
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string') {
+      try { return JSON.parse(v); } catch { return []; }
+    }
+    return [];
+  };
+
+  const posTags  = parseTags(trade.positiveTags || trade.positive_tags);
+  const misTags  = parseTags(trade.mistakeTags  || trade.mistake_tags);
+  const whyText  = trade.whyEntered    || trade.why_entered    || '';
+  const whatText = trade.whatHappened  || trade.what_happened  || '';
+  const wellText = trade.whatWentWell  || trade.what_went_well || '';
+  const mistText = trade.mistakesMade  || trade.mistakes_made  || '';
+  const lessonText = trade.lessonLearned || trade.lessons_learned || '';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end sm:p-4">
       <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={onClose} />
@@ -126,64 +145,50 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
             </h3>
             
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
-              {/* Сэтгэл зүй — camelCase болон snake_case хоёуланг дэмжинэ */}
-              {(() => {
-                const eBefore = trade.emotionBefore || trade.emotion_before;
-                const eAfter  = trade.emotionAfter  || trade.emotion_after;
-                const posTags = trade.positiveTags || trade.positive_tags || [];
-                const misTags = trade.mistakeTags  || trade.mistake_tags  || [];
-                const posArr  = typeof posTags === 'string' ? JSON.parse(posTags || '[]') : posTags;
-                const misArr  = typeof misTags === 'string' ? JSON.parse(misTags || '[]') : misTags;
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-slate-400 w-24">Сэтгэл зүй:</div>
+                <div className="flex gap-2 flex-wrap">
+                  {eb ? (
+                    <span className="px-2 py-1 bg-slate-900 border border-slate-800 rounded text-sm text-slate-300">
+                      {getEmotion(eb)?.emoji || '😐'} {getEmotion(eb)?.label || eb} (өмнө)
+                    </span>
+                  ) : null}
+                  {ea ? (
+                    <span className="px-2 py-1 bg-slate-900 border border-slate-800 rounded text-sm text-slate-300">
+                      {getEmotion(ea)?.emoji || '😐'} {getEmotion(ea)?.label || ea} (дараа)
+                    </span>
+                  ) : null}
+                  {!eb && !ea && (
+                    <span className="text-slate-600 text-sm">Бүртгэгдээгүй</span>
+                  )}
+                </div>
+              </div>
 
-                return (
-                  <>
-                    <div className="flex items-center gap-4">
-                      <div className="text-sm text-slate-400 w-24">Сэтгэл зүй:</div>
-                      <div className="flex gap-2 flex-wrap">
-                        {eBefore ? (
-                          <span className="px-2 py-1 bg-slate-900 border border-slate-800 rounded text-sm text-slate-300">
-                            {getEmotion(eBefore)?.emoji || '😐'} {getEmotion(eBefore)?.label || eBefore} (өмнө)
-                          </span>
-                        ) : null}
-                        {eAfter ? (
-                          <span className="px-2 py-1 bg-slate-900 border border-slate-800 rounded text-sm text-slate-300">
-                            {getEmotion(eAfter)?.emoji || '😐'} {getEmotion(eAfter)?.label || eAfter} (дараа)
-                          </span>
-                        ) : null}
-                        {!eBefore && !eAfter && (
-                          <span className="text-slate-600 text-sm">Бүртгэгдээгүй</span>
-                        )}
-                      </div>
-                    </div>
+              {posTags.length > 0 && (
+                <div className="flex items-start gap-4">
+                  <div className="text-sm text-slate-400 w-24 mt-1">Давуу тал:</div>
+                  <div className="flex flex-wrap gap-2 flex-1">
+                    {posTags.map(id => (
+                      <span key={id} className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded text-xs font-medium">
+                        {getPositiveTag(id)?.label || id}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                    {posArr.length > 0 && (
-                      <div className="flex items-start gap-4">
-                        <div className="text-sm text-slate-400 w-24 mt-1">Давуу тал:</div>
-                        <div className="flex flex-wrap gap-2 flex-1">
-                          {posArr.map(id => (
-                            <span key={id} className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded text-xs font-medium">
-                              {getPositiveTag(id)?.label || id}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {misArr.length > 0 && (
-                      <div className="flex items-start gap-4">
-                        <div className="text-sm text-slate-400 w-24 mt-1">Алдаа:</div>
-                        <div className="flex flex-wrap gap-2 flex-1">
-                          {misArr.map(id => (
-                            <span key={id} className="px-2 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded text-xs font-medium">
-                              {getMistakeTag(id)?.label || id}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
+              {misTags.length > 0 && (
+                <div className="flex items-start gap-4">
+                  <div className="text-sm text-slate-400 w-24 mt-1">Алдаа:</div>
+                  <div className="flex flex-wrap gap-2 flex-1">
+                    {misTags.map(id => (
+                      <span key={id} className="px-2 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded text-xs font-medium">
+                        {getMistakeTag(id)?.label || id}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -194,35 +199,35 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               <div>
                 <div className="text-xs text-slate-500 mb-2">Яагаад орсон бэ? (Setup)</div>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  {trade.whyEntered || trade.why_entered || trade.notes || '-'}
+                  {whyText || trade.notes || '-'}
                 </p>
               </div>
               <div className="h-px bg-slate-800" />
               <div>
                 <div className="text-xs text-slate-500 mb-2">Юу болсон бэ?</div>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  {trade.whatHappened || trade.what_happened || '-'}
+                  {whatText || '-'}
                 </p>
               </div>
               <div className="h-px bg-slate-800" />
               <div>
                 <div className="text-xs text-slate-500 mb-2">Юу сайн хийсэн бэ?</div>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  {trade.whatWentWell || trade.what_went_well || '-'}
+                  {wellText || '-'}
                 </p>
               </div>
               <div className="h-px bg-slate-800" />
               <div>
                 <div className="text-xs text-slate-500 mb-2">Ямар алдаа гаргасан бэ?</div>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  {trade.mistakesMade || trade.mistakes_made || '-'}
+                  {mistText || '-'}
                 </p>
               </div>
               <div className="h-px bg-slate-800" />
               <div>
                 <div className="text-xs text-slate-500 mb-2">Юу сурсан бэ?</div>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  {trade.lessonLearned || trade.lessons_learned || '-'}
+                  {lessonText || '-'}
                 </p>
               </div>
             </div>

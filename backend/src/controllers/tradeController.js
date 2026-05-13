@@ -13,6 +13,17 @@ export const getTrades = async (req, res) => {
   }
 };
 
+const calculatePnL = (entry, exit, direction, qty, market) => {
+  if (!entry || !exit || !qty) return 0;
+  const diff = direction === 'LONG' ? exit - entry : entry - exit;
+  const mkt = (market || 'forex').toLowerCase();
+  if (mkt === 'forex') {
+    if (entry < 10) return parseFloat((diff / 0.0001 * 10 * qty).toFixed(2));
+    if (entry < 500) return parseFloat((diff / 0.01 * 10 * qty).toFixed(2));
+  }
+  return parseFloat((diff * qty).toFixed(2));
+};
+
 export const addTrade = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
@@ -40,14 +51,12 @@ export const addTrade = async (req, res) => {
     const setupDescription = b.setup_description || b.setupDescription || null;
     
     // Calculate PnL if not provided
-    let pnl = b.pnl || null;
-    if (!pnl && entryPrice && exitPrice && positionSize) {
-      const ep = parseFloat(entryPrice);
-      const xp = parseFloat(exitPrice);
-      const qty = parseFloat(positionSize);
-      if (!isNaN(ep) && !isNaN(xp) && !isNaN(qty)) {
-        pnl = b.direction === 'SHORT' ? (ep - xp) * qty : (xp - ep) * qty;
-      }
+    let pnl = b.pnl != null ? b.pnl : null;
+    if ((pnl === null || pnl === 0) && entryPrice && exitPrice && positionSize) {
+      pnl = calculatePnL(
+        parseFloat(entryPrice), parseFloat(exitPrice),
+        b.direction, parseFloat(positionSize), marketType
+      );
     }
 
     // Calculate R:R ratio
@@ -112,14 +121,12 @@ export const updateTrade = async (req, res) => {
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
 
-    let pnl = b.pnl || null;
-    if (!pnl && entryPrice && exitPrice && positionSize) {
-      const ep = parseFloat(entryPrice);
-      const xp = parseFloat(exitPrice);
-      const qty = parseFloat(positionSize);
-      if (!isNaN(ep) && !isNaN(xp) && !isNaN(qty)) {
-        pnl = b.direction === 'SHORT' ? (ep - xp) * qty : (xp - ep) * qty;
-      }
+    let pnl = b.pnl != null ? b.pnl : null;
+    if ((pnl === null || pnl === 0) && entryPrice && exitPrice && positionSize) {
+      pnl = calculatePnL(
+        parseFloat(entryPrice), parseFloat(exitPrice),
+        b.direction, parseFloat(positionSize), marketType
+      );
     }
 
     let rrRatio = b.rr_ratio || null;
