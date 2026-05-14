@@ -410,4 +410,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='last_login_at') THEN
     ALTER TABLE users ADD COLUMN last_login_at TIMESTAMP WITH TIME ZONE;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='mt5_api_key') THEN
+    ALTER TABLE users ADD COLUMN mt5_api_key VARCHAR(64) UNIQUE;
+  END IF;
 END $$;

@@ -13,6 +13,7 @@ import adminRoutes from './routes/admin.js';
 import feedbackRoutes from './routes/feedback.js';
 import { authenticateToken } from './middleware/auth.js';
 import importRoutes from './routes/import.js';
+import mt5Routes from './routes/mt5.js';
 
 const app = express();
 
@@ -46,4 +47,5 @@ app.use('/api/ai', authenticateToken, aiRoutes);
 app.use('/api/tags', authenticateToken, tagsRoutes);
 app.use('/api/emotions', authenticateToken, emotionsRoutes);
 app.use('/api/import', authenticateToken, importRoutes);
+app.use('/api/mt5', mt5Routes);
 export default app;

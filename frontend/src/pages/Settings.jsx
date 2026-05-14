@@ -1,7 +1,204 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { User, Palette, Globe, Bell, Shield, AlertTriangle } from "lucide-react";
+import { User, Palette, Globe, Bell, Shield, AlertTriangle, BarChart2, Copy, RefreshCw, Check, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+
+const API_BASE = (import.meta.env.VITE_API_URL || '') + '/api';
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+};
+
+function MT5Tab() {
+  const [apiKey, setApiKey] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [copied, setCopied] = useState('');
+  const [showKey, setShowKey] = useState(false);
+
+  const backendUrl = import.meta.env.VITE_API_URL || 'https://tradejournal101-backend.onrender.com';
+  const syncUrl = `${backendUrl}/api/mt5/sync`;
+
+  useEffect(() => {
+    fetch(`${API_BASE}/mt5/apikey`, { headers: getAuthHeaders(), credentials: 'include' })
+      .then(r => r.json())
+      .then(d => { if (d.success) setApiKey(d.data.api_key); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const generate = async () => {
+    setGenerating(true);
+    const res = await fetch(`${API_BASE}/mt5/apikey`, { method: 'POST', headers: getAuthHeaders(), credentials: 'include' });
+    const d = await res.json();
+    if (d.success) setApiKey(d.data.api_key);
+    setGenerating(false);
+  };
+
+  const copy = (text, id) => {
+    navigator.clipboard.writeText(text);
+    setCopied(id);
+    setTimeout(() => setCopied(''), 2000);
+  };
+
+  const eaCode = `//+------------------------------------------------------------------+
+//|  TradeJournal101.mq5  —  paste your API key below               |
+//+------------------------------------------------------------------+
+#property version "1.0"
+#property strict
+
+input string ApiUrl = "${syncUrl}";
+input string ApiKey = "${apiKey || 'PASTE_YOUR_API_KEY_HERE'}";
+
+void OnInit() {
+   if(ApiKey == "" || ApiKey == "PASTE_YOUR_API_KEY_HERE")
+      Alert("TradeJournal: API key орхигдсон байна!");
+   else
+      Print("TradeJournal EA started.");
+}
+
+void OnTradeTransaction(
+   const MqlTradeTransaction& trans,
+   const MqlTradeRequest& req,
+   const MqlTradeResult& res)
+{
+   if(trans.type != TRADE_TRANSACTION_DEAL_ADD) return;
+   ulong deal = trans.deal;
+   if(!HistoryDealSelect(deal)) {
+      HistorySelect(TimeCurrent()-86400, TimeCurrent());
+      if(!HistoryDealSelect(deal)) return;
+   }
+   if(HistoryDealGetInteger(deal, DEAL_ENTRY) != DEAL_ENTRY_OUT) return;
+   SyncDeal(deal);
+}
+
+void SyncDeal(ulong deal) {
+   string sym    = HistoryDealGetString(deal, DEAL_SYMBOL);
+   double profit = HistoryDealGetDouble(deal, DEAL_PROFIT)
+                 + HistoryDealGetDouble(deal, DEAL_COMMISSION)
+                 + HistoryDealGetDouble(deal, DEAL_SWAP);
+   double exit_p = HistoryDealGetDouble(deal, DEAL_PRICE);
+   double vol    = HistoryDealGetDouble(deal, DEAL_VOLUME);
+   datetime dt   = (datetime)HistoryDealGetInteger(deal, DEAL_TIME);
+   long type     = HistoryDealGetInteger(deal, DEAL_TYPE);
+   ulong posId   = HistoryDealGetInteger(deal, DEAL_POSITION_ID);
+
+   // exit sell → was LONG trade; exit buy → was SHORT trade
+   string dir = (type == DEAL_TYPE_SELL) ? "LONG" : "SHORT";
+
+   string exitTime = TimeToString(dt, TIME_DATE|TIME_MINUTES);
+   StringReplace(exitTime, ".", "-");
+
+   // Find entry deal
+   double ep = 0; string entryTime = "";
+   HistorySelect(dt - 86400*30, dt);
+   for(int i = 0; i < HistoryDealsTotal(); i++) {
+      ulong d2 = HistoryDealGetTicket(i);
+      if(HistoryDealGetInteger(d2,DEAL_POSITION_ID)==posId &&
+         HistoryDealGetInteger(d2,DEAL_ENTRY)==DEAL_ENTRY_IN) {
+         ep = HistoryDealGetDouble(d2, DEAL_PRICE);
+         datetime et = (datetime)HistoryDealGetInteger(d2, DEAL_TIME);
+         entryTime = TimeToString(et, TIME_DATE|TIME_MINUTES);
+         StringReplace(entryTime, ".", "-");
+         break;
+      }
+   }
+
+   string json = "{\\"symbol\\":\\""+sym+"\\",\\"direction\\":\\""+dir+"\\",";
+   json += "\\"pnl\\":"+DoubleToString(profit,2)+",";
+   json += "\\"exit_price\\":"+DoubleToString(exit_p,5)+",";
+   json += "\\"exit_date\\":\\""+exitTime+"\\",";
+   json += "\\"volume\\":"+DoubleToString(vol,2)+",\\"status\\":\\"CLOSED\\"";
+   if(ep > 0) json += ",\\"entry_price\\":"+DoubleToString(ep,5)+",\\"entry_date\\":\\""+entryTime+"\\"";
+   json += "}";
+
+   char post[], resp[]; string respH;
+   string headers = "Content-Type: application/json\\r\\nX-Api-Key: "+ApiKey+"\\r\\n";
+   StringToCharArray(json, post, 0, StringLen(json));
+   ArrayResize(post, ArraySize(post)-1);
+
+   int code = WebRequest("POST", ApiUrl, headers, 5000, post, resp, respH);
+   if(code==200||code==201) Print("Synced: ",sym," ",dir," PnL:",DoubleToString(profit,2));
+   else Print("Sync failed (",code,"): ",CharArrayToString(resp));
+}`;
+
+  return (
+    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div>
+        <h2 className="text-lg font-semibold text-white mb-1">MetaTrader 5 Integration</h2>
+        <p className="text-sm text-slate-400">Trade хаагдах бүрт автоматаар журналд нэмнэ</p>
+      </div>
+
+      {/* API Key */}
+      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3">
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">API Key</p>
+        {loading ? (
+          <div className="h-9 bg-slate-800 rounded-lg animate-pulse" />
+        ) : apiKey ? (
+          <div className="flex items-center gap-2">
+            <code className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-emerald-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
+              {showKey ? apiKey : '•'.repeat(32) + apiKey.slice(-8)}
+            </code>
+            <button onClick={() => setShowKey(v => !v)} className="p-2 text-slate-400 hover:text-white transition-colors">
+              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+            <button onClick={() => copy(apiKey, 'key')} className="p-2 text-slate-400 hover:text-accent transition-colors">
+              {copied === 'key' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            </button>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">API key үүсгэгдээгүй байна</p>
+        )}
+        <button onClick={generate} disabled={generating} className="flex items-center gap-2 text-sm bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-4 py-2 rounded-lg transition-colors disabled:opacity-50">
+          <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
+          {apiKey ? 'Шинэ key үүсгэх' : 'API Key үүсгэх'}
+        </button>
+        {apiKey && <p className="text-xs text-amber-400/70">Шинэ key үүсгэвэл EA дотор солих хэрэгтэй</p>}
+      </div>
+
+      {/* Sync URL */}
+      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-2">
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sync URL</p>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono overflow-hidden text-ellipsis whitespace-nowrap">{syncUrl}</code>
+          <button onClick={() => copy(syncUrl, 'url')} className="p-2 text-slate-400 hover:text-accent transition-colors">
+            {copied === 'url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* EA Code */}
+      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">MQL5 Expert Advisor код</p>
+          <button onClick={() => copy(eaCode, 'ea')} className="flex items-center gap-1.5 text-xs text-accent hover:underline">
+            {copied === 'ea' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied === 'ea' ? 'Хуулсан!' : 'Кодыг хуулах'}
+          </button>
+        </div>
+        <pre className="bg-slate-950 border border-slate-800 rounded-lg p-4 text-[10px] text-slate-400 font-mono overflow-x-auto max-h-48 leading-relaxed">{eaCode}</pre>
+      </div>
+
+      {/* Setup steps */}
+      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3">
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Суулгах заавар</p>
+        <ol className="space-y-2">
+          {[
+            'Дээрх кодыг хуулж MT5 → File → Open Data Folder → MQL5 → Experts дотор TradeJournal101.mq5 нэртэй файл үүсгэж paste хийнэ',
+            'MT5 → Tools → Options → Expert Advisors → "Allow WebRequest for listed URL" нэмж Sync URL-ийг жагсаана',
+            'MT5 → Navigator → Expert Advisors → TradeJournal101 → Chart дээр drag хийж суулгана',
+            'EA Settings дээр ApiKey талбарт өөрийн API key-г оруулна',
+            'Smiley face харагдвал амжилттай — Trade хаагдах бүрт автоматаар sync болно',
+          ].map((step, i) => (
+            <li key={i} className="flex gap-3 text-sm text-slate-300">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+              <span className="leading-relaxed">{step}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  );
+}
 
 export function SettingsPage() {
   const location = useLocation();
@@ -185,6 +382,7 @@ export function SettingsPage() {
     { id: "preferences", label: text.preferences, icon: Globe },
     { id: "notifications", label: text.notifications, icon: Bell },
     { id: "privacy", label: text.privacy, icon: Shield },
+    { id: "mt5", label: "MetaTrader 5", icon: BarChart2 },
   ];
 
   return (
@@ -392,6 +590,8 @@ export function SettingsPage() {
               </div>
             </div>
           )}
+
+          {activeTab === "mt5" && <MT5Tab />}
 
           {activeTab === "privacy" && (
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
