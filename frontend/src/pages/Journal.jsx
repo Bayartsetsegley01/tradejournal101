@@ -178,18 +178,18 @@ export function JournalPage() {
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
-              onClick={() => setIsExportModalOpen(true)}
-              className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
-            >
-              <Download className="w-4 h-4" />
-              {t('export')}
-            </button>
-            <button
               onClick={() => setIsImportModalOpen(true)}
               className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
             >
               <Upload className="w-4 h-4" />
               {t('import')}
+            </button>
+            <button
+              onClick={() => setIsExportModalOpen(true)}
+              className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
+            >
+              <Download className="w-4 h-4" />
+              {t('export')}
             </button>
             <button
               onClick={() => { setEditingTrade(null); setIsAddModalOpen(true); }}
