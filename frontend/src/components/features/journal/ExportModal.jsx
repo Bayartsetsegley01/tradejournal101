@@ -22,6 +22,12 @@ const fmtDate = (d) => {
   } catch { return '-'; }
 };
 
+// CSV-д comma-гүй ISO формат ашиглана (Jan 15, 2026 → comma → column split болдог)
+const fmtDateCSV = (d) => {
+  if (!d) return '';
+  try { return new Date(d).toISOString().slice(0, 10); } catch { return ''; }
+};
+
 const fmtPnl = (n) => {
   const v = parseFloat(n ?? 0);
   if (isNaN(v)) return '-';
@@ -233,7 +239,7 @@ export function ExportModal({ onClose, trades = [] }) {
     if (!trades.length) return alert('Татах арилжаа байхгүй байна.');
 
     const cols = [];
-    if (options.tradeInfo)       cols.push(['Date', t => fmtDate(t.entry_date || t.date)], ['Symbol', t => cleanText(t.symbol)], ['Direction', t => cleanText(t.direction)], ['Status', t => cleanText(t.status)]);
+    if (options.tradeInfo)       cols.push(['Date', t => fmtDateCSV(t.entry_date || t.date)], ['Symbol', t => cleanText(t.symbol)], ['Direction', t => cleanText(t.direction)], ['Status', t => cleanText(t.status)]);
     if (options.entryExit)       cols.push(['Entry', t => fmtNum(t.entry_price ?? t.entry)], ['Exit', t => fmtNum(t.exit_price ?? t.exit)], ['Stop Loss', t => fmtNum(t.stop_loss ?? t.stopLoss)], ['Take Profit', t => fmtNum(t.take_profit ?? t.takeProfit)]);
     if (options.riskManagement)  cols.push(['Quantity', t => fmtNum(t.position_size ?? t.quantity)], ['Risk %', t => fmtNum(t.risk_percent ?? t.riskPercent)]);
     if (options.pnlStats)        cols.push(['PnL', t => parseFloat(t.pnl ?? 0).toFixed(2)], ['R:R', t => fmtNum(t.rr_ratio ?? t.rrRatio)]);
