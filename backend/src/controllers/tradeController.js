@@ -1,18 +1,21 @@
 import { query, getDbStatus } from '../config/database.js';
 import cloudinary from '../config/cloudinary.js';
 
-const uploadBase64 = (dataUrl) => new Promise((resolve, reject) => {
+const uniquePublicId = (userId) =>
+  `tradejournal/${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+
+const uploadBase64 = (dataUrl, userId) => new Promise((resolve, reject) => {
   cloudinary.uploader.upload(dataUrl,
-    { folder: 'tradejournal', resource_type: 'image',
+    { public_id: uniquePublicId(userId), resource_type: 'image', overwrite: false,
       transformation: [{ width: 1920, height: 1080, crop: 'limit', quality: 'auto:good' }] },
     (err, result) => { if (err) reject(err); else resolve(result.secure_url); }
   );
 });
 
-const resolveScreenshot = async (raw) => {
+const resolveScreenshot = async (raw, userId) => {
   if (!raw) return null;
   if (raw.startsWith('data:')) {
-    try { return await uploadBase64(raw); } catch (e) { console.error('Screenshot upload failed:', e); return null; }
+    try { return await uploadBase64(raw, userId); } catch (e) { console.error('Screenshot upload failed:', e); return null; }
   }
   return raw;
 };
@@ -90,7 +93,7 @@ export const addTrade = async (req, res) => {
       }
     }
 
-    const screenshotUrl = await resolveScreenshot(b.screenshot_url || null);
+    const screenshotUrl = await resolveScreenshot(b.screenshot_url || null, userId);
 
     console.log('[addTrade] payload:', { symbol: b.symbol, direction: b.direction, entryPrice, exitPrice, pnl, riskPercent, positionSize });
 
@@ -169,7 +172,7 @@ export const updateTrade = async (req, res) => {
       }
     }
 
-    const screenshotUrl = await resolveScreenshot(b.screenshot_url || null);
+    const screenshotUrl = await resolveScreenshot(b.screenshot_url || null, userId);
 
     console.log('[updateTrade] payload:', { id, symbol: b.symbol, direction: b.direction, entryPrice, exitPrice, pnl, riskPercent, positionSize });
 
@@ -258,7 +261,8 @@ export const addTradeMedia = async (req, res) => {
 
     const url = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
-        { folder: 'tradejournal', resource_type: 'image', transformation: [{ width: 1920, height: 1080, crop: 'limit', quality: 'auto:good' }] },
+        { public_id: uniquePublicId(userId), resource_type: 'image', overwrite: false,
+          transformation: [{ width: 1920, height: 1080, crop: 'limit', quality: 'auto:good' }] },
         (err, result) => { if (err) reject(err); else resolve(result.secure_url); }
       ).end(req.file.buffer);
     });
