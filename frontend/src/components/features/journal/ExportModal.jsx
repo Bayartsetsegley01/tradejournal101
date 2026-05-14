@@ -8,18 +8,11 @@ import html2canvas from "html2canvas";
 const cleanText = (val) => {
   if (val === null || val === undefined) return '-';
   const s = String(val)
-    .replace(/ /g, '')
     .replace(/\x00/g, '')
     .replace(/\r?\n|\r/g, ' ')
     .normalize('NFC')
     .trim();
   return s || '-';
-};
-
-const truncate = (val, max = 80) => {
-  const s = cleanText(val);
-  if (s === '-') return '-';
-  return s.length > max ? s.slice(0, max) + '…' : s;
 };
 
 const fmtDate = (d) => {
@@ -42,24 +35,17 @@ const fmtNum = (n) => {
 
 // options
 
-const CSV_DEFAULTS = {
+const DEFAULT_OPTIONS = {
   tradeInfo:       true,
   entryExit:       true,
   riskManagement:  true,
   pnlStats:        true,
   strategySession: true,
   psychology:      true,
-  reasonForEntry:  false,
-  whatHappened:    false,
-  lessonLearned:   false,
+  reasonForEntry:  true,
+  whatHappened:    true,
+  lessonLearned:   true,
   screenshots:     false,
-};
-
-const PDF_DEFAULTS = {
-  ...CSV_DEFAULTS,
-  reasonForEntry: true,
-  whatHappened:   true,
-  lessonLearned:  true,
 };
 
 const OPTION_LABELS = {
@@ -74,8 +60,6 @@ const OPTION_LABELS = {
   lessonLearned:   'Lesson Learned',
   screenshots:     'Screenshots (PDF only)',
 };
-
-const TEXT_FIELDS = new Set(['reasonForEntry', 'whatHappened', 'lessonLearned']);
 
 // PDF HTML builder
 
@@ -234,19 +218,14 @@ function buildReportHTML({ trades, options, stats }) {
 
 export function ExportModal({ onClose, trades = [] }) {
   const [format, setFormat] = useState('pdf');
-  const [options, setOptions] = useState(PDF_DEFAULTS);
+  const [options, setOptions] = useState(DEFAULT_OPTIONS);
   const [isExporting, setIsExporting] = useState(false);
-
-  const handleFormatChange = (f) => {
-    setFormat(f);
-    setOptions(f === 'csv' ? CSV_DEFAULTS : PDF_DEFAULTS);
-  };
 
   const toggle = (key) => setOptions(o => ({ ...o, [key]: !o[key] }));
   const allOn = Object.values(options).every(Boolean);
   const toggleAll = () => {
     const v = !allOn;
-    setOptions(Object.fromEntries(Object.keys(CSV_DEFAULTS).map(k => [k, v])));
+    setOptions(Object.fromEntries(Object.keys(DEFAULT_OPTIONS).map(k => [k, v])));
   };
 
   // CSV
@@ -260,9 +239,9 @@ export function ExportModal({ onClose, trades = [] }) {
     if (options.pnlStats)        cols.push(['PnL', t => parseFloat(t.pnl ?? 0).toFixed(2)], ['R:R', t => fmtNum(t.rr_ratio ?? t.rrRatio)]);
     if (options.strategySession) cols.push(['Strategy', t => cleanText(t.strategy)], ['Session', t => cleanText(t.session)]);
     if (options.psychology)      cols.push(['Emotion Before', t => cleanText(t.emotionBefore || t.emotion_before)], ['Emotion After', t => cleanText(t.emotionAfter || t.emotion_after)]);
-    if (options.reasonForEntry)  cols.push(['Reason For Entry', t => `"${truncate(t.whyEntered || t.why_entered).replace(/"/g, '""')}"`]);
-    if (options.whatHappened)    cols.push(['What Happened',    t => `"${truncate(t.whatHappened || t.what_happened).replace(/"/g, '""')}"`]);
-    if (options.lessonLearned)   cols.push(['Lesson Learned',   t => `"${truncate(t.lessonLearned || t.lessons_learned).replace(/"/g, '""')}"`]);
+    if (options.reasonForEntry)  cols.push(['Reason For Entry', t => `"${cleanText(t.whyEntered || t.why_entered).replace(/"/g, '""')}"`]);
+    if (options.whatHappened)    cols.push(['What Happened',    t => `"${cleanText(t.whatHappened || t.what_happened).replace(/"/g, '""')}"`]);
+    if (options.lessonLearned)   cols.push(['Lesson Learned',   t => `"${cleanText(t.lessonLearned || t.lessons_learned).replace(/"/g, '""')}"`]);
 
     const header = cols.map(([h]) => h).join(',');
     const rows = trades.map(t => cols.map(([, fn]) => fn(t)).join(','));
@@ -377,13 +356,13 @@ export function ExportModal({ onClose, trades = [] }) {
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2.5">Формат</p>
             <div className="flex gap-2.5">
               <button
-                onClick={() => handleFormatChange('pdf')}
+                onClick={() => setFormat('pdf')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all ${format === 'pdf' ? 'bg-accent/10 border-accent/50 text-accent' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'}`}
               >
                 <FileText className="w-4 h-4" /> PDF Report
               </button>
               <button
-                onClick={() => handleFormatChange('csv')}
+                onClick={() => setFormat('csv')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all ${format === 'csv' ? 'bg-accent/10 border-accent/50 text-accent' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'}`}
               >
                 <FileSpreadsheet className="w-4 h-4" /> CSV Data
@@ -402,7 +381,6 @@ export function ExportModal({ onClose, trades = [] }) {
             <div className="space-y-1">
               {Object.entries(OPTION_LABELS).map(([key, label]) => {
                 const isPdfOnly = key === 'screenshots';
-                const isTextField = TEXT_FIELDS.has(key);
                 const disabled = isPdfOnly && format === 'csv';
                 const checked = options[key] && !disabled;
                 return (
@@ -420,7 +398,6 @@ export function ExportModal({ onClose, trades = [] }) {
                     </div>
                     <span className="text-sm text-slate-300 flex-1">{label}</span>
                     {isPdfOnly && <span className="text-[9px] text-slate-600 bg-slate-800 px-1.5 py-0.5 rounded">PDF</span>}
-                    {isTextField && format === 'csv' && <span className="text-[9px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">80 char</span>}
                   </label>
                 );
               })}
@@ -429,7 +406,7 @@ export function ExportModal({ onClose, trades = [] }) {
 
           {format === 'csv' && (
             <div className="bg-slate-950/50 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-500 leading-relaxed">
-              CSV нь spreadsheet-д тохирсон compact формат. Урт текст (Notes, Reason, Lesson) 80 тэмдэгтээр хязгаарлагдана. Бүрэн текстийн хувьд PDF ашиглана уу.
+              CSV нь Excel болон Google Sheets-д нийцсэн формат. Бүх текст хязгааргүй оригиналаараа хадгалагдана.
             </div>
           )}
 

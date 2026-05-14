@@ -22,7 +22,6 @@ export const importTrades = async (req, res) => {
     for (let i = 0; i < trades.length; i++) {
       const t = trades[i];
       try {
-        // Resolve column aliases: new format uses short names
         const symbol = (t.symbol || t.pair || t.ticker || '').trim();
         if (!symbol) throw new Error('symbol is required');
 
@@ -32,32 +31,51 @@ export const importTrades = async (req, res) => {
         const status = (t.status || 'CLOSED').toUpperCase();
         if (!VALID_STATUSES.has(status)) throw new Error(`status must be OPEN or CLOSED, got "${t.status}"`);
 
-        // Short-name columns (new format): entry, exit, rr, note
-        // Long-name columns (legacy): entry_price, exit_price, rr_ratio, notes
-        const entryDate = t.date || t.entry_date || t.open_date || null;
-        const exitDate  = t.exit_date || t.close_date || null;
-        const entryPrice = parseFloat(t.entry || t.entry_price || t.open_price || 0) || null;
-        const exitPrice  = parseFloat(t.exit  || t.exit_price  || t.close_price || 0) || null;
-        const rrRatio    = parseFloat(t.rr    || t.rr_ratio    || 0) || null;
-        const pnl        = parseFloat(t.pnl   || t.profit      || t.pl || 0) || null;
-        const notes      = (t.note || t.notes || t.comment || t.description || '').trim();
-        const strategy   = (t.strategy || t.psychology || '').trim();
-        const stopLoss   = parseFloat(t.stop_loss || t.sl || 0) || null;
-        const takeProfit = parseFloat(t.take_profit || t.tp || 0) || null;
-        const positionSize = parseFloat(t.position_size || t.quantity || t.size || t.lot || 0) || null;
-        const marketType = (t.market_type || t.market || '').trim() || null;
+        const entryDate   = t.date || t.entry_date || t.open_date || null;
+        const exitDate    = t.exit_date || t.close_date || null;
+        const entryPrice  = parseFloat(t.entry || t.entry_price || t.open_price || 0) || null;
+        const exitPrice   = parseFloat(t.exit  || t.exit_price  || t.close_price || 0) || null;
+        const stopLoss    = parseFloat(t.stop_loss || t.sl || 0) || null;
+        const takeProfit  = parseFloat(t.take_profit || t.tp || 0) || null;
+        const positionSize = parseFloat(t.quantity || t.position_size || t.size || t.lot || 0) || null;
+        const riskPercent = parseFloat(t.risk_pct || t.risk_percent || t.risk || 0) || null;
+        const rrRatio     = parseFloat(t.rr || t.rr_ratio || 0) || null;
+        const pnl         = parseFloat(t.pnl || t.profit || t.pl || 0) || null;
+
+        const strategy     = (t.strategy || t.psychology || '').trim() || null;
+        const session      = (t.session || '').trim() || null;
+        const marketType   = (t.market_type || t.market || '').trim() || null;
+        const emotionBefore = (t.emotion_before || '').trim() || null;
+        const emotionAfter  = (t.emotion_after  || '').trim() || null;
+
+        // Long text fields — no truncation
+        const notes       = (t.note || t.notes || t.comment || t.description || '').trim() || null;
+        const whyEntered  = (t.why_entered || t.reason || '').trim() || null;
+        const whatHappened = (t.what_happened || '').trim() || null;
+        const lessonsLearned = (t.lessons || t.lessons_learned || t.lesson || '').trim() || null;
 
         await query(
-          `INSERT INTO trades (user_id, status, symbol, market_type, direction, strategy, session,
+          `INSERT INTO trades (
+            user_id, status, symbol, market_type, direction, strategy, session,
             entry_date, exit_date, entry_price, exit_price, stop_loss, take_profit,
-            position_size, pnl, rr_ratio, notes, lessons_learned)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+            position_size, pnl, rr_ratio, risk_percent,
+            notes, lessons_learned, why_entered, what_happened,
+            emotion_before, emotion_after
+          ) VALUES (
+            $1,$2,$3,$4,$5,$6,$7,
+            $8,$9,$10,$11,$12,$13,
+            $14,$15,$16,$17,
+            $18,$19,$20,$21,
+            $22,$23
+          )`,
           [
-            userId, status, symbol, marketType, direction, strategy,
-            t.session || null,
-            entryDate, exitDate, entryPrice, exitPrice,
-            stopLoss, takeProfit, positionSize, pnl, rrRatio,
-            notes, (t.lessons_learned || t.lessons || '').trim()
+            userId, status, symbol, marketType, direction, strategy, session,
+            entryDate ? new Date(entryDate) : null,
+            exitDate  ? new Date(exitDate)  : null,
+            entryPrice, exitPrice, stopLoss, takeProfit,
+            positionSize, pnl, rrRatio, riskPercent,
+            notes, lessonsLearned, whyEntered, whatHappened,
+            emotionBefore, emotionAfter,
           ]
         );
         imported++;
@@ -72,7 +90,7 @@ export const importTrades = async (req, res) => {
         total: trades.length,
         imported,
         failed: errors.length,
-        errors: errors.slice(0, 10)
+        errors: errors.slice(0, 10),
       }
     });
   } catch (error) {
