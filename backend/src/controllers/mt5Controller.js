@@ -1,6 +1,8 @@
 import { query } from '../config/database.js';
 import crypto from 'crypto';
-import MetaApi from 'metaapi.cloud-sdk';
+import { createRequire } from 'module';
+const _require = createRequire(import.meta.url);
+const MetaApi = _require('metaapi.cloud-sdk').default;
 
 // ── API Key (EA sync) ─────────────────────────────────────────────────────────
 
