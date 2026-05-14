@@ -413,4 +413,13 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='mt5_api_key') THEN
     ALTER TABLE users ADD COLUMN mt5_api_key VARCHAR(64) UNIQUE;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='mt5_login') THEN
+    ALTER TABLE users ADD COLUMN mt5_login VARCHAR(50);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='mt5_server') THEN
+    ALTER TABLE users ADD COLUMN mt5_server VARCHAR(100);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='mt5_account_id') THEN
+    ALTER TABLE users ADD COLUMN mt5_account_id VARCHAR(100);
+  END IF;
 END $$;

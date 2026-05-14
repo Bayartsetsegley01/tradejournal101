@@ -10,11 +10,24 @@ const getAuthHeaders = () => {
 };
 
 function MT5Tab() {
+  // EA key state
   const [apiKey, setApiKey] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [keyLoading, setKeyLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState('');
   const [showKey, setShowKey] = useState(false);
+
+  // MetaApi state
+  const [maStatus, setMaStatus] = useState(null);
+  const [maLoading, setMaLoading] = useState(true);
+  const [maForm, setMaForm] = useState({ login: '', password: '', server: '' });
+  const [showPass, setShowPass] = useState(false);
+  const [maConnecting, setMaConnecting] = useState(false);
+  const [maDisconnecting, setMaDisconnecting] = useState(false);
+  const [maSyncing, setMaSyncing] = useState(false);
+  const [maMonths, setMaMonths] = useState(3);
+  const [maSyncResult, setMaSyncResult] = useState(null);
+  const [maError, setMaError] = useState('');
 
   const backendUrl = import.meta.env.VITE_API_URL || 'https://tradejournal101-backend.onrender.com';
   const syncUrl = `${backendUrl}/api/mt5/sync`;
@@ -23,8 +36,18 @@ function MT5Tab() {
     fetch(`${API_BASE}/mt5/apikey`, { headers: getAuthHeaders(), credentials: 'include' })
       .then(r => r.json())
       .then(d => { if (d.success) setApiKey(d.data.api_key); })
-      .finally(() => setLoading(false));
+      .finally(() => setKeyLoading(false));
   }, []);
+
+  const loadMaStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/mt5/status`, { headers: getAuthHeaders(), credentials: 'include' });
+      const d = await res.json();
+      if (d.success) setMaStatus(d.data);
+    } catch {}
+    setMaLoading(false);
+  };
+  useEffect(() => { loadMaStatus(); }, []);
 
   const generate = async () => {
     setGenerating(true);
@@ -39,6 +62,62 @@ function MT5Tab() {
     setCopied(id);
     setTimeout(() => setCopied(''), 2000);
   };
+
+  const connectMa = async () => {
+    setMaConnecting(true);
+    setMaError('');
+    setMaSyncResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/mt5/connect`, {
+        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify(maForm),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setMaStatus({ connected: true, state: d.data.state, login: maForm.login, server: maForm.server });
+        setMaForm({ login: '', password: '', server: '' });
+        let tries = 0;
+        const poll = setInterval(async () => {
+          tries++;
+          const r2 = await fetch(`${API_BASE}/mt5/status`, { headers: getAuthHeaders(), credentials: 'include' });
+          const d2 = await r2.json();
+          if (d2.success) setMaStatus(d2.data);
+          if (d2.data?.state === 'DEPLOYED' || tries >= 18) clearInterval(poll);
+        }, 10000);
+      } else {
+        setMaError(d.error || 'Холбоход алдаа гарлаа');
+      }
+    } catch (e) { setMaError(e.message); }
+    setMaConnecting(false);
+  };
+
+  const syncHistory = async () => {
+    setMaSyncing(true);
+    setMaSyncResult(null);
+    setMaError('');
+    try {
+      const res = await fetch(`${API_BASE}/mt5/sync-history`, {
+        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify({ months: maMonths }),
+      });
+      const d = await res.json();
+      if (d.success) setMaSyncResult(d.data);
+      else setMaError(d.error || 'Sync алдаа гарлаа');
+    } catch (e) { setMaError(e.message); }
+    setMaSyncing(false);
+  };
+
+  const disconnectMa = async () => {
+    setMaDisconnecting(true);
+    try {
+      await fetch(`${API_BASE}/mt5/disconnect`, { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' });
+      setMaStatus({ connected: false });
+    } catch {}
+    setMaDisconnecting(false);
+  };
+
+  const stateLabel = (s) => ({ DEPLOYED: 'Холбогдсон', DEPLOYING: 'Холбогдож байна...', UNDEPLOYED: 'Идэвхгүй', DELETING: 'Устгаж байна' }[s] || s || '...');
+  const stateColor = (s) => s === 'DEPLOYED' ? 'text-emerald-400' : s === 'DEPLOYING' ? 'text-amber-400' : 'text-slate-400';
 
   const eaCode = `//+------------------------------------------------------------------+
 //|  TradeJournal101.mq5  —  paste your API key below               |
@@ -123,78 +202,167 @@ void SyncDeal(ulong deal) {
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+      {/* ── MetaApi Section ─────────────────────── */}
       <div>
-        <h2 className="text-lg font-semibold text-white mb-1">MetaTrader 5 Integration</h2>
-        <p className="text-sm text-slate-400">Trade хаагдах бүрт автоматаар журналд нэмнэ</p>
+        <h2 className="text-lg font-semibold text-white mb-1">MT5 Автоматаар Холбох</h2>
+        <p className="text-sm text-slate-400">Login, Investor Password, Server оруулахад л болно — read-only горим</p>
       </div>
 
-      {/* API Key */}
-      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">API Key</p>
-        {loading ? (
-          <div className="h-9 bg-slate-800 rounded-lg animate-pulse" />
-        ) : apiKey ? (
-          <div className="flex items-center gap-2">
-            <code className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-emerald-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
-              {showKey ? apiKey : '•'.repeat(32) + apiKey.slice(-8)}
-            </code>
-            <button onClick={() => setShowKey(v => !v)} className="p-2 text-slate-400 hover:text-white transition-colors">
-              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-            <button onClick={() => copy(apiKey, 'key')} className="p-2 text-slate-400 hover:text-accent transition-colors">
-              {copied === 'key' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+      {maLoading ? (
+        <div className="h-24 bg-slate-800/40 rounded-xl animate-pulse" />
+      ) : maStatus?.connected ? (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${maStatus.state === 'DEPLOYED' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+              <span className={`text-sm font-medium ${stateColor(maStatus.state)}`}>{stateLabel(maStatus.state)}</span>
+            </div>
+            <button onClick={disconnectMa} disabled={maDisconnecting}
+              className="text-xs text-rose-400 hover:text-rose-300 transition-colors disabled:opacity-50">
+              {maDisconnecting ? 'Устгаж байна...' : 'Холболт устгах'}
             </button>
           </div>
-        ) : (
-          <p className="text-sm text-slate-500">API key үүсгэгдээгүй байна</p>
-        )}
-        <button onClick={generate} disabled={generating} className="flex items-center gap-2 text-sm bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-4 py-2 rounded-lg transition-colors disabled:opacity-50">
-          <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
-          {apiKey ? 'Шинэ key үүсгэх' : 'API Key үүсгэх'}
-        </button>
-        {apiKey && <p className="text-xs text-amber-400/70">Шинэ key үүсгэвэл EA дотор солих хэрэгтэй</p>}
-      </div>
-
-      {/* Sync URL */}
-      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-2">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sync URL</p>
-        <div className="flex items-center gap-2">
-          <code className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono overflow-hidden text-ellipsis whitespace-nowrap">{syncUrl}</code>
-          <button onClick={() => copy(syncUrl, 'url')} className="p-2 text-slate-400 hover:text-accent transition-colors">
-            {copied === 'url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-          </button>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-slate-500 mb-0.5">Login</p>
+              <p className="text-slate-200 font-mono">{maStatus.login}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 mb-0.5">Server</p>
+              <p className="text-slate-200 font-mono text-xs">{maStatus.server}</p>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-emerald-500/10 flex items-center gap-3 flex-wrap">
+            <select value={maMonths} onChange={e => setMaMonths(Number(e.target.value))}
+              className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50">
+              {[1, 2, 3, 6, 12].map(m => <option key={m} value={m}>{m} сар</option>)}
+            </select>
+            <button onClick={syncHistory} disabled={maSyncing || maStatus.state !== 'DEPLOYED'}
+              className="flex items-center gap-2 text-sm bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-4 py-2 rounded-lg transition-colors disabled:opacity-50">
+              <RefreshCw className={`w-4 h-4 ${maSyncing ? 'animate-spin' : ''}`} />
+              {maSyncing ? 'Татаж байна...' : 'Арилжааны түүх татах'}
+            </button>
+          </div>
+          {maSyncResult && (
+            <p className="text-xs text-emerald-400">
+              {maSyncResult.imported}/{maSyncResult.total} арилжаа амжилттай импортлогдлоо
+              {maSyncResult.errors?.length > 0 && <span className="text-amber-400 ml-2">({maSyncResult.errors.length} алдаатай)</span>}
+            </p>
+          )}
+          {maError && <p className="text-xs text-rose-400">{maError}</p>}
         </div>
-      </div>
-
-      {/* EA Code */}
-      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">MQL5 Expert Advisor код</p>
-          <button onClick={() => copy(eaCode, 'ea')} className="flex items-center gap-1.5 text-xs text-accent hover:underline">
-            {copied === 'ea' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied === 'ea' ? 'Хуулсан!' : 'Кодыг хуулах'}
+      ) : (
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-4">
+          <div className="grid gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">MT5 Login (дансны дугаар)</label>
+              <input type="text" value={maForm.login} onChange={e => setMaForm({...maForm, login: e.target.value})}
+                placeholder="12345678"
+                className="w-full bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 transition-all" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Investor Password (зөвхөн уншдаг)</label>
+              <div className="flex items-center gap-2">
+                <input type={showPass ? 'text' : 'password'} value={maForm.password} onChange={e => setMaForm({...maForm, password: e.target.value})}
+                  placeholder="••••••••"
+                  className="flex-1 bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 transition-all" />
+                <button type="button" onClick={() => setShowPass(v => !v)} className="p-2 text-slate-400 hover:text-white transition-colors">
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Server</label>
+              <input type="text" value={maForm.server} onChange={e => setMaForm({...maForm, server: e.target.value})}
+                placeholder="MetaQuotes-Demo"
+                className="w-full bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 transition-all" />
+            </div>
+          </div>
+          {maError && <p className="text-xs text-rose-400">{maError}</p>}
+          <button onClick={connectMa}
+            disabled={maConnecting || !maForm.login || !maForm.password || !maForm.server}
+            className="w-full flex items-center justify-center gap-2 text-sm bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
+            <RefreshCw className={`w-4 h-4 ${maConnecting ? 'animate-spin' : ''}`} />
+            {maConnecting ? 'Холбогдож байна... (30-60с)' : 'MT5 Холбох'}
           </button>
+          <p className="text-xs text-slate-500">Investor password нь зөвхөн уншдаг — арилжаа нээх, хаах боломжгүй</p>
         </div>
-        <pre className="bg-slate-950 border border-slate-800 rounded-lg p-4 text-[10px] text-slate-400 font-mono overflow-x-auto max-h-48 leading-relaxed">{eaCode}</pre>
-      </div>
+      )}
 
-      {/* Setup steps */}
-      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Суулгах заавар</p>
-        <ol className="space-y-2">
-          {[
-            'Дээрх кодыг хуулж MT5 → File → Open Data Folder → MQL5 → Experts дотор TradeJournal101.mq5 нэртэй файл үүсгэж paste хийнэ',
-            'MT5 → Tools → Options → Expert Advisors → "Allow WebRequest for listed URL" нэмж Sync URL-ийг жагсаана',
-            'MT5 → Navigator → Expert Advisors → TradeJournal101 → Chart дээр drag хийж суулгана',
-            'EA Settings дээр ApiKey талбарт өөрийн API key-г оруулна',
-            'Smiley face харагдвал амжилттай — Trade хаагдах бүрт автоматаар sync болно',
-          ].map((step, i) => (
-            <li key={i} className="flex gap-3 text-sm text-slate-300">
-              <span className="shrink-0 w-5 h-5 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
-              <span className="leading-relaxed">{step}</span>
-            </li>
-          ))}
-        </ol>
+      {/* ── EA Section ──────────────────────────── */}
+      <div className="border-t border-slate-800 pt-2">
+        <h3 className="text-sm font-semibold text-slate-400 mb-4">MQL5 Expert Advisor (Дэвшилтэт / Real-time sync)</h3>
+
+        {/* API Key */}
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3 mb-4">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">API Key</p>
+          {keyLoading ? (
+            <div className="h-9 bg-slate-800 rounded-lg animate-pulse" />
+          ) : apiKey ? (
+            <div className="flex items-center gap-2">
+              <code className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-emerald-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
+                {showKey ? apiKey : '•'.repeat(32) + apiKey.slice(-8)}
+              </code>
+              <button onClick={() => setShowKey(v => !v)} className="p-2 text-slate-400 hover:text-white transition-colors">
+                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+              <button onClick={() => copy(apiKey, 'key')} className="p-2 text-slate-400 hover:text-accent transition-colors">
+                {copied === 'key' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">API key үүсгэгдээгүй байна</p>
+          )}
+          <button onClick={generate} disabled={generating}
+            className="flex items-center gap-2 text-sm bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-4 py-2 rounded-lg transition-colors disabled:opacity-50">
+            <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
+            {apiKey ? 'Шинэ key үүсгэх' : 'API Key үүсгэх'}
+          </button>
+          {apiKey && <p className="text-xs text-amber-400/70">Шинэ key үүсгэвэл EA дотор солих хэрэгтэй</p>}
+        </div>
+
+        {/* Sync URL */}
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-2 mb-4">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sync URL</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono overflow-hidden text-ellipsis whitespace-nowrap">{syncUrl}</code>
+            <button onClick={() => copy(syncUrl, 'url')} className="p-2 text-slate-400 hover:text-accent transition-colors">
+              {copied === 'url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* EA Code */}
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3 mb-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">MQL5 Expert Advisor код</p>
+            <button onClick={() => copy(eaCode, 'ea')} className="flex items-center gap-1.5 text-xs text-accent hover:underline">
+              {copied === 'ea' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied === 'ea' ? 'Хуулсан!' : 'Кодыг хуулах'}
+            </button>
+          </div>
+          <pre className="bg-slate-950 border border-slate-800 rounded-lg p-4 text-[10px] text-slate-400 font-mono overflow-x-auto max-h-48 leading-relaxed">{eaCode}</pre>
+        </div>
+
+        {/* Setup steps */}
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Суулгах заавар</p>
+          <ol className="space-y-2">
+            {[
+              'Дээрх кодыг хуулж MT5 → File → Open Data Folder → MQL5 → Experts дотор TradeJournal101.mq5 нэртэй файл үүсгэж paste хийнэ',
+              'MT5 → Tools → Options → Expert Advisors → "Allow WebRequest for listed URL" нэмж Sync URL-ийг жагсаана',
+              'MT5 → Navigator → Expert Advisors → TradeJournal101 → Chart дээр drag хийж суулгана',
+              'EA Settings дээр ApiKey талбарт өөрийн API key-г оруулна',
+              'Smiley face харагдвал амжилттай — Trade хаагдах бүрт автоматаар sync болно',
+            ].map((step, i) => (
+              <li key={i} className="flex gap-3 text-sm text-slate-300">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+                <span className="leading-relaxed">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     </div>
   );
