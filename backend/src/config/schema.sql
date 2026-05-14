@@ -423,3 +423,16 @@ BEGIN
     ALTER TABLE users ADD COLUMN mt5_account_id VARCHAR(100);
   END IF;
 END $$;
+
+-- MT5 connected accounts (one user can have multiple)
+CREATE TABLE IF NOT EXISTS mt5_accounts (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID REFERENCES users(id) ON DELETE CASCADE,
+  account_id      VARCHAR(255),
+  login           VARCHAR(100),
+  server          VARCHAR(100),
+  sync_type       VARCHAR(20) DEFAULT 'AUTO',
+  status          VARCHAR(20) DEFAULT 'CONNECTING',
+  last_synced_at  TIMESTAMP WITH TIME ZONE,
+  created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

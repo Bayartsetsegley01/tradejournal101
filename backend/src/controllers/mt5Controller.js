@@ -4,7 +4,233 @@ import { createRequire } from 'module';
 const _require = createRequire(import.meta.url);
 const MetaApi = _require('metaapi.cloud-sdk').default;
 
-// ── API Key (EA sync) ─────────────────────────────────────────────────────────
+const getMetaApi = () => {
+  if (!process.env.METAAPI_TOKEN) throw new Error('METAAPI_TOKEN тохиргоогүй байна');
+  return new MetaApi(process.env.METAAPI_TOKEN);
+};
+
+const timeAgo = (ms) => {
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'Саяхан';
+  if (m < 60) return `${m}м өмнө`;
+  if (m < 1440) return `${Math.floor(m / 60)}ц өмнө`;
+  return `${Math.floor(m / 1440)}ө өмнө`;
+};
+
+// ── Auto-Sync: Connect ────────────────────────────────────────────────────────
+
+export const connectAccount = async (req, res) => {
+  const { login, investorPassword, server } = req.body;
+  const userId = req.user.id;
+
+  if (!login || !investorPassword || !server) {
+    return res.status(400).json({ success: false, error: 'login, investorPassword, server шаардлагатай' });
+  }
+
+  try {
+    const api = getMetaApi();
+
+    // Create MetaApi account (investor password sent to MetaApi, NOT stored in our DB)
+    const account = await api.metatraderAccountApi.createAccount({
+      name: `TJ_${userId.toString().slice(0, 8)}_${Date.now()}`,
+      type: 'cloud',
+      login: String(login),
+      password: String(investorPassword),
+      server: String(server),
+      platform: 'mt5',
+      magic: 0,
+    });
+
+    const result = await query(
+      `INSERT INTO mt5_accounts (user_id, account_id, login, server, sync_type, status)
+       VALUES ($1,$2,$3,$4,'AUTO','CONNECTING') RETURNING *`,
+      [userId, account.id, String(login), String(server)]
+    );
+
+    // Deploy async — don't block the response
+    account.deploy().catch(e => console.error('[MetaApi] deploy error:', e));
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (e) {
+    console.error('[MetaApi] connect error:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+};
+
+// ── Auto-Sync: Sync trades ────────────────────────────────────────────────────
+
+export const syncAccount = async (req, res) => {
+  const { accountId } = req.params;
+  const userId = req.user.id;
+  const months = parseInt(req.body?.months || req.query?.months || 3);
+
+  const accountResult = await query(
+    'SELECT * FROM mt5_accounts WHERE id=$1 AND user_id=$2',
+    [accountId, userId]
+  );
+  if (!accountResult.rows[0]) {
+    return res.status(404).json({ success: false, error: 'Данс олдсонгүй' });
+  }
+
+  const dbAccount = accountResult.rows[0];
+
+  try {
+    const api = getMetaApi();
+    const account = await api.metatraderAccountApi.getAccount(dbAccount.account_id);
+
+    if (account.state !== 'DEPLOYED') await account.deploy();
+
+    await Promise.race([
+      account.waitConnected(),
+      new Promise((_, r) => setTimeout(() => r(new Error('Холболтын хугацаа дууслаа (60с). Дахин оролдоно уу.')), 60000)),
+    ]);
+
+    const startTime = new Date();
+    startTime.setMonth(startTime.getMonth() - months);
+
+    const connection = account.getRPCConnection();
+    await connection.connect();
+    await Promise.race([
+      connection.waitSynchronized({ timeoutInSeconds: 30 }),
+      new Promise((_, r) => setTimeout(() => r(new Error('Sync timeout')), 35000)),
+    ]);
+
+    const history = await connection.getDealsByTimeRange(startTime, new Date());
+    await connection.close();
+
+    const deals = (history.deals || []).filter(d =>
+      d.type === 'DEAL_TYPE_BUY' || d.type === 'DEAL_TYPE_SELL'
+    );
+    const outDeals = deals.filter(d => d.entryType === 'DEAL_ENTRY_OUT');
+    const inDeals  = deals.filter(d => d.entryType === 'DEAL_ENTRY_IN');
+
+    let imported = 0;
+    let skipped  = 0;
+    const errors = [];
+
+    for (const ex of outDeals) {
+      try {
+        const en = inDeals.find(d => d.positionId === ex.positionId);
+        // exit SELL = was LONG trade; exit BUY = was SHORT trade
+        const direction = ex.type === 'DEAL_TYPE_SELL' ? 'LONG' : 'SHORT';
+        const pnl = (ex.profit || 0) + (ex.commission || 0) + (ex.swap || 0);
+        const entryDate = en?.time ? new Date(en.time) : null;
+        const exitDate  = ex.time  ? new Date(ex.time)  : null;
+
+        // Dedup: skip if this exact trade already exists
+        if (entryDate && exitDate) {
+          const dup = await query(
+            `SELECT id FROM trades WHERE user_id=$1 AND symbol=$2 AND direction=$3
+             AND entry_date=$4 AND exit_date=$5 LIMIT 1`,
+            [userId, ex.symbol, direction, entryDate, exitDate]
+          );
+          if (dup.rows[0]) { skipped++; continue; }
+        }
+
+        await query(
+          `INSERT INTO trades
+             (user_id, status, symbol, direction, entry_price, exit_price,
+              position_size, pnl, entry_date, exit_date, stop_loss, take_profit, market_type)
+           VALUES ($1,'CLOSED',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'FOREX')`,
+          [userId, ex.symbol, direction,
+           en?.price ?? null, ex.price ?? null,
+           ex.volume ?? null, pnl,
+           entryDate, exitDate,
+           en?.sl ?? ex.sl ?? null, en?.tp ?? ex.tp ?? null]
+        );
+        imported++;
+      } catch (e) {
+        errors.push({ symbol: ex.symbol, error: e.message });
+      }
+    }
+
+    await query(
+      `UPDATE mt5_accounts SET status='CONNECTED', last_synced_at=NOW() WHERE id=$1`,
+      [accountId]
+    );
+
+    res.json({ success: true, data: { imported, skipped, total: outDeals.length, errors: errors.slice(0, 5) } });
+  } catch (e) {
+    console.error('[MetaApi] sync error:', e);
+    await query(`UPDATE mt5_accounts SET status='ERROR' WHERE id=$1`, [accountId]);
+    res.status(500).json({ success: false, error: e.message });
+  }
+};
+
+// ── Get connected accounts ────────────────────────────────────────────────────
+
+export const getAccounts = async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT id, login, server, sync_type, status, last_synced_at, created_at
+       FROM mt5_accounts WHERE user_id=$1 ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+    res.json({ success: true, data: result.rows });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+};
+
+// ── Delete connected account ──────────────────────────────────────────────────
+
+export const deleteAccount = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  const accountResult = await query(
+    'SELECT * FROM mt5_accounts WHERE id=$1 AND user_id=$2',
+    [id, userId]
+  );
+  if (!accountResult.rows[0]) {
+    return res.status(404).json({ success: false, error: 'Данс олдсонгүй' });
+  }
+
+  if (accountResult.rows[0].account_id) {
+    try {
+      const api = getMetaApi();
+      const account = await api.metatraderAccountApi.getAccount(accountResult.rows[0].account_id);
+      await account.undeploy();
+      await account.remove();
+    } catch (e) { console.error('[MetaApi] remove error:', e); }
+  }
+
+  await query('DELETE FROM mt5_accounts WHERE id=$1', [id]);
+  res.json({ success: true });
+};
+
+// ── EA Sync (real-time push via API key auth) ─────────────────────────────────
+
+export const eaSyncTrade = async (req, res) => {
+  try {
+    const t = req.body;
+    const symbol = (t.symbol || '').trim();
+    if (!symbol) return res.status(400).json({ success: false, error: 'symbol шаардлагатай' });
+
+    const direction = (t.direction || '').toUpperCase();
+    if (!['LONG', 'SHORT'].includes(direction))
+      return res.status(400).json({ success: false, error: 'direction нь LONG эсвэл SHORT байна' });
+
+    const result = await query(
+      `INSERT INTO trades
+         (user_id, status, symbol, direction, entry_price, exit_price,
+          position_size, pnl, entry_date, exit_date, notes, market_type)
+       VALUES ($1,'CLOSED',$2,$3,$4,$5,$6,$7,$8,$9,$10,'FOREX') RETURNING id`,
+      [req.userId, symbol, direction,
+       parseFloat(t.entry_price) || null, parseFloat(t.exit_price) || null,
+       parseFloat(t.volume) || null, parseFloat(t.pnl) ?? null,
+       t.entry_date ? new Date(t.entry_date.replace(/\./g, '-')) : null,
+       t.exit_date  ? new Date(t.exit_date.replace(/\./g, '-'))  : null,
+       (t.comment || '').trim() || null]
+    );
+    res.status(201).json({ success: true, data: { id: result.rows[0].id } });
+  } catch (e) {
+    console.error('EA sync error:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+};
+
+// ── EA API key management ─────────────────────────────────────────────────────
 
 export const getApiKey = async (req, res) => {
   try {
@@ -23,200 +249,4 @@ export const generateApiKey = async (req, res) => {
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
-};
-
-export const syncTrade = async (req, res) => {
-  try {
-    const t = req.body;
-    const symbol = (t.symbol || '').trim();
-    if (!symbol) return res.status(400).json({ success: false, error: 'symbol required' });
-    const direction = (t.direction || '').toUpperCase();
-    if (!['LONG', 'SHORT'].includes(direction))
-      return res.status(400).json({ success: false, error: 'direction must be LONG or SHORT' });
-
-    const result = await query(
-      `INSERT INTO trades
-         (user_id, status, symbol, direction, entry_price, exit_price,
-          position_size, pnl, entry_date, exit_date, notes, market_type)
-       VALUES ($1,'CLOSED',$2,$3,$4,$5,$6,$7,$8,$9,$10,'FOREX') RETURNING id`,
-      [req.userId, symbol, direction,
-       parseFloat(t.entry_price) || null, parseFloat(t.exit_price) || null,
-       parseFloat(t.volume) || null, parseFloat(t.pnl) ?? null,
-       t.entry_date ? new Date(t.entry_date.replace(/\./g, '-')) : null,
-       t.exit_date  ? new Date(t.exit_date.replace(/\./g, '-'))  : null,
-       (t.comment || '').trim() || null]
-    );
-    res.status(201).json({ success: true, data: { id: result.rows[0].id } });
-  } catch (e) {
-    console.error('MT5 EA sync error:', e);
-    res.status(500).json({ success: false, error: e.message });
-  }
-};
-
-// ── MetaApi Cloud ─────────────────────────────────────────────────────────────
-
-const getMetaApi = () => {
-  if (!process.env.METAAPI_TOKEN) throw new Error('METAAPI_TOKEN тохиргоогүй байна');
-  return new MetaApi(process.env.METAAPI_TOKEN);
-};
-
-export const connectMetaApi = async (req, res) => {
-  const { login, password, server } = req.body;
-  const userId = req.user.id;
-
-  if (!login || !password || !server) {
-    return res.status(400).json({ success: false, error: 'Login, investor password, server оруулна уу' });
-  }
-
-  try {
-    const api = getMetaApi();
-    const existing = await query('SELECT mt5_account_id FROM users WHERE id=$1', [userId]);
-    const existingId = existing.rows[0]?.mt5_account_id;
-
-    let account = null;
-    if (existingId) {
-      try {
-        account = await api.metatraderAccountApi.getAccount(existingId);
-        if (['DELETING', 'DELETED'].includes(account.state)) account = null;
-      } catch { account = null; }
-    }
-
-    if (!account) {
-      account = await api.metatraderAccountApi.createAccount({
-        name: `TJ_${userId.toString().slice(0, 8)}`,
-        type: 'cloud',
-        login: String(login),
-        password: String(password),
-        server: String(server),
-        platform: 'mt5',
-        magic: 0,
-      });
-    } else {
-      try { await account.update({ login: String(login), password: String(password), server: String(server) }); } catch {}
-    }
-
-    await query(
-      'UPDATE users SET mt5_account_id=$1, mt5_login=$2, mt5_server=$3 WHERE id=$4',
-      [account.id, String(login), String(server), userId]
-    );
-
-    // Start deploying without waiting
-    account.deploy().catch(e => console.error('[MetaApi] deploy error:', e));
-
-    res.json({ success: true, data: { account_id: account.id, state: account.state } });
-  } catch (e) {
-    console.error('[MetaApi] connect error:', e);
-    res.status(500).json({ success: false, error: e.message });
-  }
-};
-
-export const getMetaApiStatus = async (req, res) => {
-  const userId = req.user.id;
-  try {
-    const result = await query('SELECT mt5_account_id, mt5_login, mt5_server FROM users WHERE id=$1', [userId]);
-    const { mt5_account_id, mt5_login, mt5_server } = result.rows[0] || {};
-    if (!mt5_account_id) return res.json({ success: true, data: { connected: false } });
-
-    const api = getMetaApi();
-    const account = await api.metatraderAccountApi.getAccount(mt5_account_id);
-    res.json({ success: true, data: {
-      connected: true,
-      state: account.state,
-      connectionStatus: account.connectionStatus,
-      login: mt5_login,
-      server: mt5_server,
-    }});
-  } catch {
-    res.json({ success: true, data: { connected: false } });
-  }
-};
-
-export const syncMetaApiHistory = async (req, res) => {
-  const userId = req.user.id;
-  const months = parseInt(req.body.months || 3);
-
-  const userResult = await query('SELECT mt5_account_id FROM users WHERE id=$1', [userId]);
-  const accountId = userResult.rows[0]?.mt5_account_id;
-  if (!accountId) return res.status(400).json({ success: false, error: 'MT5 холбогдоогүй байна' });
-
-  try {
-    const api = getMetaApi();
-    const account = await api.metatraderAccountApi.getAccount(accountId);
-
-    if (account.state !== 'DEPLOYED') await account.deploy();
-
-    await Promise.race([
-      account.waitConnected(),
-      new Promise((_, r) => setTimeout(() => r(new Error('Холболтын хугацаа дууслаа (60s). Дахин оролдоно уу.')), 60000))
-    ]);
-
-    const startTime = new Date();
-    startTime.setMonth(startTime.getMonth() - months);
-
-    const connection = account.getRPCConnection();
-    await connection.connect();
-    await Promise.race([
-      connection.waitSynchronized({ timeoutInSeconds: 30 }),
-      new Promise((_, r) => setTimeout(() => r(new Error('Sync timeout')), 35000))
-    ]);
-
-    const history = await connection.getDealsByTimeRange(startTime, new Date());
-    await connection.close();
-
-    const deals = (history.deals || []).filter(d =>
-      d.type === 'DEAL_TYPE_BUY' || d.type === 'DEAL_TYPE_SELL'
-    );
-    const outDeals = deals.filter(d => d.entryType === 'DEAL_ENTRY_OUT');
-    const inDeals  = deals.filter(d => d.entryType === 'DEAL_ENTRY_IN');
-
-    let imported = 0;
-    const errors = [];
-
-    for (const ex of outDeals) {
-      try {
-        const en = inDeals.find(d => d.positionId === ex.positionId);
-        // exit SELL = was LONG; exit BUY = was SHORT
-        const direction = ex.type === 'DEAL_TYPE_SELL' ? 'LONG' : 'SHORT';
-        const pnl = (ex.profit || 0) + (ex.commission || 0) + (ex.swap || 0);
-
-        await query(
-          `INSERT INTO trades
-             (user_id, status, symbol, direction, entry_price, exit_price,
-              position_size, pnl, entry_date, exit_date, stop_loss, take_profit, market_type)
-           VALUES ($1,'CLOSED',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'FOREX')`,
-          [userId, ex.symbol, direction,
-           en?.price ?? null, ex.price ?? null,
-           ex.volume ?? null, pnl,
-           en?.time  ?? null, ex.time ?? null,
-           en?.sl ?? ex.sl ?? null, en?.tp ?? ex.tp ?? null]
-        );
-        imported++;
-      } catch (e) {
-        errors.push({ symbol: ex.symbol, error: e.message });
-      }
-    }
-
-    res.json({ success: true, data: { imported, total: outDeals.length, errors: errors.slice(0, 5) } });
-  } catch (e) {
-    console.error('[MetaApi] sync error:', e);
-    res.status(500).json({ success: false, error: e.message });
-  }
-};
-
-export const disconnectMetaApi = async (req, res) => {
-  const userId = req.user.id;
-  const result = await query('SELECT mt5_account_id FROM users WHERE id=$1', [userId]);
-  const accountId = result.rows[0]?.mt5_account_id;
-
-  if (accountId) {
-    try {
-      const api = getMetaApi();
-      const account = await api.metatraderAccountApi.getAccount(accountId);
-      await account.undeploy();
-      await account.remove();
-    } catch (e) { console.error('[MetaApi] disconnect error:', e); }
-  }
-
-  await query('UPDATE users SET mt5_account_id=NULL, mt5_login=NULL, mt5_server=NULL WHERE id=$1', [userId]);
-  res.json({ success: true });
 };

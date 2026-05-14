@@ -2,21 +2,23 @@ import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
 import {
-  getApiKey, generateApiKey, syncTrade,
-  connectMetaApi, getMetaApiStatus, syncMetaApiHistory, disconnectMetaApi,
+  connectAccount, syncAccount, getAccounts, deleteAccount,
+  eaSyncTrade, getApiKey, generateApiKey,
 } from '../controllers/mt5Controller.js';
 
 const router = express.Router();
 
-// EA key routes
-router.get('/apikey', authenticateToken, getApiKey);
-router.post('/apikey', authenticateToken, generateApiKey);
-router.post('/sync', apiKeyAuth, syncTrade);
+// Auto-Sync (JWT auth)
+router.post('/connect',            authenticateToken, connectAccount);
+router.post('/sync/:accountId',    authenticateToken, syncAccount);
+router.get('/accounts',            authenticateToken, getAccounts);
+router.delete('/accounts/:id',     authenticateToken, deleteAccount);
 
-// MetaApi routes
-router.post('/connect', authenticateToken, connectMetaApi);
-router.get('/status', authenticateToken, getMetaApiStatus);
-router.post('/sync-history', authenticateToken, syncMetaApiHistory);
-router.delete('/disconnect', authenticateToken, disconnectMetaApi);
+// EA API key management (JWT auth)
+router.get('/apikey',              authenticateToken, getApiKey);
+router.post('/apikey',             authenticateToken, generateApiKey);
+
+// EA real-time push (API key auth — no JWT)
+router.post('/ea-sync',            apiKeyAuth, eaSyncTrade);
 
 export default router;

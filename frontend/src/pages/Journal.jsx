@@ -334,6 +334,7 @@ export function JournalPage() {
         isOpen={isImportMethodOpen}
         onClose={() => setIsImportMethodOpen(false)}
         onCSVImport={() => setIsImportModalOpen(true)}
+        onImportComplete={invalidate}
       />
 
       <ImportModal

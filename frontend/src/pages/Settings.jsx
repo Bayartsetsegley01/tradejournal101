@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { User, Palette, Globe, Bell, Shield, AlertTriangle, BarChart2, Copy, RefreshCw, Check, Eye, EyeOff } from "lucide-react";
+import { User, Palette, Globe, Bell, Shield, AlertTriangle, BarChart2, Copy, RefreshCw, Check, Eye, EyeOff, Plus, Trash2, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const API_BASE = (import.meta.env.VITE_API_URL || '') + '/api';
@@ -9,28 +9,224 @@ const getAuthHeaders = () => {
   return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 };
 
-function MT5Tab() {
-  // EA key state
-  const [apiKey, setApiKey] = useState(null);
-  const [keyLoading, setKeyLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [copied, setCopied] = useState('');
-  const [showKey, setShowKey] = useState(false);
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-  // MetaApi state
-  const [maStatus, setMaStatus] = useState(null);
-  const [maLoading, setMaLoading] = useState(true);
-  const [maForm, setMaForm] = useState({ login: '', password: '', server: '' });
+const timeAgo = (date) => {
+  if (!date) return 'Хэзээ ч sync хийгдээгүй';
+  const m = Math.floor((Date.now() - new Date(date)) / 60000);
+  if (m < 1) return 'Саяхан';
+  if (m < 60) return `${m} минутын өмнө`;
+  if (m < 1440) return `${Math.floor(m / 60)} цагийн өмнө`;
+  return `${Math.floor(m / 1440)} өдрийн өмнө`;
+};
+
+const STATUS_DOT  = { CONNECTED: 'bg-emerald-400 animate-pulse', CONNECTING: 'bg-amber-400', ERROR: 'bg-rose-400' };
+const STATUS_TEXT = { CONNECTED: 'Холбогдсон', CONNECTING: 'Холбогдож байна...', ERROR: 'Алдаа гарлаа' };
+
+// ── AccountCard ───────────────────────────────────────────────────────────────
+
+function AccountCard({ account, onRefresh }) {
+  const [syncing,  setSyncing]  = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [months,   setMonths]   = useState(3);
+  const [result,   setResult]   = useState(null);
+  const [error,    setError]    = useState('');
+
+  const handleSync = async () => {
+    setSyncing(true); setResult(null); setError('');
+    try {
+      const res = await fetch(`${API_BASE}/mt5/sync/${account.id}`, {
+        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify({ months }),
+      });
+      const d = await res.json();
+      if (d.success) { setResult(d.data); onRefresh(); }
+      else setError(d.error || 'Sync алдаа');
+    } catch (e) { setError(e.message); }
+    setSyncing(false);
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await fetch(`${API_BASE}/mt5/accounts/${account.id}`, {
+        method: 'DELETE', headers: getAuthHeaders(), credentials: 'include',
+      });
+      onRefresh();
+    } catch {}
+    setDeleting(false);
+  };
+
+  return (
+    <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 space-y-3">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+            <BarChart2 className="w-4 h-4 text-accent" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-white font-mono">{account.login}</span>
+              <div className="flex items-center gap-1">
+                <div className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[account.status] || 'bg-slate-500'}`} />
+                <span className="text-xs text-slate-400">{STATUS_TEXT[account.status] || account.status}</span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">{account.server}</p>
+          </div>
+        </div>
+        <button onClick={handleDelete} disabled={deleting}
+          className="p-1.5 rounded-lg text-slate-600 hover:text-rose-400 hover:bg-rose-400/10 transition-colors disabled:opacity-40 shrink-0">
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      <p className="text-xs text-slate-600">Сүүлд sync: {timeAgo(account.last_synced_at)}</p>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <select value={months} onChange={e => setMonths(Number(e.target.value))}
+          className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+          {[1, 2, 3, 6, 12].map(m => <option key={m} value={m}>{m} сар</option>)}
+        </select>
+        <button onClick={handleSync} disabled={syncing}
+          className="flex items-center gap-1.5 text-xs bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
+          {syncing ? 'Татаж байна...' : 'Sync хийх'}
+        </button>
+      </div>
+
+      {result && (
+        <p className="text-xs text-emerald-400">
+          {result.imported} шинэ арилжаа нэмэгдлээ
+          {result.skipped > 0 && <span className="text-slate-500 ml-1.5">({result.skipped} давхардал алгассан)</span>}
+        </p>
+      )}
+      {error && <p className="text-xs text-rose-400">{error}</p>}
+    </div>
+  );
+}
+
+// ── ConnectForm ───────────────────────────────────────────────────────────────
+
+function ConnectForm({ onSuccess, onCancel }) {
+  const [form,     setForm]     = useState({ login: '', investorPassword: '', server: '' });
   const [showPass, setShowPass] = useState(false);
-  const [maConnecting, setMaConnecting] = useState(false);
-  const [maDisconnecting, setMaDisconnecting] = useState(false);
-  const [maSyncing, setMaSyncing] = useState(false);
-  const [maMonths, setMaMonths] = useState(3);
-  const [maSyncResult, setMaSyncResult] = useState(null);
-  const [maError, setMaError] = useState('');
+  const [step,     setStep]     = useState('idle'); // idle | connecting | syncing | done
+  const [syncRes,  setSyncRes]  = useState(null);
+  const [error,    setError]    = useState('');
+
+  const handle = async () => {
+    setError(''); setStep('connecting');
+    try {
+      const r1 = await fetch(`${API_BASE}/mt5/connect`, {
+        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify(form),
+      });
+      const d1 = await r1.json();
+      if (!d1.success) { setError(d1.error || 'Холбоход алдаа'); setStep('idle'); return; }
+
+      const accountId = d1.data.id;
+      setStep('syncing');
+
+      const r2 = await fetch(`${API_BASE}/mt5/sync/${accountId}`, {
+        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify({ months: 3 }),
+      });
+      const d2 = await r2.json();
+      setSyncRes(d2.data);
+      setStep('done');
+      setTimeout(() => { onSuccess(); onCancel(); }, 2000);
+    } catch (e) {
+      setError(e.message); setStep('idle');
+    }
+  };
+
+  const inputCls = 'w-full bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-accent/50 transition-all';
+
+  return (
+    <div className="bg-slate-800/30 border border-accent/20 rounded-xl p-4 space-y-3 mb-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-white flex items-center gap-2">
+          <Zap className="w-4 h-4 text-accent" /> Шинэ данс нэмэх
+        </p>
+        <button onClick={onCancel} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Цуцлах</button>
+      </div>
+
+      {step === 'done' ? (
+        <div className="text-center py-4">
+          <p className="text-emerald-400 text-sm font-medium">Амжилттай холбогдлоо!</p>
+          {syncRes && <p className="text-xs text-slate-400 mt-1">{syncRes.imported} арилжаа нэмэгдлээ</p>}
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-2.5">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">MT5 Login (дансны дугаар)</label>
+              <input type="text" value={form.login} onChange={e => setForm({...form, login: e.target.value})}
+                placeholder="12345678" className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Investor Password</label>
+              <div className="flex gap-2">
+                <input type={showPass ? 'text' : 'password'} value={form.investorPassword}
+                  onChange={e => setForm({...form, investorPassword: e.target.value})}
+                  placeholder="••••••••" className={`${inputCls} flex-1`} />
+                <button type="button" onClick={() => setShowPass(v => !v)}
+                  className="px-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors">
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Server</label>
+              <input type="text" value={form.server} onChange={e => setForm({...form, server: e.target.value})}
+                placeholder="MetaQuotes-Demo" className={inputCls} />
+            </div>
+          </div>
+
+          {error && <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">{error}</p>}
+
+          <button onClick={handle}
+            disabled={step !== 'idle' || !form.login || !form.investorPassword || !form.server}
+            className="w-full flex items-center justify-center gap-2 text-sm bg-accent hover:bg-accent-hover text-slate-950 font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50">
+            <RefreshCw className={`w-4 h-4 ${step !== 'idle' ? 'animate-spin' : ''}`} />
+            {step === 'connecting' ? 'Холбогдож байна... (30-60с)' : step === 'syncing' ? 'Арилжааг татаж байна...' : 'MT5 Холбох'}
+          </button>
+          <p className="text-xs text-slate-600 text-center">Investor password — зөвхөн уншдаг, арилжаа нээх боломжгүй</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── MT5Tab ────────────────────────────────────────────────────────────────────
+
+function MT5Tab() {
+  // Auto-Sync accounts
+  const [accounts,        setAccounts]        = useState([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [showConnectForm, setShowConnectForm] = useState(false);
+
+  // EA key
+  const [apiKey,    setApiKey]    = useState(null);
+  const [keyLoading,setKeyLoading]= useState(true);
+  const [generating,setGenerating]= useState(false);
+  const [copied,    setCopied]    = useState('');
+  const [showKey,   setShowKey]   = useState(false);
 
   const backendUrl = import.meta.env.VITE_API_URL || 'https://tradejournal101-backend.onrender.com';
-  const syncUrl = `${backendUrl}/api/mt5/sync`;
+  const syncUrl = `${backendUrl}/api/mt5/ea-sync`;
+
+  const loadAccounts = async () => {
+    setAccountsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/mt5/accounts`, { headers: getAuthHeaders(), credentials: 'include' });
+      const d = await res.json();
+      if (d.success) setAccounts(d.data);
+    } catch {}
+    setAccountsLoading(false);
+  };
+  useEffect(() => { loadAccounts(); }, []);
 
   useEffect(() => {
     fetch(`${API_BASE}/mt5/apikey`, { headers: getAuthHeaders(), credentials: 'include' })
@@ -38,16 +234,6 @@ function MT5Tab() {
       .then(d => { if (d.success) setApiKey(d.data.api_key); })
       .finally(() => setKeyLoading(false));
   }, []);
-
-  const loadMaStatus = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/mt5/status`, { headers: getAuthHeaders(), credentials: 'include' });
-      const d = await res.json();
-      if (d.success) setMaStatus(d.data);
-    } catch {}
-    setMaLoading(false);
-  };
-  useEffect(() => { loadMaStatus(); }, []);
 
   const generate = async () => {
     setGenerating(true);
@@ -62,62 +248,6 @@ function MT5Tab() {
     setCopied(id);
     setTimeout(() => setCopied(''), 2000);
   };
-
-  const connectMa = async () => {
-    setMaConnecting(true);
-    setMaError('');
-    setMaSyncResult(null);
-    try {
-      const res = await fetch(`${API_BASE}/mt5/connect`, {
-        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
-        body: JSON.stringify(maForm),
-      });
-      const d = await res.json();
-      if (d.success) {
-        setMaStatus({ connected: true, state: d.data.state, login: maForm.login, server: maForm.server });
-        setMaForm({ login: '', password: '', server: '' });
-        let tries = 0;
-        const poll = setInterval(async () => {
-          tries++;
-          const r2 = await fetch(`${API_BASE}/mt5/status`, { headers: getAuthHeaders(), credentials: 'include' });
-          const d2 = await r2.json();
-          if (d2.success) setMaStatus(d2.data);
-          if (d2.data?.state === 'DEPLOYED' || tries >= 18) clearInterval(poll);
-        }, 10000);
-      } else {
-        setMaError(d.error || 'Холбоход алдаа гарлаа');
-      }
-    } catch (e) { setMaError(e.message); }
-    setMaConnecting(false);
-  };
-
-  const syncHistory = async () => {
-    setMaSyncing(true);
-    setMaSyncResult(null);
-    setMaError('');
-    try {
-      const res = await fetch(`${API_BASE}/mt5/sync-history`, {
-        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
-        body: JSON.stringify({ months: maMonths }),
-      });
-      const d = await res.json();
-      if (d.success) setMaSyncResult(d.data);
-      else setMaError(d.error || 'Sync алдаа гарлаа');
-    } catch (e) { setMaError(e.message); }
-    setMaSyncing(false);
-  };
-
-  const disconnectMa = async () => {
-    setMaDisconnecting(true);
-    try {
-      await fetch(`${API_BASE}/mt5/disconnect`, { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' });
-      setMaStatus({ connected: false });
-    } catch {}
-    setMaDisconnecting(false);
-  };
-
-  const stateLabel = (s) => ({ DEPLOYED: 'Холбогдсон', DEPLOYING: 'Холбогдож байна...', UNDEPLOYED: 'Идэвхгүй', DELETING: 'Устгаж байна' }[s] || s || '...');
-  const stateColor = (s) => s === 'DEPLOYED' ? 'text-emerald-400' : s === 'DEPLOYING' ? 'text-amber-400' : 'text-slate-400';
 
   const eaCode = `//+------------------------------------------------------------------+
 //|  TradeJournal101.mq5  —  paste your API key below               |
@@ -161,13 +291,11 @@ void SyncDeal(ulong deal) {
    long type     = HistoryDealGetInteger(deal, DEAL_TYPE);
    ulong posId   = HistoryDealGetInteger(deal, DEAL_POSITION_ID);
 
-   // exit sell → was LONG trade; exit buy → was SHORT trade
    string dir = (type == DEAL_TYPE_SELL) ? "LONG" : "SHORT";
 
    string exitTime = TimeToString(dt, TIME_DATE|TIME_MINUTES);
    StringReplace(exitTime, ".", "-");
 
-   // Find entry deal
    double ep = 0; string entryTime = "";
    HistorySelect(dt - 86400*30, dt);
    for(int i = 0; i < HistoryDealsTotal(); i++) {
@@ -203,96 +331,48 @@ void SyncDeal(ulong deal) {
   return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      {/* ── MetaApi Section ─────────────────────── */}
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-1">MT5 Автоматаар Холбох</h2>
-        <p className="text-sm text-slate-400">Login, Investor Password, Server оруулахад л болно — read-only горим</p>
+      {/* ── Auto-Sync ─────────────────────────────── */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-white mb-1">Auto-Sync холболт</h2>
+          <p className="text-sm text-slate-400">MT5 данс шууд холбогдоно — read-only горим</p>
+        </div>
+        {!showConnectForm && (
+          <button onClick={() => setShowConnectForm(true)}
+            className="flex items-center gap-1.5 text-sm bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-3 py-2 rounded-lg transition-colors shrink-0">
+            <Plus className="w-4 h-4" /> Шинэ данс нэмэх
+          </button>
+        )}
       </div>
 
-      {maLoading ? (
-        <div className="h-24 bg-slate-800/40 rounded-xl animate-pulse" />
-      ) : maStatus?.connected ? (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${maStatus.state === 'DEPLOYED' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              <span className={`text-sm font-medium ${stateColor(maStatus.state)}`}>{stateLabel(maStatus.state)}</span>
-            </div>
-            <button onClick={disconnectMa} disabled={maDisconnecting}
-              className="text-xs text-rose-400 hover:text-rose-300 transition-colors disabled:opacity-50">
-              {maDisconnecting ? 'Устгаж байна...' : 'Холболт устгах'}
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <p className="text-xs text-slate-500 mb-0.5">Login</p>
-              <p className="text-slate-200 font-mono">{maStatus.login}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 mb-0.5">Server</p>
-              <p className="text-slate-200 font-mono text-xs">{maStatus.server}</p>
-            </div>
-          </div>
-          <div className="pt-3 border-t border-emerald-500/10 flex items-center gap-3 flex-wrap">
-            <select value={maMonths} onChange={e => setMaMonths(Number(e.target.value))}
-              className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50">
-              {[1, 2, 3, 6, 12].map(m => <option key={m} value={m}>{m} сар</option>)}
-            </select>
-            <button onClick={syncHistory} disabled={maSyncing || maStatus.state !== 'DEPLOYED'}
-              className="flex items-center gap-2 text-sm bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-4 py-2 rounded-lg transition-colors disabled:opacity-50">
-              <RefreshCw className={`w-4 h-4 ${maSyncing ? 'animate-spin' : ''}`} />
-              {maSyncing ? 'Татаж байна...' : 'Арилжааны түүх татах'}
-            </button>
-          </div>
-          {maSyncResult && (
-            <p className="text-xs text-emerald-400">
-              {maSyncResult.imported}/{maSyncResult.total} арилжаа амжилттай импортлогдлоо
-              {maSyncResult.errors?.length > 0 && <span className="text-amber-400 ml-2">({maSyncResult.errors.length} алдаатай)</span>}
-            </p>
-          )}
-          {maError && <p className="text-xs text-rose-400">{maError}</p>}
+      {showConnectForm && (
+        <ConnectForm
+          onSuccess={loadAccounts}
+          onCancel={() => setShowConnectForm(false)}
+        />
+      )}
+
+      {accountsLoading ? (
+        <div className="space-y-3">
+          {[0, 1].map(i => <div key={i} className="h-24 bg-slate-800/40 rounded-xl animate-pulse" />)}
+        </div>
+      ) : accounts.length === 0 ? (
+        <div className="border border-dashed border-slate-700 rounded-xl p-8 text-center">
+          <BarChart2 className="w-8 h-8 text-slate-700 mx-auto mb-3" />
+          <p className="text-sm text-slate-500">Холбогдсон MT5 данс байхгүй байна</p>
+          <p className="text-xs text-slate-600 mt-1">Дээрх "Шинэ данс нэмэх" товчийг дарна уу</p>
         </div>
       ) : (
-        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-4">
-          <div className="grid gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">MT5 Login (дансны дугаар)</label>
-              <input type="text" value={maForm.login} onChange={e => setMaForm({...maForm, login: e.target.value})}
-                placeholder="12345678"
-                className="w-full bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 transition-all" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Investor Password (зөвхөн уншдаг)</label>
-              <div className="flex items-center gap-2">
-                <input type={showPass ? 'text' : 'password'} value={maForm.password} onChange={e => setMaForm({...maForm, password: e.target.value})}
-                  placeholder="••••••••"
-                  className="flex-1 bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 transition-all" />
-                <button type="button" onClick={() => setShowPass(v => !v)} className="p-2 text-slate-400 hover:text-white transition-colors">
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Server</label>
-              <input type="text" value={maForm.server} onChange={e => setMaForm({...maForm, server: e.target.value})}
-                placeholder="MetaQuotes-Demo"
-                className="w-full bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent/50 transition-all" />
-            </div>
-          </div>
-          {maError && <p className="text-xs text-rose-400">{maError}</p>}
-          <button onClick={connectMa}
-            disabled={maConnecting || !maForm.login || !maForm.password || !maForm.server}
-            className="w-full flex items-center justify-center gap-2 text-sm bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${maConnecting ? 'animate-spin' : ''}`} />
-            {maConnecting ? 'Холбогдож байна... (30-60с)' : 'MT5 Холбох'}
-          </button>
-          <p className="text-xs text-slate-500">Investor password нь зөвхөн уншдаг — арилжаа нээх, хаах боломжгүй</p>
+        <div className="space-y-3">
+          {accounts.map(acc => (
+            <AccountCard key={acc.id} account={acc} onRefresh={loadAccounts} />
+          ))}
         </div>
       )}
 
-      {/* ── EA Section ──────────────────────────── */}
-      <div className="border-t border-slate-800 pt-2">
-        <h3 className="text-sm font-semibold text-slate-400 mb-4">MQL5 Expert Advisor (Дэвшилтэт / Real-time sync)</h3>
+      {/* ── EA Sync ───────────────────────────────── */}
+      <div className="border-t border-slate-800 pt-4">
+        <h3 className="text-sm font-semibold text-slate-400 mb-4">MQL5 Expert Advisor (Real-time sync)</h3>
 
         {/* API Key */}
         <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3 mb-4">
@@ -324,7 +404,7 @@ void SyncDeal(ulong deal) {
 
         {/* Sync URL */}
         <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-2 mb-4">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sync URL</p>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">EA Sync URL</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono overflow-hidden text-ellipsis whitespace-nowrap">{syncUrl}</code>
             <button onClick={() => copy(syncUrl, 'url')} className="p-2 text-slate-400 hover:text-accent transition-colors">
@@ -351,7 +431,7 @@ void SyncDeal(ulong deal) {
           <ol className="space-y-2">
             {[
               'Дээрх кодыг хуулж MT5 → File → Open Data Folder → MQL5 → Experts дотор TradeJournal101.mq5 нэртэй файл үүсгэж paste хийнэ',
-              'MT5 → Tools → Options → Expert Advisors → "Allow WebRequest for listed URL" нэмж Sync URL-ийг жагсаана',
+              'MT5 → Tools → Options → Expert Advisors → "Allow WebRequest for listed URL" нэмж EA Sync URL-ийг жагсаана',
               'MT5 → Navigator → Expert Advisors → TradeJournal101 → Chart дээр drag хийж суулгана',
               'EA Settings дээр ApiKey талбарт өөрийн API key-г оруулна',
               'Smiley face харагдвал амжилттай — Trade хаагдах бүрт автоматаар sync болно',
@@ -368,6 +448,8 @@ void SyncDeal(ulong deal) {
   );
 }
 
+// ── SettingsPage ──────────────────────────────────────────────────────────────
+
 export function SettingsPage() {
   const location = useLocation();
   const { user } = useAuth();
@@ -380,7 +462,6 @@ export function SettingsPage() {
     }
   }, [location.state]);
 
-  // Form states — name/email always come from the authenticated user
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem('app_profile');
     const extra = saved ? JSON.parse(saved) : {};
@@ -394,12 +475,12 @@ export function SettingsPage() {
     };
   });
 
-  // Sync name/email whenever the authenticated user changes
   useEffect(() => {
     if (user) {
       setProfile(p => ({ ...p, name: user.name ?? p.name, email: user.email ?? p.email }));
     }
   }, [user?.id]);
+
   const [appearance, setAppearance] = useState(() => {
     const saved = localStorage.getItem('app_appearance');
     return saved ? JSON.parse(saved) : { theme: "dark" };
@@ -413,7 +494,6 @@ export function SettingsPage() {
     return saved ? JSON.parse(saved) : { email: true, push: false, tradeAlerts: true };
   });
 
-  // Auto-save extra profile fields only (name/email live in DB, not localStorage)
   useEffect(() => {
     const { name: _n, email: _e, ...extra } = profile;
     localStorage.setItem('app_profile', JSON.stringify(extra));
@@ -426,7 +506,6 @@ export function SettingsPage() {
 
   useEffect(() => {
     localStorage.setItem('app_preferences', JSON.stringify(preferences));
-    // Dispatch a custom event for language change if needed globally
     window.dispatchEvent(new Event('language-changed'));
   }, [preferences]);
 
@@ -438,119 +517,41 @@ export function SettingsPage() {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfile({ ...profile, avatar: reader.result });
-      };
+      reader.onloadend = () => setProfile({ ...profile, avatar: reader.result });
       reader.readAsDataURL(file);
     }
   };
 
-  const handleRemoveImage = () => {
-    setProfile({ ...profile, avatar: null });
-  };
+  const handleRemoveImage = () => setProfile({ ...profile, avatar: null });
 
   const handleDeleteData = () => {
-    // Implement actual deletion logic here
     console.log("Deleting all data...");
     setShowDeleteModal(false);
-    // Optional: show a success toast
   };
 
   const t = {
     mn: {
-      settings: "Тохиргоо",
-      settingsDesc: "Бүртгэл болон системийн тохиргоо",
-      profile: "Профайл",
-      appearance: "Харагдах байдал",
-      preferences: "Тохиргоо",
-      notifications: "Мэдэгдэл",
-      privacy: "Нууцлал",
-      plan: "План & Төлбөр",
-      profileInfo: "Профайл мэдээлэл",
-      changePhoto: "Зураг солих",
-      remove: "Устгах",
-      name: "Нэр",
-      email: "И-мэйл хаяг",
-      phone: "Утасны дугаар",
-      age: "Нас",
-      gender: "Хүйс",
-      male: "Эрэгтэй",
-      female: "Эмэгтэй",
-      other: "Бусад",
-      theme: "Загвар (Theme)",
-      language: "Хэл",
-      currency: "Үндсэн мөнгөн тэмдэгт",
-      timezone: "Цагийн бүс",
-      emailNotif: "И-мэйл мэдэгдэл",
-      emailNotifDesc: "Долоо хоногийн тайлан болон зөвлөмжүүд",
-      tradeAlerts: "Арилжааны анхааруулга",
-      tradeAlertsDesc: "Алдаа гаргах эрсдэлтэй үед AI анхааруулах",
-      dataPrivacy: "Өгөгдөл ба Нууцлал",
-      dataPrivacyDesc: "Таны өгөгдөл найдвартай хадгалагдаж байгаа бөгөөд AI анализ зөвхөн таны зөвшөөрөлтэйгөөр хийгдэнэ. Бид таны мэдээллийг гуравдагч этгээдэд дамжуулахгүй.",
-      dangerZone: "Аюултай бүс",
-      dangerZoneDesc: "Энэ үйлдэл нь буцаах боломжгүй бөгөөд таны бүх арилжааны түүх, тохиргоо устгагдах болно.",
-      deleteAll: "Бүх өгөгдлөө устгах",
-      planActive: "Идэвхтэй байна",
-      nextPayment: "Дараагийн төлбөр: 2026 оны 5 сарын 5",
-      updatePayment: "Төлбөрийн мэдээлэл шинэчлэх",
-      deleteConfirmTitle: "Бүх өгөгдлийг устгах уу?",
-      deleteConfirmDesc: "Та өөрийн бүх арилжааны түүх, тохиргоо, профайл мэдээллээ устгах гэж байна. Энэ үйлдэл нь буцаах боломжгүй бөгөөд таны бүх мэдээлэл бүрмөсөн устах болно.",
-      cancel: "Цуцлах",
-      yesDelete: "Тийм, устгах"
+      settings: "Тохиргоо", settingsDesc: "Бүртгэл болон системийн тохиргоо",
+      profile: "Профайл", appearance: "Харагдах байдал", preferences: "Тохиргоо",
+      notifications: "Мэдэгдэл", privacy: "Нууцлал",
     },
     en: {
-      settings: "Settings",
-      settingsDesc: "Account and system preferences",
-      profile: "Profile",
-      appearance: "Appearance",
-      preferences: "Preferences",
-      notifications: "Notifications",
-      privacy: "Privacy",
-      plan: "Plan & Billing",
-      profileInfo: "Profile Information",
-      changePhoto: "Change Photo",
-      remove: "Remove",
-      name: "Name",
-      email: "Email Address",
-      phone: "Phone Number",
-      age: "Age",
-      gender: "Gender",
-      male: "Male",
-      female: "Female",
-      other: "Other",
-      theme: "Theme",
-      language: "Language",
-      currency: "Base Currency",
-      timezone: "Timezone",
-      emailNotif: "Email Notifications",
-      emailNotifDesc: "Weekly reports and recommendations",
-      tradeAlerts: "Trading Alerts",
-      tradeAlertsDesc: "AI warnings when at risk of making mistakes",
-      dataPrivacy: "Data & Privacy",
-      dataPrivacyDesc: "Your data is securely stored and AI analysis is only performed with your permission. We do not share your information with third parties.",
-      dangerZone: "Danger Zone",
-      dangerZoneDesc: "This action cannot be undone. All your trading history and settings will be deleted.",
-      deleteAll: "Delete All Data",
-      planActive: "Active",
-      nextPayment: "Next payment: May 5, 2026",
-      updatePayment: "Update Payment Info",
-      deleteConfirmTitle: "Delete all data?",
-      deleteConfirmDesc: "You are about to delete all your trading history, settings, and profile information. This action cannot be undone and all your data will be permanently lost.",
-      cancel: "Cancel",
-      yesDelete: "Yes, delete"
-    }
+      settings: "Settings", settingsDesc: "Account and system preferences",
+      profile: "Profile", appearance: "Appearance", preferences: "Preferences",
+      notifications: "Notifications", privacy: "Privacy",
+    },
   };
 
   const lang = preferences.language || 'mn';
   const text = t[lang];
 
   const tabs = [
-    { id: "profile", label: text.profile, icon: User },
-    { id: "appearance", label: text.appearance, icon: Palette },
-    { id: "preferences", label: text.preferences, icon: Globe },
+    { id: "profile",       label: text.profile,       icon: User },
+    { id: "appearance",    label: text.appearance,    icon: Palette },
+    { id: "preferences",   label: text.preferences,   icon: Globe },
     { id: "notifications", label: text.notifications, icon: Bell },
-    { id: "privacy", label: text.privacy, icon: Shield },
-    { id: "mt5", label: "MetaTrader 5", icon: BarChart2 },
+    { id: "privacy",       label: text.privacy,       icon: Shield },
+    { id: "mt5",           label: "MetaTrader 5",     icon: BarChart2 },
   ];
 
   return (
@@ -567,13 +568,10 @@ export function SettingsPage() {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive ? "bg-accent/10 text-accent translate-x-1" : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 hover:translate-x-1"
-                }`}
-              >
+                }`}>
                 <Icon className={`w-4 h-4 transition-transform duration-200 ${isActive ? "scale-110" : ""}`} />
                 {tab.label}
               </button>
@@ -583,7 +581,6 @@ export function SettingsPage() {
 
         {/* Content Area */}
         <div className="flex-1 bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-          {/* Subtle background glow */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-accent/5 blur-[100px] rounded-full pointer-events-none" />
 
           {activeTab === "profile" && (
@@ -612,48 +609,34 @@ export function SettingsPage() {
               <div className="grid gap-5 max-w-md mt-2">
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-1.5">Нэр</label>
-                  <input
-                    type="text"
-                    value={profile.name}
+                  <input type="text" value={profile.name}
                     onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner"
-                  />
+                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-1.5">И-мэйл хаяг</label>
-                  <input
-                    type="email"
-                    value={profile.email}
+                  <input type="email" value={profile.email}
                     onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner"
-                  />
+                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-1.5">Утасны дугаар</label>
-                  <input
-                    type="tel"
-                    value={profile.phone || ''}
+                  <input type="tel" value={profile.phone || ''}
                     onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner"
-                  />
+                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner" />
                 </div>
                 <div className="grid grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-medium text-slate-400 mb-1.5">Нас</label>
-                    <input
-                      type="number"
-                      value={profile.age || ''}
+                    <input type="number" value={profile.age || ''}
                       onChange={(e) => setProfile({ ...profile, age: e.target.value })}
-                      className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner"
-                    />
+                      className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-400 mb-1.5">Хүйс</label>
-                    <select
-                      value={profile.gender || 'other'}
+                    <select value={profile.gender || 'other'}
                       onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
-                      className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner appearance-none"
-                    >
+                      className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner appearance-none">
                       <option value="male">Эрэгтэй</option>
                       <option value="female">Эмэгтэй</option>
                       <option value="other">Бусад</option>
@@ -672,15 +655,10 @@ export function SettingsPage() {
                   <label className="block text-sm font-medium text-slate-400 mb-3">Загвар (Theme)</label>
                   <div className="flex gap-3 p-1 bg-slate-950/50 rounded-xl border border-slate-800/50">
                     {["dark", "light", "system"].map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setAppearance({ ...appearance, theme: t })}
+                      <button key={t} onClick={() => setAppearance({ ...appearance, theme: t })}
                         className={`flex-1 py-2.5 rounded-lg text-sm font-medium capitalize transition-all duration-300 ${
-                          appearance.theme === t
-                            ? "bg-slate-800 text-accent shadow-md"
-                            : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
-                        }`}
-                      >
+                          appearance.theme === t ? "bg-slate-800 text-accent shadow-md" : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
+                        }`}>
                         {t}
                       </button>
                     ))}
@@ -696,22 +674,16 @@ export function SettingsPage() {
               <div className="grid gap-5 max-w-md">
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-1.5">Хэл</label>
-                  <select
-                    value={preferences.language}
-                    onChange={(e) => setPreferences({ ...preferences, language: e.target.value })}
-                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner appearance-none"
-                  >
+                  <select value={preferences.language} onChange={(e) => setPreferences({ ...preferences, language: e.target.value })}
+                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner appearance-none">
                     <option value="mn">Монгол</option>
                     <option value="en">English</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-1.5">Үндсэн мөнгөн тэмдэгт</label>
-                  <select
-                    value={preferences.currency}
-                    onChange={(e) => setPreferences({ ...preferences, currency: e.target.value })}
-                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner appearance-none"
-                  >
+                  <select value={preferences.currency} onChange={(e) => setPreferences({ ...preferences, currency: e.target.value })}
+                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner appearance-none">
                     <option value="USD">USD ($)</option>
                     <option value="MNT">MNT (₮)</option>
                     <option value="EUR">EUR (€)</option>
@@ -719,11 +691,8 @@ export function SettingsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-1.5">Цагийн бүс</label>
-                  <select
-                    value={preferences.timezone}
-                    onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
-                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner appearance-none"
-                  >
+                  <select value={preferences.timezone} onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
+                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner appearance-none">
                     <option value="Asia/Ulaanbaatar">Asia/Ulaanbaatar (ULAT)</option>
                     <option value="America/New_York">America/New_York (EST)</option>
                     <option value="Europe/London">Europe/London (GMT)</option>
@@ -742,7 +711,8 @@ export function SettingsPage() {
                     <div className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">И-мэйл мэдэгдэл</div>
                     <div className="text-xs text-slate-500 mt-1">Долоо хоногийн тайлан болон зөвлөмжүүд</div>
                   </div>
-                  <div className={`w-12 h-6 rounded-full transition-colors duration-300 relative ${notifications.email ? 'bg-accent' : 'bg-slate-800'}`} onClick={() => setNotifications({...notifications, email: !notifications.email})}>
+                  <div className={`w-12 h-6 rounded-full transition-colors duration-300 relative ${notifications.email ? 'bg-accent' : 'bg-slate-800'}`}
+                    onClick={() => setNotifications({...notifications, email: !notifications.email})}>
                     <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm ${notifications.email ? 'left-7' : 'left-1'}`} />
                   </div>
                 </label>
@@ -751,7 +721,8 @@ export function SettingsPage() {
                     <div className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Арилжааны анхааруулга</div>
                     <div className="text-xs text-slate-500 mt-1">Алдаа гаргах эрсдэлтэй үед AI анхааруулах</div>
                   </div>
-                  <div className={`w-12 h-6 rounded-full transition-colors duration-300 relative ${notifications.tradeAlerts ? 'bg-accent' : 'bg-slate-800'}`} onClick={() => setNotifications({...notifications, tradeAlerts: !notifications.tradeAlerts})}>
+                  <div className={`w-12 h-6 rounded-full transition-colors duration-300 relative ${notifications.tradeAlerts ? 'bg-accent' : 'bg-slate-800'}`}
+                    onClick={() => setNotifications({...notifications, tradeAlerts: !notifications.tradeAlerts})}>
                     <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm ${notifications.tradeAlerts ? 'left-7' : 'left-1'}`} />
                   </div>
                 </label>
@@ -772,10 +743,8 @@ export function SettingsPage() {
               <div className="pt-6 mt-2 border-t border-slate-800">
                 <h3 className="text-sm font-medium text-white mb-2">Аюултай бүс</h3>
                 <p className="text-xs text-slate-500 mb-4">Энэ үйлдэл нь буцаах боломжгүй бөгөөд таны бүх арилжааны түүх, тохиргоо устгагдах болно.</p>
-                <button 
-                  onClick={() => setShowDeleteModal(true)}
-                  className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-sm font-medium rounded-xl transition-colors border border-rose-500/20"
-                >
+                <button onClick={() => setShowDeleteModal(true)}
+                  className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-sm font-medium rounded-xl transition-colors border border-rose-500/20">
                   Бүх өгөгдлөө устгах
                 </button>
               </div>
@@ -784,7 +753,6 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
@@ -798,16 +766,12 @@ export function SettingsPage() {
               Та өөрийн бүх арилжааны түүх, тохиргоо, профайл мэдээллээ устгах гэж байна. Энэ үйлдэл нь <strong className="text-white">буцаах боломжгүй</strong> бөгөөд таны бүх мэдээлэл бүрмөсөн устах болно.
             </p>
             <div className="flex gap-3 justify-end">
-              <button 
-                onClick={() => setShowDeleteModal(false)}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-              >
+              <button onClick={() => setShowDeleteModal(false)}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
                 Цуцлах
               </button>
-              <button 
-                onClick={handleDeleteData}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium bg-rose-500 hover:bg-rose-600 text-white transition-colors shadow-lg shadow-rose-500/20"
-              >
+              <button onClick={handleDeleteData}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium bg-rose-500 hover:bg-rose-600 text-white transition-colors shadow-lg shadow-rose-500/20">
                 Тийм, устгах
               </button>
             </div>
