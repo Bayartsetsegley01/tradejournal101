@@ -5,6 +5,7 @@ import { AddTradeModal } from "@/components/features/journal/AddTradeModal";
 import { TradeDetailModal } from "@/components/features/journal/TradeDetailModal";
 import { ExportModal } from "@/components/features/journal/ExportModal";
 import { ImportModal } from "@/components/features/journal/ImportModal";
+import { ImportMethodModal } from "@/components/features/journal/ImportMethodModal";
 import { TimeFilter } from "@/components/features/analytics/TimeFilter";
 import { Plus, Download, Loader2, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { SESSIONS } from "@/lib/constants";
@@ -19,6 +20,7 @@ export function JournalPage() {
   const { trades, loading: isLoading, invalidate, applyUpdate, applyRemove } = useTrades();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportMethodOpen, setIsImportMethodOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [editingTrade, setEditingTrade] = useState(null);
@@ -178,7 +180,7 @@ export function JournalPage() {
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
-              onClick={() => setIsImportModalOpen(true)}
+              onClick={() => setIsImportMethodOpen(true)}
               className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 border border-slate-700"
             >
               <Download className="w-4 h-4" />
@@ -328,10 +330,16 @@ export function JournalPage() {
         <ExportModal onClose={() => setIsExportModalOpen(false)} trades={filteredTrades} />
       )}
 
+      <ImportMethodModal
+        isOpen={isImportMethodOpen}
+        onClose={() => setIsImportMethodOpen(false)}
+        onCSVImport={() => setIsImportModalOpen(true)}
+      />
+
       <ImportModal
         isOpen={isImportModalOpen}
         onClose={() => { setIsImportModalOpen(false); invalidate(); }}
-        onImportComplete={invalidate} 
+        onImportComplete={invalidate}
       />
     </div>
   );
