@@ -20,5 +20,6 @@ router.post('/apikey',             authenticateToken, generateApiKey);
 
 // EA real-time push (API key auth — no JWT)
 router.post('/ea-sync',            apiKeyAuth, eaSyncTrade);
+router.post('/sync',               apiKeyAuth, eaSyncTrade); // backward compat for existing EA installations
 
 export default router;

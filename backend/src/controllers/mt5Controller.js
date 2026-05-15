@@ -9,6 +9,17 @@ const getMetaApi = () => {
   return new MetaApi(process.env.METAAPI_TOKEN);
 };
 
+const cleanError = (msg = '') => {
+  const m = msg.toLowerCase();
+  if (m.includes('already') || m.includes('exist')) return 'Энэ данс аль хэдийн бүртгэлтэй байна';
+  if (m.includes('timeout') || m.includes('хугацаа')) return 'Холболтын хугацаа дууслаа. Дахин оролдоно уу';
+  if (m.includes('invalid') || m.includes('unauthorized') || m.includes('wrong password') || m.includes('401'))
+    return 'Нэвтрэх мэдээлэл буруу байна. Login эсвэл Investor Password шалгана уу';
+  if (m.includes('not found') || m.includes('404')) return 'Сервер эсвэл данс олдсонгүй';
+  if (m.includes('network') || m.includes('econnrefused') || m.includes('enotfound')) return 'Сүлжээний алдаа. Дахин оролдоно уу';
+  return msg;
+};
+
 const timeAgo = (ms) => {
   const m = Math.floor(ms / 60000);
   if (m < 1) return 'Саяхан';
@@ -28,18 +39,41 @@ export const connectAccount = async (req, res) => {
   }
 
   try {
+    // Return existing DB entry if user already connected this login+server
+    const existing = await query(
+      'SELECT * FROM mt5_accounts WHERE user_id=$1 AND login=$2 AND server=$3 LIMIT 1',
+      [userId, String(login), String(server)]
+    );
+    if (existing.rows[0]) {
+      return res.json({ success: true, data: existing.rows[0] });
+    }
+
     const api = getMetaApi();
 
-    // Create MetaApi account (investor password sent to MetaApi, NOT stored in our DB)
-    const account = await api.metatraderAccountApi.createAccount({
-      name: `TJ_${userId.toString().slice(0, 8)}_${Date.now()}`,
-      type: 'cloud',
-      login: String(login),
-      password: String(investorPassword),
-      server: String(server),
-      platform: 'mt5',
-      magic: 0,
-    });
+    let account;
+    try {
+      account = await api.metatraderAccountApi.createAccount({
+        name: `TJ_${userId.toString().slice(0, 8)}_${Date.now()}`,
+        type: 'cloud',
+        login: String(login),
+        password: String(investorPassword),
+        server: String(server),
+        platform: 'mt5',
+        magic: 0,
+      });
+    } catch (createErr) {
+      // MetaApi account already registered — find and reuse it
+      const errMsg = createErr.message || '';
+      if (errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('exist')) {
+        const allAccounts = await api.metatraderAccountApi.getAccounts({});
+        account = allAccounts.find(
+          a => String(a.login) === String(login) && a.server === String(server)
+        );
+        if (!account) throw new Error('already');
+      } else {
+        throw createErr;
+      }
+    }
 
     const result = await query(
       `INSERT INTO mt5_accounts (user_id, account_id, login, server, sync_type, status)
@@ -53,7 +87,7 @@ export const connectAccount = async (req, res) => {
     res.json({ success: true, data: result.rows[0] });
   } catch (e) {
     console.error('[MetaApi] connect error:', e);
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ success: false, error: cleanError(e.message) });
   }
 };
 
@@ -153,7 +187,7 @@ export const syncAccount = async (req, res) => {
   } catch (e) {
     console.error('[MetaApi] sync error:', e);
     await query(`UPDATE mt5_accounts SET status='ERROR' WHERE id=$1`, [accountId]);
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ success: false, error: cleanError(e.message) });
   }
 };
 
