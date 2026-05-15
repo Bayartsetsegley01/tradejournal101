@@ -62,8 +62,6 @@ export function TradeCalendar({ trades = [], currency = '$' }) {
     return result;
   }, [calendarDays]);
 
-  const visibleWeeks = weeks.filter(w => w.weekTrades > 0);
-
   const monthlySummary = useMemo(() => {
     const active = calendarDays.filter(Boolean).filter(d => d.trades > 0);
     return {
@@ -116,14 +114,9 @@ export function TradeCalendar({ trades = [], currency = '$' }) {
         </div>
       </div>
 
-      {/* Week rows – only weeks that have trades */}
-      {visibleWeeks.length === 0 ? (
-        <div className="py-10 text-center text-slate-600 text-sm">
-          {lang === 'mn' ? 'Энэ сард арилжаа байхгүй' : 'No trades this month'}
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {visibleWeeks.map((week, wi) => {
+      {/* Week rows – full month grid */}
+      <div className="space-y-1">
+        {weeks.map((week, wi) => {
             const weekIsProfit = week.weekPnl >= 0;
             return (
               <div key={wi} className="grid gap-1 items-stretch" style={{ gridTemplateColumns: GRID }}>
@@ -186,25 +179,28 @@ export function TradeCalendar({ trades = [], currency = '$' }) {
                 })}
 
                 {/* Weekly summary column */}
-                <div className={`rounded-xl flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 ${
-                  weekIsProfit
-                    ? 'bg-emerald-500/8 border border-emerald-500/15'
-                    : 'bg-rose-500/8 border border-rose-500/15'
-                }`}>
-                  <span className="text-[9px] text-slate-500 font-medium">
-                    {week.weekTrades}{lang === 'mn' ? 'т' : 'tr'}
-                  </span>
-                  <span className={`text-[10px] font-bold leading-none text-center ${
-                    weekIsProfit ? 'text-emerald-400' : 'text-rose-400'
+                {week.weekTrades > 0 ? (
+                  <div className={`rounded-xl flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 ${
+                    weekIsProfit
+                      ? 'bg-emerald-500/8 border border-emerald-500/15'
+                      : 'bg-rose-500/8 border border-rose-500/15'
                   }`}>
-                    {fmtPnl(week.weekPnl, currency)}
-                  </span>
-                </div>
+                    <span className="text-[9px] text-slate-500 font-medium">
+                      {week.weekTrades}{lang === 'mn' ? 'т' : 'tr'}
+                    </span>
+                    <span className={`text-[10px] font-bold leading-none text-center ${
+                      weekIsProfit ? 'text-emerald-400' : 'text-rose-400'
+                    }`}>
+                      {fmtPnl(week.weekPnl, currency)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-slate-800/20 border border-slate-800/40" />
+                )}
               </div>
             );
           })}
         </div>
-      )}
 
       {/* Monthly footer */}
       {monthlySummary.totalTrades > 0 && (

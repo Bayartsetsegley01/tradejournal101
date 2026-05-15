@@ -4,7 +4,6 @@ import { SummaryCards } from "@/components/features/analytics/SummaryCards";
 import { ChartWithTabs } from "@/components/features/analytics/ChartWithTabs";
 import { RecentTradesPanel } from "@/components/features/analytics/RecentTradesPanel";
 import { TradeCalendar } from "@/components/features/analytics/TradeCalendar";
-import { AiInsightPanel } from "@/components/features/analytics/AiInsightPanel";
 import { analyticsService } from "@/services/analyticsService";
 import { tradeService } from "@/services/tradeService";
 import { AlertTriangle, ChevronDown, BarChart2, Sparkles } from "lucide-react";
@@ -231,9 +230,6 @@ export function AnalyticsPage() {
 
                 {/* Trade calendar */}
                 <TradeCalendar trades={trades} currency={currency} />
-
-                {/* AI Insight */}
-                <AiInsightPanel />
 
               </div>
             )
