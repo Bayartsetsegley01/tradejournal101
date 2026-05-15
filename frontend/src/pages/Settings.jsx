@@ -183,15 +183,33 @@ function ConnectForm({ onSuccess, onCancel }) {
       <div className="space-y-2.5">
         <div>
           <label className="block text-[11px] font-medium text-slate-500 mb-1.5">MT5 Login</label>
-          <input type="text" value={form.login} onChange={e => setForm({...form, login: e.target.value})}
-            placeholder="12345678" disabled={step !== 'idle'} className={inputCls} />
+          <input
+            type="text"
+            name="mt5_login_field"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            value={form.login}
+            onChange={e => setForm({...form, login: e.target.value})}
+            placeholder="Дансны дугаар (жш: 107057802)"
+            disabled={step !== 'idle'}
+            className={inputCls}
+          />
         </div>
         <div>
           <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Investor Password</label>
           <div className="flex gap-2">
-            <input type={showPass ? 'text' : 'password'} value={form.investorPassword}
+            <input
+              type={showPass ? 'text' : 'password'}
+              name="mt5_investor_pwd"
+              autoComplete="new-password"
+              value={form.investorPassword}
               onChange={e => setForm({...form, investorPassword: e.target.value})}
-              placeholder="••••••••" disabled={step !== 'idle'} className={`${inputCls} flex-1`} />
+              placeholder="••••••••"
+              disabled={step !== 'idle'}
+              className={`${inputCls} flex-1`}
+            />
             <button type="button" onClick={() => setShowPass(v => !v)}
               className="px-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-colors">
               {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -200,8 +218,19 @@ function ConnectForm({ onSuccess, onCancel }) {
         </div>
         <div>
           <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Server</label>
-          <input type="text" value={form.server} onChange={e => setForm({...form, server: e.target.value})}
-            placeholder="MetaQuotes-Demo" disabled={step !== 'idle'} className={inputCls} />
+          <input
+            type="text"
+            name="mt5_server_field"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            value={form.server}
+            onChange={e => setForm({...form, server: e.target.value})}
+            placeholder="MetaQuotes-Demo"
+            disabled={step !== 'idle'}
+            className={inputCls}
+          />
         </div>
       </div>
 
