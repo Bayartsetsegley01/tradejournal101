@@ -131,7 +131,10 @@ function ConnectForm({ onSuccess, onCancel }) {
         body: JSON.stringify(form),
       });
       const d1 = await r1.json();
-      if (!d1.success) { setError(d1.error || 'Холбоход алдаа'); setStep('idle'); return; }
+      if (!d1.success) {
+        setError(d1.error === 'AUTO_SYNC_UNAVAILABLE' ? '__unavailable__' : (d1.error || 'Холбоход алдаа'));
+        setStep('idle'); return;
+      }
 
       const accountId = d1.data.id;
       setStep('syncing');
@@ -234,17 +237,32 @@ function ConnectForm({ onSuccess, onCancel }) {
         </div>
       </div>
 
-      {error && (
+      {error === '__unavailable__' ? (
+        <div className="mt-3 bg-amber-500/8 border border-amber-500/20 rounded-xl p-4 space-y-2">
+          <p className="text-xs font-semibold text-amber-400">Auto-Sync түр ажиллахгүй байна</p>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            MetaApi cloud холболт нь төлбөртэй үйлчилгээ шаарддаг. Доорх аргуудыг ашиглаарай:
+          </p>
+          <ul className="text-[11px] text-slate-400 space-y-1 pl-3">
+            <li>• <span className="text-blue-400 font-medium">EA Sync</span> — MT5-д EA суулгах (үнэгүй, real-time)</li>
+            <li>• <span className="text-slate-300 font-medium">CSV Import</span> — MT5-аас export хийж upload хийх</li>
+          </ul>
+        </div>
+      ) : error ? (
         <p className="mt-3 text-xs text-rose-400 bg-rose-400/5 border border-rose-400/15 rounded-lg px-3 py-2">{error}</p>
-      )}
+      ) : null}
 
-      <button onClick={handle}
-        disabled={step !== 'idle' || !form.login || !form.investorPassword || !form.server}
-        className="mt-4 w-full flex items-center justify-center gap-2 text-sm font-semibold bg-accent hover:bg-accent-hover text-slate-950 py-2.5 rounded-lg transition-colors disabled:opacity-50 shadow-[0_0_20px_rgba(200,240,122,0.1)]">
-        <Zap className="w-4 h-4" />
-        {step !== 'idle' ? 'Холбогдож байна...' : 'MT5 Холбох'}
-      </button>
-      <p className="text-[10px] text-slate-600 text-center mt-2">Read-only горим — арилжаа нээх боломжгүй</p>
+      {error !== '__unavailable__' && (
+        <>
+          <button onClick={handle}
+            disabled={step !== 'idle' || !form.login || !form.investorPassword || !form.server}
+            className="mt-4 w-full flex items-center justify-center gap-2 text-sm font-semibold bg-accent hover:bg-accent-hover text-slate-950 py-2.5 rounded-lg transition-colors disabled:opacity-50 shadow-[0_0_20px_rgba(200,240,122,0.1)]">
+            <Zap className="w-4 h-4" />
+            {step !== 'idle' ? 'Холбогдож байна...' : 'MT5 Холбох'}
+          </button>
+          <p className="text-[10px] text-slate-600 text-center mt-2">Read-only горим — арилжаа нээх боломжгүй</p>
+        </>
+      )}
     </div>
   );
 }

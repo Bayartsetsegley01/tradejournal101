@@ -11,6 +11,8 @@ const getMetaApi = () => {
 
 const cleanError = (msg = '') => {
   const m = msg.toLowerCase();
+  if (m.includes('high reliability') || m.includes('top up'))
+    return 'AUTO_SYNC_UNAVAILABLE';
   if (m.includes('already') || m.includes('exist')) return 'Энэ данс аль хэдийн бүртгэлтэй байна';
   if (m.includes('timeout') || m.includes('хугацаа')) return 'Холболтын хугацаа дууслаа. Дахин оролдоно уу';
   if (m.includes('invalid') || m.includes('unauthorized') || m.includes('wrong password') || m.includes('401'))
