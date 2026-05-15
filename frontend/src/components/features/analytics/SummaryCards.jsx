@@ -1,106 +1,111 @@
-import { TrendingUp, TrendingDown, Target, Activity, Hash } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 
 const MNT_RATE = 3450;
 
-function KPICard({ icon: Icon, label, value, badge, badgeCls, iconBg, iconCls }) {
+function fmtSigned(val, currency) {
+  if (val === null || val === undefined) return '—';
+  const n = parseFloat(val);
+  if (isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (currency === '₮') return `${n >= 0 ? '+' : '-'}${Math.round(abs * MNT_RATE).toLocaleString()} ₮`;
+  return `${n >= 0 ? '+' : '-'}$${abs.toFixed(2)}`;
+}
+
+function fmtBalance(val, currency) {
+  if (!val && val !== 0) return '—';
+  const n = parseFloat(val);
+  if (isNaN(n)) return '—';
+  if (currency === '₮') return `${Math.round(n * MNT_RATE).toLocaleString()} ₮`;
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function BigCard({ label, value, valueCls = 'text-white', sub, subCls = 'text-slate-500' }) {
   return (
-    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl p-5 hover:border-slate-700 hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-all duration-300 group cursor-default">
-      <div className="flex items-start justify-between mb-5">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg}`}>
-          <Icon className={`w-5 h-5 ${iconCls}`} />
-        </div>
-        {badge && (
-          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${badgeCls}`}>
-            {badge}
-          </span>
-        )}
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-white font-mono tracking-tight leading-none">
-          {value}
-        </p>
-        <p className="text-xs text-slate-500 mt-2 font-medium uppercase tracking-wide">{label}</p>
-      </div>
+    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl p-5 hover:border-slate-700 transition-all duration-300 cursor-default">
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">{label}</p>
+      <p className={`text-2xl font-bold font-mono leading-none ${valueCls}`}>{value}</p>
+      {sub && <p className={`text-xs mt-2 font-medium ${subCls}`}>{sub}</p>}
     </div>
   );
 }
 
-export function SummaryCards({ data, timeRange = 'all', currency = '$' }) {
-  const { t } = useLang();
+function SmallCard({ label, value, valueCls = 'text-white' }) {
+  return (
+    <div className="bg-slate-900 border border-slate-800/60 rounded-xl p-3.5 hover:border-slate-700 transition-all duration-300 cursor-default">
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">{label}</p>
+      <p className={`text-base font-bold font-mono leading-none ${valueCls}`}>{value}</p>
+    </div>
+  );
+}
+
+export function SummaryCards({ data, currency = '$' }) {
+  const { lang } = useLang();
   if (!data) return null;
 
-  const rangeKeyMap = {
-    today: 'rangeToday', '7d': 'range7d', '1m': 'range1m',
-    '3m': 'range3m', '6m': 'range6m', '1y': 'range1y',
-    all: 'rangeAll', custom: 'rangeCustom',
-  };
-  const rangeLabel = t(rangeKeyMap[timeRange] || 'rangeCustom');
-
-  const formatCurrency = (val) => {
-    if (currency === '₮') {
-      const mnt = Math.round(val * MNT_RATE);
-      const abs = Math.abs(mnt);
-      return `${val >= 0 ? '+' : '-'}${abs.toLocaleString()} ₮`;
-    }
-    const abs = Math.abs(val);
-    return `${val >= 0 ? '+' : '-'}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
-
-  const isProfit = data.netPnl >= 0;
-  const isGoodWinRate = data.winRate >= 50;
-  const isGoodPF = data.profitFactor >= 1;
-
-  const cards = [
-    {
-      icon: isProfit ? TrendingUp : TrendingDown,
-      label: t('netPnlLabel'),
-      value: formatCurrency(data.netPnl),
-      badge: isProfit ? t('positive') : t('negative'),
-      badgeCls: isProfit
-        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20',
-      iconBg: isProfit ? 'bg-emerald-500/10' : 'bg-rose-500/10',
-      iconCls: isProfit ? 'text-emerald-400' : 'text-rose-400',
-    },
-    {
-      icon: Target,
-      label: t('winRateLabel'),
-      value: `${data.winRate.toFixed(1)}%`,
-      badge: isGoodWinRate ? '↑ 50%+' : '↓ 50%-',
-      badgeCls: isGoodWinRate
-        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20',
-      iconBg: 'bg-sky-500/10',
-      iconCls: 'text-sky-400',
-    },
-    {
-      icon: Activity,
-      label: t('profitFactorLabel'),
-      value: data.profitFactor.toFixed(2),
-      badge: isGoodPF ? '↑ 1.0+' : '↓ 1.0-',
-      badgeCls: isGoodPF
-        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20',
-      iconBg: 'bg-violet-500/10',
-      iconCls: 'text-violet-400',
-    },
-    {
-      icon: Hash,
-      label: t('totalTradesLabel'),
-      value: data.totalTrades,
-      badge: rangeLabel,
-      badgeCls: 'bg-slate-800 text-slate-400 border border-slate-700',
-      iconBg: 'bg-accent/10',
-      iconCls: 'text-accent',
-    },
-  ];
+  const netPnl   = parseFloat(data.netPnl   ?? 0);
+  const winRate  = parseFloat(data.winRate  ?? 0);
+  const avgRR    = parseFloat(data.avgRR    ?? 0);
+  const avgWin   = parseFloat(data.avgWin   ?? 0);
+  const avgLoss  = parseFloat(data.avgLoss  ?? 0);
+  const expectancy = parseFloat(data.expectancy ?? 0);
+  const volume   = parseFloat(data.totalVolume ?? 0);
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((card, i) => (
-        <KPICard key={i} {...card} />
-      ))}
+    <div className="space-y-3">
+      {/* Row 1 – 3 large cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <BigCard
+          label={lang === 'mn' ? 'ҮЛДЭГДЭЛ' : 'BALANCE'}
+          value={fmtBalance(data.balance, currency)}
+        />
+        <BigCard
+          label={lang === 'mn' ? 'ЦЭВЭР ДҮН' : 'NET P&L'}
+          value={fmtSigned(netPnl, currency)}
+          valueCls={netPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}
+        />
+        <BigCard
+          label={lang === 'mn' ? 'ЯЛАЛТЫН ХУВЬ' : 'WIN RATE'}
+          value={`${winRate.toFixed(1)}%`}
+          valueCls={winRate >= 50 ? 'text-emerald-400' : 'text-rose-400'}
+          sub={winRate >= 50
+            ? (lang === 'mn' ? 'Сайн үзүүлэлт' : 'Good performance')
+            : (lang === 'mn' ? 'Сайжруулна уу' : 'Needs improvement')}
+          subCls={winRate >= 50 ? 'text-emerald-500' : 'text-rose-500'}
+        />
+      </div>
+
+      {/* Row 2 – 6 small cards */}
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <SmallCard
+          label="RISK REWARD"
+          value={avgRR > 0 ? avgRR.toFixed(2) : '—'}
+          valueCls={avgRR >= 1.5 ? 'text-emerald-400' : avgRR > 0 ? 'text-amber-400' : 'text-slate-500'}
+        />
+        <SmallCard
+          label={lang === 'mn' ? 'ХҮЛЭЭЛТ' : 'EXPECTANCY'}
+          value={data.expectancy != null ? fmtSigned(expectancy, currency) : '—'}
+          valueCls={expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'}
+        />
+        <SmallCard
+          label={lang === 'mn' ? 'АРИЛЖАА' : 'TRADES'}
+          value={data.totalTrades ?? 0}
+        />
+        <SmallCard
+          label={lang === 'mn' ? 'ДУНДАЖ АШИГ' : 'AVG WIN'}
+          value={avgWin > 0 ? fmtSigned(avgWin, currency) : '—'}
+          valueCls="text-emerald-400"
+        />
+        <SmallCard
+          label={lang === 'mn' ? 'ДУНДАЖ АЛДАГДАЛ' : 'AVG LOSS'}
+          value={avgLoss < 0 ? fmtSigned(avgLoss, currency) : '—'}
+          valueCls="text-rose-400"
+        />
+        <SmallCard
+          label={lang === 'mn' ? 'ЛОТ' : 'VOLUME'}
+          value={volume > 0 ? volume.toFixed(2) : '—'}
+          valueCls="text-slate-300"
+        />
+      </div>
     </div>
   );
 }

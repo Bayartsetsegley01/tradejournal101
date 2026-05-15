@@ -34,15 +34,53 @@ export const getSummary = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
     const userId = req.user.id;
-    const filter = addAccountFilter(getDateFilter(req.query.range || req.query.timeRange), req.query.account_id);
-    const result = await query(
-      `SELECT COUNT(*) as total_trades, SUM(CASE WHEN pnl>0 THEN 1 ELSE 0 END) as winning_trades, SUM(pnl) as net_pnl, SUM(CASE WHEN pnl>0 THEN pnl ELSE 0 END) as gross_profit, SUM(CASE WHEN pnl<0 THEN pnl ELSE 0 END) as gross_loss FROM trades WHERE user_id=$1 AND status='CLOSED' ${filter.sql}`,
-      [userId, ...filter.params]
-    );
+    const accountId = req.query.account_id;
+    const filter = addAccountFilter(getDateFilter(req.query.range || req.query.timeRange), accountId);
+
+    // Balance query: account filter but NO time filter (all-time cumulative)
+    let balSql = `SELECT COALESCE(SUM(pnl),0) as balance FROM trades WHERE user_id=$1 AND status='CLOSED'`;
+    let balParams = [userId];
+    if (accountId && accountId !== 'all') {
+      if (accountId === 'personal') { balSql += ' AND account_id IS NULL'; }
+      else { balSql += ' AND account_id=$2'; balParams.push(accountId); }
+    }
+
+    const [result, balRes] = await Promise.all([
+      query(
+        `SELECT COUNT(*) as total_trades,
+                SUM(CASE WHEN pnl>0 THEN 1 ELSE 0 END) as winning_trades,
+                SUM(pnl) as net_pnl,
+                SUM(CASE WHEN pnl>0 THEN pnl ELSE 0 END) as gross_profit,
+                SUM(CASE WHEN pnl<0 THEN pnl ELSE 0 END) as gross_loss,
+                AVG(CASE WHEN pnl>0 THEN pnl ELSE NULL END) as avg_win,
+                AVG(CASE WHEN pnl<0 THEN pnl ELSE NULL END) as avg_loss,
+                COALESCE(SUM(position_size),0) as total_volume,
+                COALESCE(AVG(NULLIF(rr_ratio,0)),0) as avg_rr
+         FROM trades WHERE user_id=$1 AND status='CLOSED' ${filter.sql}`,
+        [userId, ...filter.params]
+      ),
+      query(balSql, balParams),
+    ]);
+
     const r = result.rows[0];
-    const totalTrades = parseInt(r.total_trades)||0, winningTrades = parseInt(r.winning_trades)||0;
-    const netPnl = parseFloat(r.net_pnl)||0, grossProfit = parseFloat(r.gross_profit)||0, grossLoss = Math.abs(parseFloat(r.gross_loss)||0);
-    res.json({ success: true, data: { netPnl, winRate: totalTrades>0?(winningTrades/totalTrades)*100:0, profitFactor: grossLoss>0?grossProfit/grossLoss:(grossProfit>0?grossProfit:0), totalTrades } });
+    const totalTrades   = parseInt(r.total_trades)  || 0;
+    const winningTrades = parseInt(r.winning_trades) || 0;
+    const netPnl        = parseFloat(r.net_pnl)     || 0;
+    const grossProfit   = parseFloat(r.gross_profit) || 0;
+    const grossLoss     = Math.abs(parseFloat(r.gross_loss) || 0);
+    const avgWin        = parseFloat(r.avg_win)      || 0;
+    const avgLoss       = Math.abs(parseFloat(r.avg_loss)  || 0);
+    const totalVolume   = parseFloat(r.total_volume) || 0;
+    const avgRR         = parseFloat(r.avg_rr)       || 0;
+    const balance       = parseFloat(balRes.rows[0]?.balance) || 0;
+    const winRate       = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+    const expectancy    = winRate / 100 * avgWin - (1 - winRate / 100) * avgLoss;
+
+    res.json({ success: true, data: {
+      balance, netPnl, winRate,
+      profitFactor: grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? grossProfit : 0),
+      totalTrades, avgWin, avgLoss, totalVolume, avgRR, expectancy,
+    }});
   } catch (error) {
     console.error('getSummary error:', error);
     res.status(500).json({ success: false, error: error.message });
