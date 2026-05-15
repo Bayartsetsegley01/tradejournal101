@@ -23,6 +23,7 @@ const timeAgo = (date) => {
 const STATUS = {
   CONNECTED:  { dot: 'bg-emerald-400 animate-pulse', pill: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', label: 'Холбогдсон' },
   CONNECTING: { dot: 'bg-amber-400 animate-pulse',   pill: 'bg-amber-400/10 text-amber-400 border-amber-400/20',     label: 'Холбогдож байна' },
+  SYNCING:    { dot: 'bg-blue-400 animate-pulse',    pill: 'bg-blue-400/10 text-blue-400 border-blue-400/20',         label: 'Sync хийгдэж байна...' },
   ERROR:      { dot: 'bg-rose-400',                  pill: 'bg-rose-400/10 text-rose-400 border-rose-400/20',         label: 'Алдаа' },
 };
 
@@ -45,11 +46,18 @@ function AccountCard({ account, onRefresh }) {
         body: JSON.stringify({ months }),
       });
       const d = await res.json();
-      if (d.success) { setResult(d.data); onRefresh(); }
-      else setError(d.error || 'Sync алдаа');
-    } catch (e) { setError(e.message); }
-    setSyncing(false);
+      if (d.success) {
+        // Background sync started — poll until status changes from SYNCING
+        onRefresh();
+      } else {
+        setError(d.error || 'Sync алдаа');
+        setSyncing(false);
+      }
+    } catch (e) { setError(e.message); setSyncing(false); }
   };
+
+  // Keep spinner while account is in SYNCING state
+  const isSyncing = syncing || account.status === 'SYNCING';
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -90,22 +98,28 @@ function AccountCard({ account, onRefresh }) {
 
       <div className="flex items-center gap-2">
         <select value={months} onChange={e => setMonths(Number(e.target.value))}
-          className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-600">
+          disabled={isSyncing}
+          className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-600 disabled:opacity-40">
           {[1, 2, 3, 6, 12].map(m => <option key={m} value={m}>{m} сар</option>)}
         </select>
-        <button onClick={handleSync} disabled={syncing}
+        <button onClick={handleSync} disabled={isSyncing}
           className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 px-3 py-1.5 rounded-lg transition-all disabled:opacity-50">
-          <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
-          {syncing ? 'Татаж байна...' : 'Sync хийх'}
+          <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+          {isSyncing ? 'Sync хийгдэж байна...' : 'Sync хийх'}
         </button>
       </div>
 
-      {result && (
+      {account.status === 'SYNCING' && (
+        <p className="mt-2 text-[11px] text-blue-400/80">MetaApi-тай холбогдож байна, 2–5 мин хүлээнэ үү...</p>
+      )}
+      {account.status === 'CONNECTED' && account.last_synced_at && !isSyncing && (
         <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-400/5 border border-emerald-400/15 rounded-lg px-2.5 py-1.5">
           <Check className="w-3 h-3 shrink-0" />
-          {result.imported} шинэ арилжаа нэмэгдлээ
-          {result.skipped > 0 && <span className="text-slate-500 ml-1">· {result.skipped} давхардал алгасав</span>}
+          Sync амжилттай боллоо
         </div>
+      )}
+      {account.status === 'ERROR' && account.last_sync_error && (
+        <p className="mt-2.5 text-xs text-rose-400 bg-rose-400/5 border border-rose-400/15 rounded-lg px-2.5 py-1.5">{account.last_sync_error}</p>
       )}
       {error && (
         <p className="mt-2.5 text-xs text-rose-400 bg-rose-400/5 border border-rose-400/15 rounded-lg px-2.5 py-1.5">{error}</p>
@@ -291,6 +305,20 @@ function MT5Tab() {
     } catch {}
     setAccountsLoading(false);
   };
+
+  // Poll every 4s while any account is in SYNCING state
+  useEffect(() => {
+    const hasSyncing = accounts.some(a => a.status === 'SYNCING');
+    if (!hasSyncing) return;
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/mt5/accounts`, { headers: getAuthHeaders(), credentials: 'include' });
+        const d = await res.json();
+        if (d.success) setAccounts(d.data);
+      } catch {}
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [accounts]);
   useEffect(() => { loadAccounts(); }, []);
 
   useEffect(() => {

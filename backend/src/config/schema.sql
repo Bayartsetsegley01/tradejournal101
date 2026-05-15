@@ -443,3 +443,10 @@ DO $$ BEGIN
     ALTER TABLE trades ADD COLUMN account_id UUID REFERENCES mt5_accounts(id) ON DELETE SET NULL;
   END IF;
 END $$;
+
+-- Store last sync error message
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mt5_accounts' AND column_name='last_sync_error') THEN
+    ALTER TABLE mt5_accounts ADD COLUMN last_sync_error TEXT;
+  END IF;
+END $$;

@@ -115,7 +115,7 @@ export const connectAccount = async (req, res) => {
   }
 };
 
-// ── Auto-Sync: Sync trades ────────────────────────────────────────────────────
+// ── Auto-Sync: Sync trades (background — avoids Render 30s HTTP timeout) ────────
 
 export const syncAccount = async (req, res) => {
   const { accountId } = req.params;
@@ -130,8 +130,15 @@ export const syncAccount = async (req, res) => {
     return res.status(404).json({ success: false, error: 'Данс олдсонгүй' });
   }
 
-  const dbAccount = accountResult.rows[0];
+  // Mark as SYNCING and respond immediately — actual work runs in background
+  await query(`UPDATE mt5_accounts SET status='SYNCING' WHERE id=$1`, [accountId]);
+  res.json({ success: true, data: { status: 'SYNCING' } });
 
+  // Background sync — runs after HTTP response is sent
+  _runSync(accountId, userId, accountResult.rows[0], months);
+};
+
+async function _runSync(accountId, userId, dbAccount, months) {
   try {
     const api = getMetaApi();
     const account = await api.metatraderAccountApi.getAccount(dbAccount.account_id);
@@ -159,18 +166,15 @@ export const syncAccount = async (req, res) => {
 
     let imported = 0;
     let skipped  = 0;
-    const errors = [];
 
     for (const ex of outDeals) {
       try {
         const en = inDeals.find(d => d.positionId === ex.positionId);
-        // exit SELL = was LONG trade; exit BUY = was SHORT trade
         const direction = ex.type === 'DEAL_TYPE_SELL' ? 'LONG' : 'SHORT';
         const pnl = (ex.profit || 0) + (ex.commission || 0) + (ex.swap || 0);
         const entryDate = en?.time ? new Date(en.time) : null;
         const exitDate  = ex.time  ? new Date(ex.time)  : null;
 
-        // Dedup: skip if this exact trade already exists
         if (entryDate && exitDate) {
           const dup = await query(
             `SELECT id FROM trades WHERE user_id=$1 AND symbol=$2 AND direction=$3
@@ -193,7 +197,7 @@ export const syncAccount = async (req, res) => {
         );
         imported++;
       } catch (e) {
-        errors.push({ symbol: ex.symbol, error: e.message });
+        console.error('[MetaApi] trade insert:', e.message);
       }
     }
 
@@ -201,21 +205,22 @@ export const syncAccount = async (req, res) => {
       `UPDATE mt5_accounts SET status='CONNECTED', last_synced_at=NOW() WHERE id=$1`,
       [accountId]
     );
-
-    res.json({ success: true, data: { imported, skipped, total: outDeals.length, errors: errors.slice(0, 5) } });
+    console.log(`[MetaApi] sync done — imported:${imported} skipped:${skipped}`);
   } catch (e) {
-    console.error('[MetaApi] sync error:', e);
-    await query(`UPDATE mt5_accounts SET status='ERROR' WHERE id=$1`, [accountId]);
-    res.status(500).json({ success: false, error: cleanError(e.message) });
+    console.error('[MetaApi] background sync error:', e.message);
+    await query(
+      `UPDATE mt5_accounts SET status='ERROR', last_sync_error=$2 WHERE id=$1`,
+      [accountId, cleanError(e.message)]
+    ).catch(() => {});
   }
-};
+}
 
 // ── Get connected accounts ────────────────────────────────────────────────────
 
 export const getAccounts = async (req, res) => {
   try {
     const result = await query(
-      `SELECT id, login, server, sync_type, status, last_synced_at, created_at
+      `SELECT id, login, server, sync_type, status, last_synced_at, last_sync_error, created_at
        FROM mt5_accounts WHERE user_id=$1 ORDER BY created_at DESC`,
       [req.user.id]
     );
