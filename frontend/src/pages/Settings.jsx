@@ -20,8 +20,11 @@ const timeAgo = (date) => {
   return `${Math.floor(m / 1440)} өдрийн өмнө`;
 };
 
-const STATUS_DOT  = { CONNECTED: 'bg-emerald-400 animate-pulse', CONNECTING: 'bg-amber-400', ERROR: 'bg-rose-400' };
-const STATUS_TEXT = { CONNECTED: 'Холбогдсон', CONNECTING: 'Холбогдож байна...', ERROR: 'Алдаа гарлаа' };
+const STATUS = {
+  CONNECTED:  { dot: 'bg-emerald-400 animate-pulse', pill: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', label: 'Холбогдсон' },
+  CONNECTING: { dot: 'bg-amber-400 animate-pulse',   pill: 'bg-amber-400/10 text-amber-400 border-amber-400/20',     label: 'Холбогдож байна' },
+  ERROR:      { dot: 'bg-rose-400',                  pill: 'bg-rose-400/10 text-rose-400 border-rose-400/20',         label: 'Алдаа' },
+};
 
 // ── AccountCard ───────────────────────────────────────────────────────────────
 
@@ -31,6 +34,8 @@ function AccountCard({ account, onRefresh }) {
   const [months,   setMonths]   = useState(3);
   const [result,   setResult]   = useState(null);
   const [error,    setError]    = useState('');
+
+  const st = STATUS[account.status] || STATUS.ERROR;
 
   const handleSync = async () => {
     setSyncing(true); setResult(null); setError('');
@@ -58,50 +63,53 @@ function AccountCard({ account, onRefresh }) {
   };
 
   return (
-    <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 space-y-3">
-      <div className="flex items-start justify-between">
+    <div className="group bg-slate-950 border border-slate-800 rounded-xl p-4 hover:border-slate-700 transition-all duration-200">
+      <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
-            <BarChart2 className="w-4 h-4 text-accent" />
+          <div className="w-8 h-8 rounded-lg bg-slate-800/80 border border-slate-700/50 flex items-center justify-center shrink-0">
+            <BarChart2 className="w-4 h-4 text-slate-400" />
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-white font-mono">{account.login}</span>
-              <div className="flex items-center gap-1">
-                <div className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[account.status] || 'bg-slate-500'}`} />
-                <span className="text-xs text-slate-400">{STATUS_TEXT[account.status] || account.status}</span>
-              </div>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">{account.server}</p>
+            <p className="text-sm font-semibold text-white font-mono leading-none">{account.login}</p>
+            <p className="text-[11px] text-slate-500 mt-1">{account.server}</p>
           </div>
         </div>
-        <button onClick={handleDelete} disabled={deleting}
-          className="p-1.5 rounded-lg text-slate-600 hover:text-rose-400 hover:bg-rose-400/10 transition-colors disabled:opacity-40 shrink-0">
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded-full border ${st.pill}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+            {st.label}
+          </span>
+          <button onClick={handleDelete} disabled={deleting}
+            className="p-1.5 rounded-lg text-slate-700 hover:text-rose-400 hover:bg-rose-400/10 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-40">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
-      <p className="text-xs text-slate-600">Сүүлд sync: {timeAgo(account.last_synced_at)}</p>
+      <p className="text-[11px] text-slate-600 mb-3">Сүүлд sync: {timeAgo(account.last_synced_at)}</p>
 
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2">
         <select value={months} onChange={e => setMonths(Number(e.target.value))}
-          className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none">
+          className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-slate-600">
           {[1, 2, 3, 6, 12].map(m => <option key={m} value={m}>{m} сар</option>)}
         </select>
         <button onClick={handleSync} disabled={syncing}
-          className="flex items-center gap-1.5 text-xs bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
-          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 px-3 py-1.5 rounded-lg transition-all disabled:opacity-50">
+          <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
           {syncing ? 'Татаж байна...' : 'Sync хийх'}
         </button>
       </div>
 
       {result && (
-        <p className="text-xs text-emerald-400">
+        <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-400/5 border border-emerald-400/15 rounded-lg px-2.5 py-1.5">
+          <Check className="w-3 h-3 shrink-0" />
           {result.imported} шинэ арилжаа нэмэгдлээ
-          {result.skipped > 0 && <span className="text-slate-500 ml-1.5">({result.skipped} давхардал алгассан)</span>}
-        </p>
+          {result.skipped > 0 && <span className="text-slate-500 ml-1">· {result.skipped} давхардал алгасав</span>}
+        </div>
       )}
-      {error && <p className="text-xs text-rose-400">{error}</p>}
+      {error && (
+        <p className="mt-2.5 text-xs text-rose-400 bg-rose-400/5 border border-rose-400/15 rounded-lg px-2.5 py-1.5">{error}</p>
+      )}
     </div>
   );
 }
@@ -111,7 +119,7 @@ function AccountCard({ account, onRefresh }) {
 function ConnectForm({ onSuccess, onCancel }) {
   const [form,     setForm]     = useState({ login: '', investorPassword: '', server: '' });
   const [showPass, setShowPass] = useState(false);
-  const [step,     setStep]     = useState('idle'); // idle | connecting | syncing | done
+  const [step,     setStep]     = useState('idle');
   const [syncRes,  setSyncRes]  = useState(null);
   const [error,    setError]    = useState('');
 
@@ -141,60 +149,73 @@ function ConnectForm({ onSuccess, onCancel }) {
     }
   };
 
-  const inputCls = 'w-full bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-accent/50 transition-all';
+  const inputCls = 'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/10 transition-all';
+
+  if (step === 'done') return (
+    <div className="bg-slate-950 border border-emerald-500/20 rounded-xl p-5 text-center">
+      <div className="w-10 h-10 rounded-full bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center mx-auto mb-3">
+        <Check className="w-5 h-5 text-emerald-400" />
+      </div>
+      <p className="text-sm font-semibold text-white">Амжилттай холбогдлоо!</p>
+      {syncRes && <p className="text-xs text-slate-400 mt-1">{syncRes.imported} арилжаа нэмэгдлээ</p>}
+    </div>
+  );
 
   return (
-    <div className="bg-slate-800/30 border border-accent/20 rounded-xl p-4 space-y-3 mb-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-white flex items-center gap-2">
-          <Zap className="w-4 h-4 text-accent" /> Шинэ данс нэмэх
-        </p>
+    <div className="bg-slate-950 border border-accent/20 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Zap className="w-3.5 h-3.5 text-accent" />
+          <span className="text-xs font-semibold text-white">Шинэ данс нэмэх</span>
+        </div>
         <button onClick={onCancel} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Цуцлах</button>
       </div>
 
-      {step === 'done' ? (
-        <div className="text-center py-4">
-          <p className="text-emerald-400 text-sm font-medium">Амжилттай холбогдлоо!</p>
-          {syncRes && <p className="text-xs text-slate-400 mt-1">{syncRes.imported} арилжаа нэмэгдлээ</p>}
+      {step !== 'idle' && (
+        <div className="flex items-center gap-2.5 mb-3 px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg">
+          <RefreshCw className="w-3.5 h-3.5 text-accent animate-spin shrink-0" />
+          <p className="text-xs text-slate-400">
+            {step === 'connecting' ? 'MetaApi-т холбогдож байна... (30–60с)' : 'Арилжааны түүх татаж байна...'}
+          </p>
         </div>
-      ) : (
-        <>
-          <div className="grid gap-2.5">
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">MT5 Login (дансны дугаар)</label>
-              <input type="text" value={form.login} onChange={e => setForm({...form, login: e.target.value})}
-                placeholder="12345678" className={inputCls} />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Investor Password</label>
-              <div className="flex gap-2">
-                <input type={showPass ? 'text' : 'password'} value={form.investorPassword}
-                  onChange={e => setForm({...form, investorPassword: e.target.value})}
-                  placeholder="••••••••" className={`${inputCls} flex-1`} />
-                <button type="button" onClick={() => setShowPass(v => !v)}
-                  className="px-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors">
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Server</label>
-              <input type="text" value={form.server} onChange={e => setForm({...form, server: e.target.value})}
-                placeholder="MetaQuotes-Demo" className={inputCls} />
-            </div>
-          </div>
-
-          {error && <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">{error}</p>}
-
-          <button onClick={handle}
-            disabled={step !== 'idle' || !form.login || !form.investorPassword || !form.server}
-            className="w-full flex items-center justify-center gap-2 text-sm bg-accent hover:bg-accent-hover text-slate-950 font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${step !== 'idle' ? 'animate-spin' : ''}`} />
-            {step === 'connecting' ? 'Холбогдож байна... (30-60с)' : step === 'syncing' ? 'Арилжааг татаж байна...' : 'MT5 Холбох'}
-          </button>
-          <p className="text-xs text-slate-600 text-center">Investor password — зөвхөн уншдаг, арилжаа нээх боломжгүй</p>
-        </>
       )}
+
+      <div className="space-y-2.5">
+        <div>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1.5">MT5 Login</label>
+          <input type="text" value={form.login} onChange={e => setForm({...form, login: e.target.value})}
+            placeholder="12345678" disabled={step !== 'idle'} className={inputCls} />
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Investor Password</label>
+          <div className="flex gap-2">
+            <input type={showPass ? 'text' : 'password'} value={form.investorPassword}
+              onChange={e => setForm({...form, investorPassword: e.target.value})}
+              placeholder="••••••••" disabled={step !== 'idle'} className={`${inputCls} flex-1`} />
+            <button type="button" onClick={() => setShowPass(v => !v)}
+              className="px-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-colors">
+              {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Server</label>
+          <input type="text" value={form.server} onChange={e => setForm({...form, server: e.target.value})}
+            placeholder="MetaQuotes-Demo" disabled={step !== 'idle'} className={inputCls} />
+        </div>
+      </div>
+
+      {error && (
+        <p className="mt-3 text-xs text-rose-400 bg-rose-400/5 border border-rose-400/15 rounded-lg px-3 py-2">{error}</p>
+      )}
+
+      <button onClick={handle}
+        disabled={step !== 'idle' || !form.login || !form.investorPassword || !form.server}
+        className="mt-4 w-full flex items-center justify-center gap-2 text-sm font-semibold bg-accent hover:bg-accent-hover text-slate-950 py-2.5 rounded-lg transition-colors disabled:opacity-50 shadow-[0_0_20px_rgba(200,240,122,0.1)]">
+        <Zap className="w-4 h-4" />
+        {step !== 'idle' ? 'Холбогдож байна...' : 'MT5 Холбох'}
+      </button>
+      <p className="text-[10px] text-slate-600 text-center mt-2">Read-only горим — арилжаа нээх боломжгүй</p>
     </div>
   );
 }
@@ -202,20 +223,17 @@ function ConnectForm({ onSuccess, onCancel }) {
 // ── MT5Tab ────────────────────────────────────────────────────────────────────
 
 function MT5Tab() {
-  // Auto-Sync accounts
   const [accounts,        setAccounts]        = useState([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [showConnectForm, setShowConnectForm] = useState(false);
-
-  // EA key
-  const [apiKey,    setApiKey]    = useState(null);
-  const [keyLoading,setKeyLoading]= useState(true);
-  const [generating,setGenerating]= useState(false);
-  const [copied,    setCopied]    = useState('');
-  const [showKey,   setShowKey]   = useState(false);
+  const [apiKey,          setApiKey]          = useState(null);
+  const [keyLoading,      setKeyLoading]      = useState(true);
+  const [generating,      setGenerating]      = useState(false);
+  const [copied,          setCopied]          = useState('');
+  const [showKey,         setShowKey]         = useState(false);
 
   const backendUrl = import.meta.env.VITE_API_URL || 'https://tradejournal101-backend.onrender.com';
-  const syncUrl = `${backendUrl}/api/mt5/ea-sync`;
+  const syncUrl    = `${backendUrl}/api/mt5/ea-sync`;
 
   const loadAccounts = async () => {
     setAccountsLoading(true);
@@ -328,120 +346,176 @@ void SyncDeal(ulong deal) {
    else Print("Sync failed (",code,"): ",CharArrayToString(resp));
 }`;
 
-  return (
-    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+  const STEPS = [
+    { title: 'Кодыг хуулах',     desc: 'Дээрх MQL5 кодыг хуулах товч дарж clipboard руу хуулна' },
+    { title: 'Файл үүсгэх',      desc: 'MT5 → File → Open Data Folder → MQL5 → Experts → TradeJournal101.mq5 файл үүсгэж paste хийнэ' },
+    { title: 'WebRequest нэмэх', desc: 'MT5 → Tools → Options → Expert Advisors → "Allow WebRequest" → EA Sync URL оруулна' },
+    { title: 'EA суулгах',        desc: 'Navigator → Expert Advisors → TradeJournal101 → Chart дээр drag хийнэ' },
+    { title: 'API Key оруулах',   desc: 'EA Settings → ApiKey талбарт өөрийн API key-г оруулна. Smiley face харагдвал амжилттай!' },
+  ];
 
-      {/* ── Auto-Sync ─────────────────────────────── */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-white mb-1">Auto-Sync холболт</h2>
-          <p className="text-sm text-slate-400">MT5 данс шууд холбогдоно — read-only горим</p>
-        </div>
-        {!showConnectForm && (
-          <button onClick={() => setShowConnectForm(true)}
-            className="flex items-center gap-1.5 text-sm bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-3 py-2 rounded-lg transition-colors shrink-0">
-            <Plus className="w-4 h-4" /> Шинэ данс нэмэх
-          </button>
-        )}
+  return (
+    <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+      {/* Page header */}
+      <div>
+        <h2 className="text-base font-semibold text-white">MetaTrader 5 холболт</h2>
+        <p className="text-xs text-slate-500 mt-0.5">MT5 дансаа холбож арилжааны түүхийг автоматаар татна</p>
       </div>
 
-      {showConnectForm && (
-        <ConnectForm
-          onSuccess={loadAccounts}
-          onCancel={() => setShowConnectForm(false)}
-        />
-      )}
+      {/* 2-column grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
 
-      {accountsLoading ? (
-        <div className="space-y-3">
-          {[0, 1].map(i => <div key={i} className="h-24 bg-slate-800/40 rounded-xl animate-pulse" />)}
-        </div>
-      ) : accounts.length === 0 ? (
-        <div className="border border-dashed border-slate-700 rounded-xl p-8 text-center">
-          <BarChart2 className="w-8 h-8 text-slate-700 mx-auto mb-3" />
-          <p className="text-sm text-slate-500">Холбогдсон MT5 данс байхгүй байна</p>
-          <p className="text-xs text-slate-600 mt-1">Дээрх "Шинэ данс нэмэх" товчийг дарна уу</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {accounts.map(acc => (
-            <AccountCard key={acc.id} account={acc} onRefresh={loadAccounts} />
-          ))}
-        </div>
-      )}
-
-      {/* ── EA Sync ───────────────────────────────── */}
-      <div className="border-t border-slate-800 pt-4">
-        <h3 className="text-sm font-semibold text-slate-400 mb-4">MQL5 Expert Advisor (Real-time sync)</h3>
-
-        {/* API Key */}
-        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3 mb-4">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">API Key</p>
-          {keyLoading ? (
-            <div className="h-9 bg-slate-800 rounded-lg animate-pulse" />
-          ) : apiKey ? (
+        {/* ── Left: Auto-Sync ── */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <code className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-emerald-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
-                {showKey ? apiKey : '•'.repeat(32) + apiKey.slice(-8)}
-              </code>
-              <button onClick={() => setShowKey(v => !v)} className="p-2 text-slate-400 hover:text-white transition-colors">
-                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <div className="w-6 h-6 rounded-md bg-accent/15 flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5 text-accent" />
+              </div>
+              <span className="text-sm font-semibold text-white">Auto-Sync</span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
+                Санал болгох
+              </span>
+            </div>
+            {!showConnectForm && (
+              <button onClick={() => setShowConnectForm(true)}
+                className="flex items-center gap-1 text-xs text-slate-400 hover:text-accent transition-colors">
+                <Plus className="w-3.5 h-3.5" />
+                Нэмэх
               </button>
-              <button onClick={() => copy(apiKey, 'key')} className="p-2 text-slate-400 hover:text-accent transition-colors">
-                {copied === 'key' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            )}
+          </div>
+
+          {showConnectForm && (
+            <ConnectForm onSuccess={loadAccounts} onCancel={() => setShowConnectForm(false)} />
+          )}
+
+          {accountsLoading ? (
+            <div className="space-y-2">
+              {[0, 1].map(i => <div key={i} className="h-20 bg-slate-800/40 rounded-xl animate-pulse" />)}
+            </div>
+          ) : accounts.length === 0 ? (
+            <div className="border border-dashed border-slate-800 rounded-xl p-8 text-center">
+              <div className="w-10 h-10 rounded-xl bg-slate-800/60 flex items-center justify-center mx-auto mb-3">
+                <BarChart2 className="w-5 h-5 text-slate-600" />
+              </div>
+              <p className="text-sm font-medium text-slate-500">MT5 данс холбогдоогүй байна</p>
+              <p className="text-xs text-slate-600 mt-1 mb-4">Investor password ашиглан read-only горимоор холбоно</p>
+              <button onClick={() => setShowConnectForm(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 px-3 py-2 rounded-lg transition-colors">
+                <Plus className="w-3.5 h-3.5" />
+                Данс нэмэх
               </button>
             </div>
           ) : (
-            <p className="text-sm text-slate-500">API key үүсгэгдээгүй байна</p>
+            <div className="space-y-2">
+              {accounts.map(acc => (
+                <AccountCard key={acc.id} account={acc} onRefresh={loadAccounts} />
+              ))}
+            </div>
           )}
-          <button onClick={generate} disabled={generating}
-            className="flex items-center gap-2 text-sm bg-accent/10 hover:bg-accent/20 text-accent border border-accent/30 px-4 py-2 rounded-lg transition-colors disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${generating ? 'animate-spin' : ''}`} />
-            {apiKey ? 'Шинэ key үүсгэх' : 'API Key үүсгэх'}
-          </button>
-          {apiKey && <p className="text-xs text-amber-400/70">Шинэ key үүсгэвэл EA дотор солих хэрэгтэй</p>}
         </div>
 
-        {/* Sync URL */}
-        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-2 mb-4">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">EA Sync URL</p>
+        {/* ── Right: EA Sync ── */}
+        <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <code className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono overflow-hidden text-ellipsis whitespace-nowrap">{syncUrl}</code>
-            <button onClick={() => copy(syncUrl, 'url')} className="p-2 text-slate-400 hover:text-accent transition-colors">
-              {copied === 'url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-            </button>
+            <div className="w-6 h-6 rounded-md bg-blue-500/15 flex items-center justify-center">
+              <BarChart2 className="w-3.5 h-3.5 text-blue-400" />
+            </div>
+            <span className="text-sm font-semibold text-white">EA Sync</span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              Real-time
+            </span>
           </div>
-        </div>
 
-        {/* EA Code */}
-        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3 mb-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">MQL5 Expert Advisor код</p>
-            <button onClick={() => copy(eaCode, 'ea')} className="flex items-center gap-1.5 text-xs text-accent hover:underline">
-              {copied === 'ea' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied === 'ea' ? 'Хуулсан!' : 'Кодыг хуулах'}
-            </button>
+          {/* API Key */}
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">API Key</span>
+              <button onClick={generate} disabled={generating}
+                className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-accent transition-colors disabled:opacity-50">
+                <RefreshCw className={`w-3 h-3 ${generating ? 'animate-spin' : ''}`} />
+                {apiKey ? 'Шинэчлэх' : 'Үүсгэх'}
+              </button>
+            </div>
+            {keyLoading ? (
+              <div className="h-9 bg-slate-800 rounded-lg animate-pulse" />
+            ) : apiKey ? (
+              <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
+                <code className="flex-1 text-xs text-emerald-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
+                  {showKey ? apiKey : '••••••••••••••••••••••••' + apiKey.slice(-6)}
+                </code>
+                <button onClick={() => setShowKey(v => !v)}
+                  className="p-1 text-slate-600 hover:text-slate-300 transition-colors shrink-0">
+                  {showKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+                <button onClick={() => copy(apiKey, 'key')}
+                  className="p-1 text-slate-600 hover:text-accent transition-colors shrink-0">
+                  {copied === 'key' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-600 py-2">API key үүсгэгдээгүй байна — дээрх "Үүсгэх" дарна уу</p>
+            )}
+            {apiKey && (
+              <p className="text-[10px] text-amber-400/60 mt-2">Шинэ key үүсгэвэл EA дотор дахин оруулах хэрэгтэй</p>
+            )}
           </div>
-          <pre className="bg-slate-950 border border-slate-800 rounded-lg p-4 text-[10px] text-slate-400 font-mono overflow-x-auto max-h-48 leading-relaxed">{eaCode}</pre>
-        </div>
 
-        {/* Setup steps */}
-        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 space-y-3">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Суулгах заавар</p>
-          <ol className="space-y-2">
-            {[
-              'Дээрх кодыг хуулж MT5 → File → Open Data Folder → MQL5 → Experts дотор TradeJournal101.mq5 нэртэй файл үүсгэж paste хийнэ',
-              'MT5 → Tools → Options → Expert Advisors → "Allow WebRequest for listed URL" нэмж EA Sync URL-ийг жагсаана',
-              'MT5 → Navigator → Expert Advisors → TradeJournal101 → Chart дээр drag хийж суулгана',
-              'EA Settings дээр ApiKey талбарт өөрийн API key-г оруулна',
-              'Smiley face харагдвал амжилттай — Trade хаагдах бүрт автоматаар sync болно',
-            ].map((step, i) => (
-              <li key={i} className="flex gap-3 text-sm text-slate-300">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
-                <span className="leading-relaxed">{step}</span>
-              </li>
-            ))}
-          </ol>
+          {/* Sync URL */}
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2.5">EA Sync URL</p>
+            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2">
+              <code className="flex-1 text-xs text-slate-400 font-mono overflow-hidden text-ellipsis whitespace-nowrap">{syncUrl}</code>
+              <button onClick={() => copy(syncUrl, 'url')}
+                className="p-1 text-slate-600 hover:text-accent transition-colors shrink-0">
+                {copied === 'url' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* MQL5 Code */}
+          <div className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800 bg-slate-900/60">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+                </div>
+                <span className="text-[11px] text-slate-500 font-mono">TradeJournal101.mq5</span>
+              </div>
+              <button onClick={() => copy(eaCode, 'ea')}
+                className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-accent transition-colors">
+                {copied === 'ea' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                {copied === 'ea' ? 'Хуулсан' : 'Хуулах'}
+              </button>
+            </div>
+            <pre className="p-4 text-[10px] text-slate-400 font-mono overflow-x-auto max-h-44 leading-relaxed scrollbar-thin scrollbar-thumb-slate-800">{eaCode}</pre>
+          </div>
+
+          {/* Installation timeline */}
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Суулгах заавар</p>
+            <div className="relative">
+              {STEPS.map((s, i) => (
+                <div key={i} className="flex gap-3 relative">
+                  {i < STEPS.length - 1 && (
+                    <div className="absolute left-[13px] top-7 bottom-0 w-px bg-slate-800" />
+                  )}
+                  <div className="w-7 h-7 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-[10px] font-bold text-accent shrink-0 z-10">
+                    {i + 1}
+                  </div>
+                  <div className={i < STEPS.length - 1 ? 'pb-4' : ''}>
+                    <p className="text-xs font-semibold text-slate-300 leading-tight">{s.title}</p>
+                    <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5">{s.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
