@@ -3,6 +3,11 @@ import { query, getDbStatus } from '../config/database.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+const isQuotaError = (err) =>
+  err?.status === 402 ||
+  err?.status === 529 ||
+  /credit|billing|quota|payment|insufficient/i.test(err?.message || '');
+
 // POST /api/ai/chat
 export const chat = async (req, res) => {
   try {
@@ -65,6 +70,9 @@ export const chat = async (req, res) => {
     res.json({ success: true, reply });
   } catch (error) {
     console.error('AI chat error:', error);
+    if (isQuotaError(error)) {
+      return res.status(402).json({ success: false, code: 'AI_QUOTA', error: 'AI функц түр ажиллахгүй байна' });
+    }
     res.status(500).json({ success: false, error: 'AI хариулт авах боломжгүй байна.' });
   }
 };
@@ -131,6 +139,9 @@ export const getInsights = async (req, res) => {
     res.json({ success: true, data: insights, mode: 'ai' });
   } catch (error) {
     console.error('AI insights error:', error);
+    if (isQuotaError(error)) {
+      return res.status(402).json({ success: false, code: 'AI_QUOTA', error: 'AI функц түр ажиллахгүй байна' });
+    }
     res.status(500).json({ success: false, error: error.message });
   }
 };

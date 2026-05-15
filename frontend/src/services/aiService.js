@@ -10,8 +10,9 @@ const getHeaders = () => {
 const safeFetch = async (url, options = {}) => {
   try {
     const r = await fetch(url, { ...options, headers: getHeaders(), credentials: 'include' });
-    if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
-    return await r.json();
+    const data = await r.json();
+    // Pass through JSON body even on error so callers can inspect `code`
+    return r.ok ? data : { ...data, httpStatus: r.status };
   } catch (e) {
     console.error(`Fetch error for ${url}:`, e);
     return { success: false, error: e.message };

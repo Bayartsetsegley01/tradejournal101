@@ -52,6 +52,7 @@ export function AIChatbot() {
   const [isLoading, setIsLoading] = useState(false);
   const [tradeContext, setTradeContext] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [aiDisabled, setAiDisabled] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -134,6 +135,18 @@ export function AIChatbot() {
       });
 
       const data = await backendResponse.json();
+
+      if (backendResponse.status === 402) {
+        setAiDisabled(true);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: '⚠️ AI функц түр ажиллахгүй байна. Удахгүй сэргээгдэх болно.',
+          timestamp: new Date(),
+          isError: true
+        }]);
+        return;
+      }
+
       if (!backendResponse.ok) throw new Error(data.error || 'Backend error');
 
       setMessages(prev => [...prev, {
@@ -317,35 +330,43 @@ export function AIChatbot() {
 
               {/* Input */}
               <div className="p-3 border-t border-slate-700/50 bg-slate-950/40 shrink-0">
-                <div className="flex items-end gap-2">
-                  <div className="flex-1 relative">
-                    <textarea
-                      ref={inputRef}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSend();
-                        }
-                      }}
-                      placeholder="Асуулт бичнэ үү... (Enter илгээх)"
-                      rows={1}
-                      className="w-full bg-slate-800 border border-slate-700 focus:border-accent/50 focus:ring-1 focus:ring-accent/30 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 resize-none outline-none transition-all leading-snug"
-                      style={{ maxHeight: '80px', overflowY: 'auto' }}
-                    />
+                {aiDisabled ? (
+                  <div className="flex items-center justify-center gap-2 py-2 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                    <span className="text-xs text-amber-400">AI функц түр ажиллахгүй байна</span>
                   </div>
-                  <button
-                    onClick={() => handleSend()}
-                    disabled={!input.trim() || isLoading}
-                    className="w-9 h-9 bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 rounded-xl flex items-center justify-center transition-all shrink-0 hover:scale-105 active:scale-95"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-[10px] text-slate-600 mt-1.5 text-center">
-                  Shift+Enter = мөр эргэх
-                </p>
+                ) : (
+                  <>
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1 relative">
+                        <textarea
+                          ref={inputRef}
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSend();
+                            }
+                          }}
+                          placeholder="Асуулт бичнэ үү... (Enter илгээх)"
+                          rows={1}
+                          className="w-full bg-slate-800 border border-slate-700 focus:border-accent/50 focus:ring-1 focus:ring-accent/30 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 resize-none outline-none transition-all leading-snug"
+                          style={{ maxHeight: '80px', overflowY: 'auto' }}
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleSend()}
+                        disabled={!input.trim() || isLoading}
+                        className="w-9 h-9 bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 rounded-xl flex items-center justify-center transition-all shrink-0 hover:scale-105 active:scale-95"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-600 mt-1.5 text-center">
+                      Shift+Enter = мөр эргэх
+                    </p>
+                  </>
+                )}
               </div>
             </>
           )}

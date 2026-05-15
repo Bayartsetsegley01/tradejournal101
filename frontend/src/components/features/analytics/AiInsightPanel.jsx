@@ -5,21 +5,19 @@ import { aiService } from "@/services/aiService";
 export function AiInsightPanel() {
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [aiDisabled, setAiDisabled] = useState(false);
 
   useEffect(() => {
     const fetchInsights = async () => {
       try {
         setLoading(true);
-        // Pass empty array to let backend fetch from DB
         const response = await aiService.getInsights([]);
+        if (response.httpStatus === 402 || response.code === 'AI_QUOTA') {
+          setAiDisabled(true);
+          return;
+        }
         if (response.success) {
           setInsights(response.data);
-        } else {
-          setInsights({
-            summary: "Таны арилжааны түүхэнд анализ хийхэд эрсдэлийн удирдлага сайн байгаа ч, заримдаа эрт хаах хандлагатай байна.",
-            mistakes: ["FOMO-д автаж төлөвлөгөөгүй арилжаанд орох", "Ашигтай арилжааг эрт хаах"],
-            advice: "Арилжааны төлөвлөгөөгөө чанд баримталж, Stop Loss болон Take Profit цэгүүдээ урьдчилан тодорхойлж, түүндээ хүрэх хүртэл хүлээцтэй хандахыг зөвлөж байна."
-          });
         }
       } catch (error) {
         console.error("Failed to fetch AI insights:", error);
@@ -47,6 +45,10 @@ export function AiInsightPanel() {
         <div className="space-y-4">
           {loading ? (
             <div className="text-slate-400 text-sm animate-pulse">AI анализ хийж байна...</div>
+          ) : aiDisabled ? (
+            <div className="flex items-center gap-2 py-3 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+              <span className="text-sm text-amber-400">AI функц түр ажиллахгүй байна</span>
+            </div>
           ) : insights ? (
             <>
               <div className="flex items-start gap-3">
