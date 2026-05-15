@@ -3,7 +3,6 @@ import { TimeFilter } from "@/components/features/analytics/TimeFilter";
 import { AnalyticsTabs } from "@/components/features/analytics/AnalyticsTabs";
 import { SummaryCards } from "@/components/features/analytics/SummaryCards";
 import { EquityChart } from "@/components/features/analytics/EquityChart";
-import { AiInsightPanel } from "@/components/features/analytics/AiInsightPanel";
 import { PerformanceCharts } from "@/components/features/analytics/PerformanceCharts";
 import { MyGoalPanel } from "@/components/features/analytics/MyGoalPanel";
 import { TradeCalendar } from "@/components/features/analytics/TradeCalendar";
@@ -262,7 +261,7 @@ export function AnalyticsPage() {
           </div>
           <div>
             <h1 className="text-sm font-bold text-white leading-none">
-              {lang === 'mn' ? 'Арилжааны аналитик' : 'Trade Analytics'}
+              {lang === 'mn' ? 'Анализ' : 'Analytics'}
             </h1>
             <p className="text-[11px] text-slate-500 mt-0.5">
               {lang === 'mn' ? 'Гүйцэтгэлийн дүн шинжилгээ' : 'Performance overview'}
@@ -325,10 +324,9 @@ export function AnalyticsPage() {
                     <TradeCalendar trades={trades} />
                   </div>
 
-                  {/* Right column: Goal + AI */}
+                  {/* Right column: Goal */}
                   <div className="flex flex-col gap-5">
                     <MyGoalPanel />
-                    <AiInsightPanel />
                   </div>
                 </div>
               </div>
@@ -348,14 +346,7 @@ export function AnalyticsPage() {
           {activeTab === "mistakes" && !loading && (
             !hasData ? <EmptyState t={t} /> : (
               <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-400">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                  <div className="lg:col-span-1">
-                    <AiInsightPanel />
-                  </div>
-                  <div className="lg:col-span-2">
-                    <MistakesPanel mistakesData={mistakesData} t={t} />
-                  </div>
-                </div>
+                <MistakesPanel mistakesData={mistakesData} t={t} />
               </div>
             )
           )}
