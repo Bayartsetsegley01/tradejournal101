@@ -24,7 +24,26 @@ export const getTrades = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
     const userId = req.user.id;
-    const result = await query('SELECT * FROM trades WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+    const { account_id } = req.query;
+
+    let result;
+    if (account_id === 'personal') {
+      result = await query(
+        'SELECT * FROM trades WHERE user_id=$1 AND account_id IS NULL ORDER BY created_at DESC',
+        [userId]
+      );
+    } else if (account_id) {
+      result = await query(
+        'SELECT * FROM trades WHERE user_id=$1 AND account_id=$2 ORDER BY created_at DESC',
+        [userId, account_id]
+      );
+    } else {
+      result = await query(
+        'SELECT * FROM trades WHERE user_id=$1 ORDER BY created_at DESC',
+        [userId]
+      );
+    }
+
     res.json({ success: true, data: result.rows });
   } catch (error) {
     console.error('getTrades error:', error);

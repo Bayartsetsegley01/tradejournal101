@@ -166,10 +166,10 @@ export const syncAccount = async (req, res) => {
 
         await query(
           `INSERT INTO trades
-             (user_id, status, symbol, direction, entry_price, exit_price,
+             (user_id, account_id, status, symbol, direction, entry_price, exit_price,
               position_size, pnl, entry_date, exit_date, stop_loss, take_profit, market_type)
-           VALUES ($1,'CLOSED',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'FOREX')`,
-          [userId, ex.symbol, direction,
+           VALUES ($1,$2,'CLOSED',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'FOREX')`,
+          [userId, accountId, ex.symbol, direction,
            en?.price ?? null, ex.price ?? null,
            ex.volume ?? null, pnl,
            entryDate, exitDate,

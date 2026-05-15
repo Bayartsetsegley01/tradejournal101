@@ -436,3 +436,10 @@ CREATE TABLE IF NOT EXISTS mt5_accounts (
   last_synced_at  TIMESTAMP WITH TIME ZONE,
   created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Portfolio: link trades to mt5_accounts
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='account_id') THEN
+    ALTER TABLE trades ADD COLUMN account_id UUID REFERENCES mt5_accounts(id) ON DELETE SET NULL;
+  END IF;
+END $$;
