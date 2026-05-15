@@ -1,19 +1,26 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MN_MONTHS = ["1-р сар","2-р сар","3-р сар","4-р сар","5-р сар","6-р сар","7-р сар","8-р сар","9-р сар","10-р сар","11-р сар","12-р сар"];
+const EN_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MN_DAYS = ["Да","Мя","Лх","Пү","Ба","Бя","Ня"];
+const EN_DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
 export function TradeCalendar({ trades = [] }) {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
+  const MONTHS = lang === 'mn' ? MN_MONTHS : EN_MONTHS;
+  const DAY_NAMES = lang === 'mn' ? MN_DAYS : EN_DAYS;
+
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
+  // Convert from Sun=0 to Mon=0 for Monday-first grid
+  const rawFirstDay = new Date(year, month, 1).getDay();
+  const firstDay = (rawFirstDay + 6) % 7;
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
@@ -39,99 +46,118 @@ export function TradeCalendar({ trades = [] }) {
     return {
       totalTrades: valid.reduce((s, d) => s + d.trades, 0),
       totalPnl: valid.reduce((s, d) => s + d.pnl, 0),
-      tradingDays: valid.length,
       winDays: valid.filter(d => d.pnl > 0).length,
       lossDays: valid.filter(d => d.pnl < 0).length,
     };
   }, [calendarDays]);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-accent/20 transition-colors duration-300">
+    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl p-6 hover:border-slate-700 transition-all duration-300">
+      {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h3 className="text-base font-semibold text-white">Trade Calendar</h3>
-        <div className="flex items-center gap-3">
-          <button onClick={prevMonth} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
-            <ChevronLeft className="w-4 h-4" />
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-4 h-4 text-accent" />
+          <h3 className="text-sm font-semibold text-white">
+            {lang === 'mn' ? 'Арилжааны календар' : 'Trade Calendar'}
+          </h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={prevMonth}
+            className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
           </button>
-          <span className="text-sm font-semibold text-white min-w-[130px] text-center">
-            {MONTH_NAMES[month]} {year}
+          <span className="text-sm font-semibold text-white min-w-[100px] text-center">
+            {MONTHS[month]} {year}
           </span>
-          <button onClick={nextMonth} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
-            <ChevronRight className="w-4 h-4" />
+          <button
+            onClick={nextMonth}
+            className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1.5 mb-1.5">
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
         {DAY_NAMES.map(day => (
-          <div key={day} className="text-center text-[11px] font-medium text-slate-500 py-1.5">{day}</div>
+          <div key={day} className="text-center text-[11px] font-semibold text-slate-600 py-1">
+            {day}
+          </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1.5">
+      {/* Day cells */}
+      <div className="grid grid-cols-7 gap-1">
         {calendarDays.map((dayData, index) => {
           if (!dayData) {
-            return <div key={`empty-${index}`} className="aspect-square rounded-xl bg-slate-950/20" />;
+            return <div key={`e-${index}`} className="aspect-square rounded-xl" />;
           }
 
-          const isToday = new Date().toISOString().split('T')[0] === dayData.dateStr;
+          const isToday = todayStr === dayData.dateStr;
           const { trades: tradeCount, pnl, wins, losses } = dayData;
           const hasTrades = tradeCount > 0;
-          const isProfitable = pnl > 0;
+          const isProfit = pnl > 0;
           const isLoss = pnl < 0;
-
-          const intensity = hasTrades ? Math.min(Math.abs(pnl) / 100, 1) : 0;
+          const intensity = hasTrades ? Math.min(Math.abs(pnl) / 80, 1) : 0;
 
           return (
             <div
               key={dayData.day}
-              className={`aspect-square rounded-xl p-1.5 flex flex-col transition-all duration-200 relative group cursor-default ${
+              className={`aspect-square rounded-xl p-1.5 flex flex-col relative group cursor-default transition-all duration-150 ${
+                isToday ? 'ring-2 ring-accent/70 ring-offset-1 ring-offset-slate-900' : ''
+              } ${
                 hasTrades
-                  ? isProfitable
-                    ? 'border hover:border-emerald-500/60 hover:shadow-[0_0_10px_rgba(16,185,129,0.15)]'
+                  ? isProfit
+                    ? 'hover:ring-1 hover:ring-emerald-500/40'
                     : isLoss
-                      ? 'border hover:border-rose-500/60 hover:shadow-[0_0_10px_rgba(244,63,94,0.15)]'
+                      ? 'hover:ring-1 hover:ring-rose-500/40'
                       : 'bg-slate-800 border border-slate-700'
-                  : 'bg-slate-950/30 border border-slate-800/30 hover:border-slate-700/50'
-              } ${isToday ? 'ring-2 ring-accent ring-offset-1 ring-offset-slate-900' : ''}`}
+                  : 'hover:bg-slate-800/40'
+              }`}
               style={hasTrades ? {
-                backgroundColor: isProfitable
-                  ? `rgba(16,185,129,${0.05 + intensity * 0.2})`
+                backgroundColor: isProfit
+                  ? `rgba(16,185,129,${0.06 + intensity * 0.18})`
                   : isLoss
-                    ? `rgba(244,63,94,${0.05 + intensity * 0.2})`
+                    ? `rgba(244,63,94,${0.06 + intensity * 0.18})`
                     : undefined,
-                borderColor: isProfitable
-                  ? `rgba(16,185,129,${0.2 + intensity * 0.3})`
+                border: isProfit
+                  ? `1px solid rgba(16,185,129,${0.15 + intensity * 0.25})`
                   : isLoss
-                    ? `rgba(244,63,94,${0.2 + intensity * 0.3})`
+                    ? `1px solid rgba(244,63,94,${0.15 + intensity * 0.25})`
                     : undefined,
               } : undefined}
             >
-              <span className={`text-[10px] font-medium leading-none ${hasTrades ? 'text-white' : 'text-slate-600'}`}>
+              <span className={`text-[10px] font-semibold leading-none ${
+                isToday ? 'text-accent' : hasTrades ? 'text-white' : 'text-slate-600'
+              }`}>
                 {dayData.day}
               </span>
 
               {hasTrades && (
-                <div className="mt-auto flex flex-col gap-0.5">
-                  <span className={`text-[9px] font-bold truncate leading-none ${isProfitable ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-slate-300'}`}>
-                    {pnl > 0 ? '+' : ''}{pnl.toFixed(0)}
+                <div className="mt-auto">
+                  <span className={`text-[9px] font-bold leading-none block truncate ${
+                    isProfit ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-slate-400'
+                  }`}>
+                    {pnl >= 0 ? '+' : ''}{pnl.toFixed(0)}
                   </span>
-                  <div className="flex gap-0.5">
-                    {wins > 0 && <span className="w-1 h-1 rounded-full bg-emerald-400 shrink-0" />}
-                    {losses > 0 && <span className="w-1 h-1 rounded-full bg-rose-400 shrink-0" />}
-                  </div>
                 </div>
               )}
 
+              {/* Tooltip */}
               {hasTrades && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[160px] bg-slate-800 border border-slate-700 text-white text-xs rounded-xl p-2.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 shadow-2xl pointer-events-none">
-                  <div className="font-semibold mb-1 text-slate-300">{dayData.dateStr}</div>
-                  <div className="text-slate-400">{tradeCount} trade{tradeCount !== 1 ? 's' : ''}</div>
-                  <div className={`font-bold mt-0.5 ${isProfitable ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    P&L: {pnl > 0 ? '+' : ''}${pnl.toFixed(2)}
-                  </div>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[150px] bg-slate-800 border border-slate-700 rounded-xl p-2.5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-30 shadow-2xl pointer-events-none text-xs">
+                  <p className="text-slate-400 mb-1 font-medium">{dayData.dateStr}</p>
+                  <p className="text-slate-300">{tradeCount} {lang === 'mn' ? 'арилжаа' : 'trade'}{tradeCount !== 1 && lang !== 'mn' ? 's' : ''}</p>
+                  <p className={`font-bold mt-0.5 ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    P&L: {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                  </p>
                   {(wins > 0 || losses > 0) && (
-                    <div className="text-slate-500 mt-0.5">{wins}W / {losses}L</div>
+                    <p className="text-slate-500 mt-0.5">{wins}W / {losses}L</p>
                   )}
                 </div>
               )}
@@ -140,27 +166,32 @@ export function TradeCalendar({ trades = [] }) {
         })}
       </div>
 
-      {/* Monthly Summary */}
+      {/* Monthly summary */}
       {monthlySummary.totalTrades > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-800 grid grid-cols-4 gap-3">
-          <div className="text-center">
-            <p className="text-xs text-slate-500 mb-0.5">Trades</p>
-            <p className="text-sm font-bold text-white">{monthlySummary.totalTrades}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-slate-500 mb-0.5">Net P&L</p>
-            <p className={`text-sm font-bold ${monthlySummary.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {monthlySummary.totalPnl >= 0 ? '+' : ''}${monthlySummary.totalPnl.toFixed(2)}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-slate-500 mb-0.5">Win Days</p>
-            <p className="text-sm font-bold text-emerald-400">{monthlySummary.winDays}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-slate-500 mb-0.5">Loss Days</p>
-            <p className="text-sm font-bold text-rose-400">{monthlySummary.lossDays}</p>
-          </div>
+        <div className="mt-4 pt-4 border-t border-slate-800/60 grid grid-cols-4 gap-2">
+          {[
+            { label: lang === 'mn' ? 'Арилжаа' : 'Trades', value: monthlySummary.totalTrades, cls: 'text-white' },
+            {
+              label: 'Net P&L',
+              value: `${monthlySummary.totalPnl >= 0 ? '+' : ''}$${monthlySummary.totalPnl.toFixed(0)}`,
+              cls: monthlySummary.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400',
+            },
+            { label: lang === 'mn' ? 'Ашигтай өдөр' : 'Win Days', value: monthlySummary.winDays, cls: 'text-emerald-400' },
+            { label: lang === 'mn' ? 'Алдагдалтай' : 'Loss Days', value: monthlySummary.lossDays, cls: 'text-rose-400' },
+          ].map((item, i) => (
+            <div key={i} className="text-center">
+              <p className="text-[10px] text-slate-500 mb-0.5 font-medium">{item.label}</p>
+              <p className={`text-sm font-bold ${item.cls}`}>{item.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {monthlySummary.totalTrades === 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-800/60 text-center py-2">
+          <p className="text-xs text-slate-600">
+            {lang === 'mn' ? 'Энэ сард арилжаа алга' : 'No trades this month'}
+          </p>
         </div>
       )}
     </div>

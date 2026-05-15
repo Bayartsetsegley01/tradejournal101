@@ -1,14 +1,18 @@
-import { Sparkles, ArrowRight, AlertTriangle, CheckCircle2, Lightbulb } from "lucide-react";
+import { Sparkles, ArrowRight, AlertTriangle, CheckCircle2, Lightbulb, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { aiService } from "@/services/aiService";
+import { useLang } from "@/contexts/LanguageContext";
+import { useNavigate } from "react-router-dom";
 
 export function AiInsightPanel() {
+  const { lang } = useLang();
+  const navigate = useNavigate();
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiDisabled, setAiDisabled] = useState(false);
 
   useEffect(() => {
-    const fetchInsights = async () => {
+    (async () => {
       try {
         setLoading(true);
         const response = await aiService.getInsights([]);
@@ -16,80 +20,93 @@ export function AiInsightPanel() {
           setAiDisabled(true);
           return;
         }
-        if (response.success) {
-          setInsights(response.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch AI insights:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInsights();
+        if (response.success) setInsights(response.data);
+      } catch {}
+      finally { setLoading(false); }
+    })();
   }, []);
 
   return (
-    <div className="bg-slate-900 rounded-xl border border-accent/20 flex flex-col h-full relative overflow-hidden hover:shadow-[0_0_20px_rgba(200,240,122,0.1)] transition-all duration-300 group">
-      {/* Background glow effect */}
-      <div className="absolute top-0 right-0 -mt-16 -mr-16 w-32 h-32 bg-accent/10 blur-3xl rounded-full group-hover:bg-accent/20 transition-colors duration-500" />
-      
-      <div className="p-5 border-b border-slate-800/50 flex items-center gap-2 relative z-10">
-        <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl overflow-hidden hover:border-accent/20 hover:shadow-[0_0_24px_rgba(200,240,122,0.06)] transition-all duration-300 flex flex-col">
+      {/* Header */}
+      <div className="px-5 pt-5 pb-4 border-b border-slate-800/60 flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
           <Sparkles className="w-4 h-4 text-accent" />
         </div>
-        <h3 className="text-base font-medium text-white">AI Quick Insight</h3>
-      </div>
-      
-      <div className="p-5 flex-1 flex flex-col gap-4 relative z-10 overflow-y-auto">
-        <div className="space-y-4">
-          {loading ? (
-            <div className="text-slate-400 text-sm animate-pulse">AI анализ хийж байна...</div>
-          ) : aiDisabled ? (
-            <div className="flex items-center gap-2 py-3 px-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-              <span className="text-sm text-amber-400">AI функц түр ажиллахгүй байна</span>
-            </div>
-          ) : insights ? (
-            <>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  {insights.summary}
-                </p>
-              </div>
-              
-              {insights.mistakes && insights.mistakes.length > 0 && (
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                  <div className="text-sm text-slate-300 leading-relaxed">
-                    <p className="font-medium text-amber-400/80 mb-1">Анхаарах зүйлс:</p>
-                    <ul className="list-disc pl-4 space-y-1">
-                      {insights.mistakes.map((mistake, idx) => (
-                        <li key={idx}>{mistake}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {insights.advice && (
-                <div className="flex items-start gap-3">
-                  <Lightbulb className="w-5 h-5 text-accent shrink-0 mt-0.5" />
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    <span className="font-medium text-accent/80 block mb-1">Зөвлөгөө:</span>
-                    {insights.advice}
-                  </p>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-slate-400 text-sm">Мэдээлэл олдсонгүй.</div>
-          )}
+        <div>
+          <h3 className="text-sm font-semibold text-white leading-none">
+            {lang === 'mn' ? 'AI Зөвлөгөө' : 'AI Insight'}
+          </h3>
+          <p className="text-[11px] text-slate-600 mt-0.5">
+            {lang === 'mn' ? 'Хиймэл оюун ухааны дүн шинжилгээ' : 'AI-powered analysis'}
+          </p>
         </div>
+      </div>
 
-        <div className="mt-auto pt-4">
-          <button className="w-full bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-            Дэлгэрэнгүй AI Анализ
+      {/* Content */}
+      <div className="p-5 flex-1 flex flex-col gap-4">
+        {loading ? (
+          <div className="flex items-center gap-2 text-slate-500 text-sm">
+            <Loader2 className="w-4 h-4 animate-spin text-accent" />
+            {lang === 'mn' ? 'AI анализ хийж байна...' : 'AI is analyzing...'}
+          </div>
+        ) : aiDisabled ? (
+          <div className="flex items-start gap-3 p-3 bg-amber-500/8 border border-amber-500/15 rounded-xl">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-400/90 leading-relaxed">
+              {lang === 'mn' ? 'AI функц түр ажиллахгүй байна' : 'AI features temporarily unavailable'}
+            </p>
+          </div>
+        ) : insights ? (
+          <div className="space-y-4">
+            {insights.summary && (
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-slate-300 leading-relaxed">{insights.summary}</p>
+              </div>
+            )}
+            {insights.mistakes?.length > 0 && (
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-sm text-slate-400 leading-relaxed">
+                  <p className="font-medium text-amber-400 mb-1.5 text-xs uppercase tracking-wide">
+                    {lang === 'mn' ? 'Анхаарах' : 'Watch out'}
+                  </p>
+                  <ul className="space-y-1">
+                    {insights.mistakes.map((m, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-amber-600 mt-1 shrink-0">·</span>
+                        {m}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+            {insights.advice && (
+              <div className="flex items-start gap-3">
+                <Lightbulb className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-medium text-accent/80 uppercase tracking-wide mb-1.5">
+                    {lang === 'mn' ? 'Зөвлөгөө' : 'Advice'}
+                  </p>
+                  <p className="text-sm text-slate-400 leading-relaxed">{insights.advice}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-600">
+            {lang === 'mn' ? 'Мэдээлэл олдсонгүй' : 'No insights available'}
+          </p>
+        )}
+
+        <div className="mt-auto pt-3">
+          <button
+            onClick={() => navigate('/app/ai-advisor')}
+            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/60 hover:border-slate-600 text-slate-300 hover:text-white text-sm font-medium py-2.5 px-4 rounded-xl transition-all"
+          >
+            {lang === 'mn' ? 'Дэлгэрэнгүй AI анализ' : 'Full AI Analysis'}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
