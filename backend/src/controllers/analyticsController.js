@@ -1,5 +1,14 @@
 import { query, getDbStatus } from '../config/database.js';
 
+const addAccountFilter = (filter, accountId) => {
+  if (!accountId || accountId === 'all') return filter;
+  if (accountId === 'personal') {
+    return { sql: filter.sql + ' AND account_id IS NULL', params: filter.params };
+  }
+  const nextParam = 2 + filter.params.length;
+  return { sql: filter.sql + ` AND account_id = $${nextParam}`, params: [...filter.params, accountId] };
+};
+
 const getDateFilter = (timeRange, paramStart = 2) => {
   if (!timeRange || timeRange === 'all') return { sql: '', params: [] };
   const now = new Date();
@@ -25,7 +34,7 @@ export const getSummary = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
     const userId = req.user.id;
-    const filter = getDateFilter(req.query.range || req.query.timeRange);
+    const filter = addAccountFilter(getDateFilter(req.query.range || req.query.timeRange), req.query.account_id);
     const result = await query(
       `SELECT COUNT(*) as total_trades, SUM(CASE WHEN pnl>0 THEN 1 ELSE 0 END) as winning_trades, SUM(pnl) as net_pnl, SUM(CASE WHEN pnl>0 THEN pnl ELSE 0 END) as gross_profit, SUM(CASE WHEN pnl<0 THEN pnl ELSE 0 END) as gross_loss FROM trades WHERE user_id=$1 AND status='CLOSED' ${filter.sql}`,
       [userId, ...filter.params]
@@ -44,7 +53,7 @@ export const getCharts = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
     const userId = req.user.id;
-    const filter = getDateFilter(req.query.range || req.query.timeRange);
+    const filter = addAccountFilter(getDateFilter(req.query.range || req.query.timeRange), req.query.account_id);
     const result = await query(
       `SELECT entry_date, exit_date, pnl FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date IS NOT NULL ${filter.sql} ORDER BY entry_date ASC`,
       [userId, ...filter.params]
@@ -78,7 +87,7 @@ export const getMistakes = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
     const userId = req.user.id;
-    const filter = getDateFilter(req.query.range || req.query.timeRange);
+    const filter = addAccountFilter(getDateFilter(req.query.range || req.query.timeRange), req.query.account_id);
 
     // Build ID→name lookup from DB for both tags and emotions
     const [tradesRes, tagDefsRes, emotionDefsRes] = await Promise.all([
@@ -161,7 +170,7 @@ export const getPerformance = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
     const userId = req.user.id;
-    const filter = getDateFilter(req.query.range || req.query.timeRange);
+    const filter = addAccountFilter(getDateFilter(req.query.range || req.query.timeRange), req.query.account_id);
 
     const result = await query(
       `SELECT market_type, strategy, direction, pnl, rr_ratio,

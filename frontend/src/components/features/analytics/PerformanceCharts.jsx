@@ -4,18 +4,24 @@ import { analyticsService } from "@/services/analyticsService";
 import { Loader2 } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 
-export function PerformanceCharts({ timeRange = '7d' }) {
+const MNT_RATE = 3450;
+const fmtPnl = (v, currency) => {
+  if (currency === '₮') return `${v >= 0 ? '+' : ''}${Math.round(v * MNT_RATE).toLocaleString()} ₮`;
+  return `${v >= 0 ? '+' : ''}$${Math.abs(v).toFixed(2)}`;
+};
+
+export function PerformanceCharts({ timeRange = '7d', accountId, currency = '$' }) {
   const { t } = useLang();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    analyticsService.getPerformance(timeRange)
+    analyticsService.getPerformance(timeRange, accountId)
       .then(res => { if (res?.success) setData(res.data); })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [timeRange]);
+  }, [timeRange, accountId]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-48 col-span-2">
@@ -41,12 +47,12 @@ export function PerformanceCharts({ timeRange = '7d' }) {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.byAsset} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="#1e293b" horizontal={false} />
-                <XAxis type="number" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `$${v}`} />
+                <XAxis type="number" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => currency === '₮' ? `${Math.round(v * MNT_RATE / 1000)}K₮` : `$${v}`} />
                 <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} width={64} tick={{ fill: '#94a3b8' }} />
                 <Tooltip
                   cursor={{ fill: 'rgba(255,255,255,0.03)' }}
                   contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '10px', color: '#f8fafc', fontSize: 12 }}
-                  formatter={v => [`$${v.toFixed(2)}`, 'P&L']}
+                  formatter={v => [fmtPnl(v, currency), 'P&L']}
                 />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]} isAnimationActive animationDuration={600}>
                   {data.byAsset.map((entry, i) => (
@@ -104,11 +110,11 @@ export function PerformanceCharts({ timeRange = '7d' }) {
               <BarChart data={data.byDayOfWeek} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="#1e293b" vertical={false} />
                 <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tick={{ fill: '#64748b' }} />
-                <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `$${v}`} tick={{ fill: '#64748b' }} />
+                <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => currency === '₮' ? `${Math.round(v * MNT_RATE / 1000)}K₮` : `$${v}`} tick={{ fill: '#64748b' }} />
                 <Tooltip
                   cursor={{ fill: 'rgba(255,255,255,0.03)' }}
                   contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '10px', color: '#f8fafc', fontSize: 12 }}
-                  formatter={v => [`$${v.toFixed(2)}`, 'P&L']}
+                  formatter={v => [fmtPnl(v, currency), 'P&L']}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive animationDuration={600}>
                   {data.byDayOfWeek.map((entry, i) => (
@@ -159,7 +165,7 @@ export function PerformanceCharts({ timeRange = '7d' }) {
                       </div>
                     </td>
                     <td className={`px-4 py-3.5 text-right font-semibold ${s.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {s.pnl >= 0 ? '+' : ''}${Math.abs(s.pnl).toFixed(2)}
+                      {fmtPnl(s.pnl, currency)}
                     </td>
                   </tr>
                 ))}

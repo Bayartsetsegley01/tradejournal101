@@ -10,9 +10,11 @@ import { MyGoalPanel } from "@/components/features/analytics/MyGoalPanel";
 import { TradeCalendar } from "@/components/features/analytics/TradeCalendar";
 import { analyticsService } from "@/services/analyticsService";
 import { tradeService } from "@/services/tradeService";
-import { AlertTriangle, Brain } from "lucide-react";
+import { AlertTriangle, Brain, ChevronDown } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useTradesUpdated } from "@/lib/tradesSync";
+
+const MNT_RATE = 3450;
 
 export function AnalyticsPage() {
   const { t } = useLang();
@@ -21,7 +23,10 @@ export function AnalyticsPage() {
   const [customRange, setCustomRange] = useState(() => {
     try { return JSON.parse(localStorage.getItem('analytics_custom_range')); } catch { return null; }
   });
-  
+  const [accountId, setAccountId] = useState('all');
+  const [currency, setCurrency] = useState('$');
+  const [mt5Accounts, setMt5Accounts] = useState([]);
+
   const [summary, setSummary] = useState(null);
   const [charts, setCharts] = useState(null);
   const [mistakesData, setMistakesData] = useState(null);
@@ -29,6 +34,20 @@ export function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mode, setMode] = useState('database');
+
+  useEffect(() => {
+    fetch((import.meta.env.VITE_API_URL || '') + '/api/mt5/accounts', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    })
+      .then(r => r.json())
+      .then(d => { if (d.success) setMt5Accounts(d.data || []); })
+      .catch(() => {});
+  }, []);
+
+  const toDisplay = (val) => {
+    const n = parseFloat(val) || 0;
+    return currency === '₮' ? Math.round(n * MNT_RATE).toLocaleString() + ' ₮' : n.toFixed(2) + ' $';
+  };
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -42,9 +61,9 @@ export function AnalyticsPage() {
       const fetchRange = timeRange === 'custom' ? `${customRange.start}_${customRange.end}` : timeRange;
 
       const [summaryRes, chartsRes, mistakesRes, tradesRes] = await Promise.all([
-        analyticsService.getSummary(fetchRange),
-        analyticsService.getCharts(fetchRange),
-        analyticsService.getMistakes(fetchRange),
+        analyticsService.getSummary(fetchRange, accountId),
+        analyticsService.getCharts(fetchRange, accountId),
+        analyticsService.getMistakes(fetchRange, accountId),
         tradeService.getTrades(),
       ]);
 
@@ -77,7 +96,7 @@ export function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [timeRange, customRange]);
+  }, [timeRange, customRange, accountId]);
 
   useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
 
@@ -87,17 +106,48 @@ export function AnalyticsPage() {
   return (
     <div className="flex flex-col">
       {/* Sticky Top Header */}
-      <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 px-8 h-16 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-white tracking-tight">{t('analytics')}</h1>
-        <TimeFilter
-          value={timeRange}
-          onChange={(v) => { setTimeRange(v); localStorage.setItem('analytics_time_range', v); }}
-          customRange={customRange}
-          onCustomRangeChange={(r) => {
-            setCustomRange(r);
-            if (r) localStorage.setItem('analytics_custom_range', JSON.stringify(r));
-          }}
-        />
+      <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 px-8 h-16 flex items-center justify-between gap-4">
+        <h1 className="text-xl font-semibold text-white tracking-tight shrink-0">{t('analytics')}</h1>
+        <div className="flex items-center gap-3 ml-auto">
+          {/* Account dropdown */}
+          <div className="relative">
+            <select
+              value={accountId}
+              onChange={e => setAccountId(e.target.value)}
+              className="appearance-none bg-slate-900 border border-slate-700 text-slate-300 text-xs rounded-lg px-3 py-1.5 pr-7 focus:outline-none focus:border-accent cursor-pointer hover:border-slate-600 transition-colors"
+            >
+              <option value="all">Бүх данс</option>
+              <option value="personal">Үндсэн данс</option>
+              {mt5Accounts.map(a => (
+                <option key={a.id} value={a.id}>{a.server} · {a.login}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+          </div>
+
+          {/* Currency toggle */}
+          <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden text-xs">
+            {['$', '₮'].map(c => (
+              <button
+                key={c}
+                onClick={() => setCurrency(c)}
+                className={`px-3 py-1.5 transition-colors ${currency === c ? 'bg-accent text-black font-semibold' : 'text-slate-400 hover:text-slate-300'}`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
+          <TimeFilter
+            value={timeRange}
+            onChange={(v) => { setTimeRange(v); localStorage.setItem('analytics_time_range', v); }}
+            customRange={customRange}
+            onCustomRangeChange={(r) => {
+              setCustomRange(r);
+              if (r) localStorage.setItem('analytics_custom_range', JSON.stringify(r));
+            }}
+          />
+        </div>
       </header>
 
       {/* Main Scrollable Content */}
@@ -130,12 +180,12 @@ export function AnalyticsPage() {
           {activeTab === "overview" && !loading && summary && charts && summary.totalTrades > 0 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Row 1: Summary Cards */}
-              <SummaryCards data={summary} timeRange={timeRange} />
+              <SummaryCards data={summary} timeRange={timeRange} currency={currency} />
 
               {/* Row 2: Main Charts & AI */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 flex flex-col gap-6">
-                  <EquityChart data={charts.equityCurve} />
+                  <EquityChart data={charts.equityCurve} currency={currency} />
                   <TradeCalendar trades={trades} />
                 </div>
                 <div className="lg:col-span-1 flex flex-col gap-6">
@@ -148,7 +198,7 @@ export function AnalyticsPage() {
 
           {activeTab === "detailed" && !loading && summary && charts && summary.totalTrades > 0 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <PerformanceCharts timeRange={timeRange} />
+              <PerformanceCharts timeRange={timeRange} accountId={accountId} currency={currency} />
             </div>
           )}
 

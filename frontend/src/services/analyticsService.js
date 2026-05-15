@@ -14,10 +14,26 @@ const safeFetch = async (url, options = {}) => {
 };
 
 export const analyticsService = {
-  getSummary: async (range = '7d') => safeFetch(`${API_BASE_URL}/analytics/summary?range=${range}`),
-  getCharts: async (range = '7d') => safeFetch(`${API_BASE_URL}/analytics/charts?range=${range}`),
-  getMistakes: async (range = '7d') => safeFetch(`${API_BASE_URL}/analytics/mistakes?range=${range}`),
-  getPerformance: async (range = '7d') => safeFetch(`${API_BASE_URL}/analytics/performance?range=${range}`),
+  getSummary: async (range = '7d', accountId) => {
+    const p = new URLSearchParams({ range });
+    if (accountId && accountId !== 'all') p.set('account_id', accountId);
+    return safeFetch(`${API_BASE_URL}/analytics/summary?${p}`);
+  },
+  getCharts: async (range = '7d', accountId) => {
+    const p = new URLSearchParams({ range });
+    if (accountId && accountId !== 'all') p.set('account_id', accountId);
+    return safeFetch(`${API_BASE_URL}/analytics/charts?${p}`);
+  },
+  getMistakes: async (range = '7d', accountId) => {
+    const p = new URLSearchParams({ range });
+    if (accountId && accountId !== 'all') p.set('account_id', accountId);
+    return safeFetch(`${API_BASE_URL}/analytics/mistakes?${p}`);
+  },
+  getPerformance: async (range = '7d', accountId) => {
+    const p = new URLSearchParams({ range });
+    if (accountId && accountId !== 'all') p.set('account_id', accountId);
+    return safeFetch(`${API_BASE_URL}/analytics/performance?${p}`);
+  },
 getWeeklyReview: async (start, end) => {
     const params = new URLSearchParams();
     if (start) params.append('start', start);

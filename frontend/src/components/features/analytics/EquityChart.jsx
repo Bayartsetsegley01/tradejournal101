@@ -1,20 +1,27 @@
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, ReferenceLine } from "recharts";
 import { useLang } from "@/contexts/LanguageContext";
 
-function CustomTooltip({ active, payload, label }) {
+const MNT_RATE = 3450;
+
+function fmtVal(val, currency) {
+  if (currency === '₮') return `${val >= 0 ? '+' : ''}${Math.round(val * MNT_RATE).toLocaleString()} ₮`;
+  return `${val >= 0 ? '+' : ''}$${val.toFixed(2)}`;
+}
+
+function CustomTooltip({ active, payload, label, currency }) {
   if (!active || !payload?.length) return null;
   const val = payload[0]?.value ?? 0;
   return (
     <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl px-4 py-3 text-sm">
       <p className="text-slate-400 text-xs mb-1">{label}</p>
       <p className={`font-bold text-base ${val >= 0 ? 'text-accent' : 'text-rose-400'}`}>
-        {val >= 0 ? '+' : ''}${val.toFixed(2)}
+        {fmtVal(val, currency)}
       </p>
     </div>
   );
 }
 
-export function EquityChart({ data }) {
+export function EquityChart({ data, currency = '$' }) {
   const { t } = useLang();
 
   const formattedData = (data || []).map(item => {
@@ -27,6 +34,7 @@ export function EquityChart({ data }) {
   });
 
   const isPositive = formattedData.length === 0 || formattedData[formattedData.length - 1]?.value >= 0;
+  const lastVal = formattedData.length > 0 ? (formattedData[formattedData.length - 1]?.value ?? 0) : 0;
 
   return (
     <div className="bg-slate-900 rounded-xl p-5 border border-slate-800 flex flex-col h-[340px] hover:border-accent/30 hover:shadow-[0_0_15px_rgba(200,240,122,0.05)] transition-all duration-300">
@@ -38,7 +46,7 @@ export function EquityChart({ data }) {
         </div>
         {formattedData.length > 0 && (
           <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-            {isPositive ? '▲' : '▼'} {formattedData.length > 0 ? `$${Math.abs(formattedData[formattedData.length-1]?.value ?? 0).toFixed(2)}` : ''}
+            {isPositive ? '▲' : '▼'} {formattedData.length > 0 ? fmtVal(Math.abs(lastVal), currency) : ''}
           </span>
         )}
       </div>
@@ -68,11 +76,11 @@ export function EquityChart({ data }) {
                 fontSize={11}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(v) => `$${v}`}
+                tickFormatter={(v) => currency === '₮' ? `${Math.round(v * MNT_RATE / 1000)}K₮` : `$${v}`}
                 dx={-4}
                 tick={{ fill: '#64748b' }}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#c8f07a', strokeWidth: 1, strokeDasharray: '4 4' }} />
+              <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ stroke: '#c8f07a', strokeWidth: 1, strokeDasharray: '4 4' }} />
               <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" strokeWidth={1} />
               <Area
                 type="monotone"

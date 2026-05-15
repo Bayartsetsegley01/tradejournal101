@@ -30,7 +30,9 @@ function StatCard({ title, value, isPositive, icon: Icon, t }) {
   );
 }
 
-export function SummaryCards({ data, timeRange = 'all' }) {
+const MNT_RATE = 3450;
+
+export function SummaryCards({ data, timeRange = 'all', currency = '$' }) {
   const { t } = useLang();
   if (!data) return null;
 
@@ -38,6 +40,10 @@ export function SummaryCards({ data, timeRange = 'all' }) {
   const rangeLabel = t(rangeKeyMap[timeRange] || 'rangeCustom');
 
   const formatCurrency = (val) => {
+    if (currency === '₮') {
+      const mnt = Math.round(val * MNT_RATE);
+      return `${val >= 0 ? '+' : ''}${mnt.toLocaleString()} ₮`;
+    }
     const abs = Math.abs(val);
     return `${val >= 0 ? '+' : '-'}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };

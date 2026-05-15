@@ -117,19 +117,14 @@ export const syncAccount = async (req, res) => {
 
     if (account.state !== 'DEPLOYED') await account.deploy();
 
-    await Promise.race([
-      account.waitConnected(),
-      new Promise((_, r) => setTimeout(() => r(new Error('Холболтын хугацаа дууслаа (60с). Дахин оролдоно уу.')), 60000)),
-    ]);
-
     const startTime = new Date();
     startTime.setMonth(startTime.getMonth() - months);
 
     const connection = account.getRPCConnection();
     await connection.connect();
     await Promise.race([
-      connection.waitSynchronized({ timeoutInSeconds: 30 }),
-      new Promise((_, r) => setTimeout(() => r(new Error('Sync timeout')), 35000)),
+      connection.waitSynchronized({ timeoutInSeconds: 120 }),
+      new Promise((_, r) => setTimeout(() => r(new Error('Sync timeout 120с')), 125000)),
     ]);
 
     const history = await connection.getDealsByTimeRange(startTime, new Date());
