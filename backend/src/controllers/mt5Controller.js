@@ -65,14 +65,35 @@ export const connectAccount = async (req, res) => {
         reliability: 'regular',
       });
     } catch (createErr) {
-      // MetaApi account already registered — find and reuse it
+      // MetaApi account already registered — find and reuse or recreate
       const errMsg = createErr.message || '';
       if (errMsg.toLowerCase().includes('already') || errMsg.toLowerCase().includes('exist')) {
         const allAccounts = await api.metatraderAccountApi.getAccounts({});
-        account = allAccounts.find(
+        const found = allAccounts.find(
           a => String(a.login) === String(login) && a.server === String(server)
         );
-        if (!account) throw new Error('already');
+        if (!found) throw new Error('already');
+
+        // If the existing account has high reliability (requires paid plan), remove and recreate as regular
+        const rel = String(found.reliability || '').toLowerCase();
+        if (rel.includes('high')) {
+          console.log('[MetaApi] Removing high-reliability account, recreating as regular...');
+          try { await found.undeploy(); } catch {}
+          await new Promise(r => setTimeout(r, 3000));
+          await found.remove();
+          account = await api.metatraderAccountApi.createAccount({
+            name: `TJ_${userId.toString().slice(0, 8)}_${Date.now()}`,
+            type: 'cloud',
+            login: String(login),
+            password: String(investorPassword),
+            server: String(server),
+            platform: 'mt5',
+            magic: 0,
+            reliability: 'regular',
+          });
+        } else {
+          account = found;
+        }
       } else {
         throw createErr;
       }
@@ -123,8 +144,8 @@ export const syncAccount = async (req, res) => {
     const connection = account.getRPCConnection();
     await connection.connect();
     await Promise.race([
-      connection.waitSynchronized({ timeoutInSeconds: 120 }),
-      new Promise((_, r) => setTimeout(() => r(new Error('Sync timeout 120с')), 125000)),
+      connection.waitSynchronized({ timeoutInSeconds: 300 }),
+      new Promise((_, r) => setTimeout(() => r(new Error('Sync timeout 300с')), 310000)),
     ]);
 
     const history = await connection.getDealsByTimeRange(startTime, new Date());
