@@ -75,7 +75,7 @@ export function ImportMethodModal({ isOpen, onClose, onCSVImport, onImportComple
       return;
     }
     onClose();
-    navigate('/settings', { state: { activeTab: 'mt5' } });
+    navigate('/app/settings', { state: { activeTab: 'mt5' } });
   };
 
   return (
