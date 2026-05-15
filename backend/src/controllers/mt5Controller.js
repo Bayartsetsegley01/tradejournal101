@@ -60,6 +60,7 @@ export const connectAccount = async (req, res) => {
         server: String(server),
         platform: 'mt5',
         magic: 0,
+        reliability: 'regular',
       });
     } catch (createErr) {
       // MetaApi account already registered — find and reuse it
