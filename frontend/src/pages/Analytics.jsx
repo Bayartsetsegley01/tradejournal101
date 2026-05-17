@@ -186,6 +186,7 @@ export function AnalyticsPage() {
                     <ChartWithTabs
                       equityCurve={charts.equityCurve}
                       perfData={performance}
+                      trades={trades}
                       currency={currency}
                     />
                   </div>
