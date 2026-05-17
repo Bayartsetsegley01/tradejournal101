@@ -95,7 +95,7 @@ export function TradeCalendar({ trades = [] }) {
       <div className="grid grid-cols-7 gap-0.5">
         {calendarDays.map((dayData, index) => {
           if (!dayData) {
-            return <div key={`e-${index}`} className="h-8 rounded-lg" />;
+            return <div key={`e-${index}`} className="aspect-square rounded-lg" />;
           }
 
           const isToday = todayStr === dayData.dateStr;
@@ -108,7 +108,7 @@ export function TradeCalendar({ trades = [] }) {
           return (
             <div
               key={dayData.day}
-              className={`h-8 rounded-lg px-1 py-0.5 flex flex-col relative group cursor-default transition-all duration-150 ${
+              className={`aspect-square rounded-lg p-1 flex flex-col relative group cursor-default transition-all duration-150 ${
                 isToday ? 'ring-2 ring-accent/70 ring-offset-1 ring-offset-slate-900' : ''
               } ${
                 hasTrades
