@@ -301,9 +301,9 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
     }
   };
 
-  const allEmotions = customEmotions.length > 0 ? customEmotions : EMOTIONS;
-  const allPositiveTags = customPositiveTags.length > 0 ? customPositiveTags : POSITIVE_TAGS;
-  const allMistakeTags = customMistakeTags.length > 0 ? customMistakeTags : MISTAKE_TAGS;
+  const allEmotions = [...EMOTIONS, ...customEmotions];
+  const allPositiveTags = [...POSITIVE_TAGS, ...customPositiveTags];
+  const allMistakeTags = [...MISTAKE_TAGS, ...customMistakeTags];
 
   const inputCls = "w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all text-sm font-mono";
   const labelCls = "block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide";

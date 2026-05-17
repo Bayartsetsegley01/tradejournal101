@@ -142,7 +142,7 @@ export function TradeCalendar({ trades = [] }) {
           return (
             <div
               key={idx}
-              className={`h-[62px] rounded-lg border flex flex-col relative group cursor-default transition-all duration-150 p-1 ${bg} ${
+              className={`aspect-square rounded-lg border flex flex-col relative group cursor-default transition-all duration-150 p-1 ${bg} ${
                 isToday ? "ring-2 ring-accent/60 ring-offset-1 ring-offset-slate-900" : ""
               }`}
             >
