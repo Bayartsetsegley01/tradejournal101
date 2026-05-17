@@ -54,9 +54,9 @@ export function TradeCalendar({ trades = [] }) {
   const todayStr = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl p-6 hover:border-slate-700 transition-all duration-300">
+    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl p-4 hover:border-slate-700 transition-all duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <CalendarDays className="w-4 h-4 text-accent" />
           <h3 className="text-sm font-semibold text-white">
@@ -92,10 +92,10 @@ export function TradeCalendar({ trades = [] }) {
       </div>
 
       {/* Day cells */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5">
         {calendarDays.map((dayData, index) => {
           if (!dayData) {
-            return <div key={`e-${index}`} className="aspect-square rounded-xl" />;
+            return <div key={`e-${index}`} className="h-8 rounded-lg" />;
           }
 
           const isToday = todayStr === dayData.dateStr;
@@ -108,7 +108,7 @@ export function TradeCalendar({ trades = [] }) {
           return (
             <div
               key={dayData.day}
-              className={`aspect-square rounded-xl p-1.5 flex flex-col relative group cursor-default transition-all duration-150 ${
+              className={`h-8 rounded-lg px-1 py-0.5 flex flex-col relative group cursor-default transition-all duration-150 ${
                 isToday ? 'ring-2 ring-accent/70 ring-offset-1 ring-offset-slate-900' : ''
               } ${
                 hasTrades
@@ -132,7 +132,7 @@ export function TradeCalendar({ trades = [] }) {
                     : undefined,
               } : undefined}
             >
-              <span className={`text-[10px] font-semibold leading-none ${
+              <span className={`text-[9px] font-semibold leading-none ${
                 isToday ? 'text-accent' : hasTrades ? 'text-white' : 'text-slate-600'
               }`}>
                 {dayData.day}
@@ -140,7 +140,7 @@ export function TradeCalendar({ trades = [] }) {
 
               {hasTrades && (
                 <div className="mt-auto">
-                  <span className={`text-[9px] font-bold leading-none block truncate ${
+                  <span className={`text-[8px] font-bold leading-none block truncate ${
                     isProfit ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-slate-400'
                   }`}>
                     {pnl >= 0 ? '+' : ''}{pnl.toFixed(0)}

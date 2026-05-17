@@ -99,13 +99,13 @@ export function MyGoalPanel() {
   }
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden relative group min-h-[200px]">
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden relative group h-full" style={{ minHeight: 360 }}>
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img src={goalData.imageUrl} alt="My Goal" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/80 to-slate-900/40" />
       </div>
-      
+
       {/* Content */}
       <div className="relative z-10 p-6 h-full flex flex-col">
         <div className="flex items-center justify-between mb-auto">
