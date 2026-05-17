@@ -1,5 +1,4 @@
-import { useNavigate } from "react-router-dom";
-import { X, Zap, Monitor, FileSpreadsheet } from "lucide-react";
+import { X, Zap, FileSpreadsheet, Plus } from "lucide-react";
 
 const METHODS = [
   {
@@ -10,17 +9,7 @@ const METHODS = [
     label: 'Auto-Sync',
     badge: 'Санал болгох',
     badgeCls: 'bg-accent/10 text-accent border-accent/20',
-    desc: 'MT5 login болон investor password оруулна. Бид cloud-оор read-only горимоор холбогдож trade history татна.',
-  },
-  {
-    id: 'easync',
-    icon: Monitor,
-    iconBg: 'bg-blue-500/10',
-    iconColor: 'text-blue-400',
-    label: 'EA Sync',
-    badge: 'Real-time',
-    badgeCls: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    desc: 'MT5 дотроо Expert Advisor суулгана. Trade хаагдах бүрт автоматаар илгээдэг. Компьютер асаатай үед л ажилладаг.',
+    desc: 'MT5 login болон investor password оруулна. Cloud-оор read-only горимоор арилжааны түүх татна.',
   },
   {
     id: 'csv',
@@ -31,6 +20,16 @@ const METHODS = [
     badge: 'Гараар',
     badgeCls: 'bg-slate-700/50 text-slate-400 border-slate-600/40',
     desc: 'MT5-аас CSV export хийж upload хийнэ. Ямар ч холболт шаардахгүй — хамгийн энгийн арга.',
+  },
+  {
+    id: 'manual',
+    icon: Plus,
+    iconBg: 'bg-slate-700/50',
+    iconColor: 'text-slate-400',
+    label: 'Гараар оруулах',
+    badge: 'Үндсэн данс',
+    badgeCls: 'bg-slate-700/50 text-slate-400 border-slate-600/40',
+    desc: 'Арилжаа тус бүрийг гараар нэмнэ. Үндсэн данс руу орно.',
   },
 ];
 
@@ -43,7 +42,7 @@ function MethodCard({ method, onClick }) {
     >
       <div className="flex items-start gap-3.5">
         <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${method.iconBg} group-hover:scale-105 transition-transform`}>
-          <Icon className={`w-4.5 h-4.5 ${method.iconColor}`} style={{ width: 18, height: 18 }} />
+          <Icon className={`${method.iconColor}`} style={{ width: 18, height: 18 }} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -63,19 +62,14 @@ function MethodCard({ method, onClick }) {
   );
 }
 
-export function ImportMethodModal({ isOpen, onClose, onCSVImport, onImportComplete }) {
-  const navigate = useNavigate();
-
+export function ImportMethodModal({ isOpen, onClose, onCSVImport, onAutoSync, onManual }) {
   if (!isOpen) return null;
 
   const handleMethod = (id) => {
-    if (id === 'csv') {
-      onClose();
-      onCSVImport();
-      return;
-    }
     onClose();
-    navigate('/app/settings', { state: { activeTab: 'mt5' } });
+    if (id === 'csv') { onCSVImport?.(); return; }
+    if (id === 'autosync') { onAutoSync?.(); return; }
+    if (id === 'manual') { onManual?.(); return; }
   };
 
   return (
@@ -85,7 +79,6 @@ export function ImportMethodModal({ isOpen, onClose, onCSVImport, onImportComple
     >
       <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-2 duration-200">
         <div className="p-5">
-          {/* Header */}
           <div className="flex items-start justify-between mb-5">
             <div>
               <h2 className="text-base font-bold text-white">Импортын арга сонгох</h2>
@@ -97,7 +90,6 @@ export function ImportMethodModal({ isOpen, onClose, onCSVImport, onImportComple
             </button>
           </div>
 
-          {/* Method cards */}
           <div className="space-y-2">
             {METHODS.map(m => (
               <MethodCard key={m.id} method={m} onClick={() => handleMethod(m.id)} />

@@ -13,13 +13,21 @@ const cleanError = (msg = '') => {
   const m = msg.toLowerCase();
   if (m.includes('high reliability') || m.includes('top up'))
     return 'AUTO_SYNC_UNAVAILABLE';
-  if (m.includes('already') || m.includes('exist')) return 'Энэ данс аль хэдийн бүртгэлтэй байна';
-  if (m.includes('timeout') || m.includes('хугацаа')) return 'Холболтын хугацаа дууслаа. Дахин оролдоно уу';
+  if (m.includes('already') || m.includes('exist'))
+    return 'Энэ данс аль хэдийн бүртгэлтэй байна';
+  if (m.includes('timed out') || m.includes('timeout') || m.includes('synchronize') || m.includes('хугацаа'))
+    return 'MetaApi холболтын хугацаа дууслаа. Broker сервер хариу өгөхгүй байна. 5–10 минутын дараа дахин оролдоно уу';
   if (m.includes('invalid') || m.includes('unauthorized') || m.includes('wrong password') || m.includes('401'))
-    return 'Нэвтрэх мэдээлэл буруу байна. Login эсвэл Investor Password шалгана уу';
-  if (m.includes('not found') || m.includes('404')) return 'Сервер эсвэл данс олдсонгүй';
-  if (m.includes('network') || m.includes('econnrefused') || m.includes('enotfound')) return 'Сүлжээний алдаа. Дахин оролдоно уу';
-  return msg;
+    return 'Нэвтрэх мэдээлэл буруу байна. MT5 Login эсвэл Investor Password шалгана уу';
+  if (m.includes('not found') || m.includes('404'))
+    return 'Сервер эсвэл данс олдсонгүй. Server нэрийг шалгана уу';
+  if (m.includes('network') || m.includes('econnrefused') || m.includes('enotfound'))
+    return 'Сүлжээний алдаа. Интернет холболтоо шалгаад дахин оролдоно уу';
+  if (m.includes('deploy') || m.includes('undeploy'))
+    return 'MetaApi данс идэвхжүүлэхэд алдаа гарлаа. Дахин оролдоно уу';
+  if (m.includes('permission') || m.includes('forbidden') || m.includes('403'))
+    return 'Хандах эрх байхгүй байна. Investor Password зөв эсэхийг шалгана уу';
+  return 'Синхрончлоход алдаа гарлаа. Дахин оролдоно уу';
 };
 
 const timeAgo = (ms) => {
@@ -142,6 +150,12 @@ async function _runSync(accountId, userId, dbAccount, months) {
   try {
     const api = getMetaApi();
     const account = await api.metatraderAccountApi.getAccount(dbAccount.account_id);
+
+    // High-reliability accounts require a paid MetaApi plan — fail fast with clear error
+    const rel = String(account.reliability || '').toLowerCase();
+    if (rel.includes('high')) {
+      throw new Error('HIGH_RELIABILITY');
+    }
 
     if (account.state !== 'DEPLOYED') await account.deploy();
 

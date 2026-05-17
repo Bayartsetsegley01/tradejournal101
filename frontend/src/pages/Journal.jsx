@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { TradeTable } from "@/components/features/journal/TradeTable";
 import { TradeFilters } from "@/components/features/journal/TradeFilters";
@@ -12,6 +11,7 @@ import { TimeFilter } from "@/components/features/analytics/TimeFilter";
 import {
   Plus, Download, Loader2, Upload, ChevronLeft, ChevronRight,
   ArrowLeft, BarChart2, Wallet, TrendingUp, TrendingDown, RefreshCw,
+  X, Zap, FileSpreadsheet, Eye, EyeOff, Check,
 } from "lucide-react";
 import { SESSIONS } from "@/lib/constants";
 import { useLang } from "@/contexts/LanguageContext";
@@ -161,25 +161,24 @@ function PersonalCard({ stats, onClick }) {
   );
 }
 
-function AddAccountCard() {
-  const navigate = useNavigate();
+function AddAccountCard({ onClick }) {
   return (
     <button
-      onClick={() => navigate('/app/settings', { state: { activeTab: 'mt5' } })}
+      onClick={onClick}
       className="w-full h-full min-h-[180px] border border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center gap-2 text-slate-600 hover:text-slate-400 hover:border-slate-700 transition-all duration-200 p-5"
     >
       <div className="w-10 h-10 rounded-xl border border-dashed border-slate-700 flex items-center justify-center">
         <Plus className="w-5 h-5" />
       </div>
       <p className="text-sm font-medium">Шинэ данс нэмэх</p>
-      <p className="text-[11px] text-center">MT5 холбох · CSV импорт</p>
+      <p className="text-[11px] text-center">Auto-Sync · CSV · Гараар</p>
     </button>
   );
 }
 
 // ── Portfolio view ────────────────────────────────────────────────────────────
 
-function PortfolioView({ accounts, accountsLoading, trades, onSelect, onAddTrade }) {
+function PortfolioView({ accounts, accountsLoading, trades, onSelect, onAddAccount }) {
   const { t } = useLang();
 
   const getStats = (accountId) => {
@@ -208,7 +207,7 @@ function PortfolioView({ accounts, accountsLoading, trades, onSelect, onAddTrade
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Портфолио</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Дансууд</h1>
           <p className="text-sm text-slate-400 mt-1">
             Нийт PnL:&nbsp;
             <span className={`font-semibold ${totalPnlAll >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -216,13 +215,6 @@ function PortfolioView({ accounts, accountsLoading, trades, onSelect, onAddTrade
             </span>
           </p>
         </div>
-        <button
-          onClick={onAddTrade}
-          className="bg-accent hover:bg-accent-hover text-slate-950 text-sm font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(200,240,122,0.15)]"
-        >
-          <Plus className="w-4 h-4" />
-          {t('newTrade')}
-        </button>
       </div>
 
       {/* Cards grid */}
@@ -251,9 +243,207 @@ function PortfolioView({ accounts, accountsLoading, trades, onSelect, onAddTrade
           ))}
 
           {/* Add account */}
-          <AddAccountCard />
+          <AddAccountCard onClick={onAddAccount} />
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Add Account Modal (3-step inline flow) ────────────────────────────────────
+
+const inputCls = 'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/10 transition-all';
+
+function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
+  const [step, setStep] = useState('method'); // method | autosync | done
+  const [form, setForm] = useState({ login: '', investorPassword: '', server: '' });
+  const [showPass, setShowPass] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState('');
+
+  const reset = () => { setStep('method'); setForm({ login: '', investorPassword: '', server: '' }); setError(''); setConnecting(false); };
+  const close = () => { reset(); onClose(); };
+
+  const handleConnect = async () => {
+    setError(''); setConnecting(true);
+    try {
+      const r1 = await fetch(`${API_BASE}/mt5/connect`, {
+        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify(form),
+      });
+      const d1 = await r1.json();
+      if (!d1.success) {
+        setError(d1.error === 'AUTO_SYNC_UNAVAILABLE'
+          ? 'Таны broker Auto-Sync-г дэмжихгүй байна. CSV Import эсвэл Гараар аргыг ашиглана уу.'
+          : (d1.error || 'Холбоход алдаа гарлаа'));
+        setConnecting(false); return;
+      }
+      const r2 = await fetch(`${API_BASE}/mt5/sync/${d1.data.id}`, {
+        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify({ months: 3 }),
+      });
+      await r2.json();
+      setStep('done');
+      setTimeout(() => { onSuccess(); close(); }, 2000);
+    } catch (e) { setError(e.message); setConnecting(false); }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={e => { if (e.target === e.currentTarget) close(); }}>
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-800">
+          <div>
+            <h2 className="text-base font-bold text-white">Шинэ данс нэмэх</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {step === 'method' ? 'Аргаа сонгоно уу' : step === 'autosync' ? 'MT5 мэдээлэл оруулна уу' : 'Холбогдлоо!'}
+            </p>
+          </div>
+          <button onClick={close} className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5">
+          {/* Step 1: Method selection */}
+          {step === 'method' && (
+            <div className="space-y-2">
+              {/* Auto-Sync */}
+              <button onClick={() => setStep('autosync')}
+                className="group w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700 transition-all">
+                <div className="flex items-start gap-3.5">
+                  <div className="shrink-0 w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Zap className="w-[18px] h-[18px] text-accent" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-semibold text-white">Auto-Sync</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">Санал болгох</span>
+                    </div>
+                    <p className="text-xs text-slate-500">MT5 login болон investor password оруулна. Cloud-оор read-only горимоор арилжааны түүх татна.</p>
+                  </div>
+                  <svg className="shrink-0 self-center w-4 h-4 text-slate-700 group-hover:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+
+              {/* CSV Import */}
+              <button onClick={() => { close(); onSuccess('csv'); }}
+                className="group w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700 transition-all">
+                <div className="flex items-start gap-3.5">
+                  <div className="shrink-0 w-9 h-9 rounded-xl bg-slate-700/50 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <FileSpreadsheet className="w-[18px] h-[18px] text-slate-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-semibold text-white">CSV Import</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-700/50 text-slate-400 border border-slate-600/40">Гараар</span>
+                    </div>
+                    <p className="text-xs text-slate-500">MT5-аас CSV export хийж upload хийнэ. Ямар ч холболт шаардахгүй.</p>
+                  </div>
+                  <svg className="shrink-0 self-center w-4 h-4 text-slate-700 group-hover:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+
+              {/* Manual */}
+              <button onClick={() => { close(); onManualTrade(); }}
+                className="group w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700 transition-all">
+                <div className="flex items-start gap-3.5">
+                  <div className="shrink-0 w-9 h-9 rounded-xl bg-slate-700/50 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Plus className="w-[18px] h-[18px] text-slate-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-semibold text-white">Гараар оруулах</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-700/50 text-slate-400 border border-slate-600/40">Үндсэн данс</span>
+                    </div>
+                    <p className="text-xs text-slate-500">Арилжаа тус бүрийг гараар нэмнэ. Үндсэн данс руу орно.</p>
+                  </div>
+                  <svg className="shrink-0 self-center w-4 h-4 text-slate-700 group-hover:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Auto-Sync form */}
+          {step === 'autosync' && (
+            <div className="space-y-3">
+              <button onClick={() => { setStep('method'); setError(''); }}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors mb-1">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Буцах
+              </button>
+
+              {connecting && (
+                <div className="flex items-center gap-2.5 px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg">
+                  <RefreshCw className="w-3.5 h-3.5 text-accent animate-spin shrink-0" />
+                  <p className="text-xs text-slate-400">MetaApi-т холбогдож байна... (30–60с)</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">MT5 Login</label>
+                <input type="text" autoComplete="off" value={form.login}
+                  onChange={e => setForm({...form, login: e.target.value})}
+                  placeholder="Дансны дугаар (жш: 107057802)"
+                  disabled={connecting} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Investor Password</label>
+                <div className="flex gap-2">
+                  <input type={showPass ? 'text' : 'password'} autoComplete="new-password"
+                    value={form.investorPassword}
+                    onChange={e => setForm({...form, investorPassword: e.target.value})}
+                    placeholder="••••••••" disabled={connecting} className={`${inputCls} flex-1`} />
+                  <button type="button" onClick={() => setShowPass(v => !v)}
+                    className="px-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 hover:text-white transition-colors">
+                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Server</label>
+                <input type="text" autoComplete="off" value={form.server}
+                  onChange={e => setForm({...form, server: e.target.value})}
+                  placeholder="MetaQuotes-Demo" disabled={connecting} className={inputCls} />
+              </div>
+
+              {error && (
+                <p className="text-xs text-rose-400 bg-rose-400/5 border border-rose-400/15 rounded-lg px-3 py-2">{error}</p>
+              )}
+
+              <button onClick={handleConnect}
+                disabled={connecting || !form.login || !form.investorPassword || !form.server}
+                className="w-full flex items-center justify-center gap-2 text-sm font-semibold bg-accent hover:bg-accent-hover text-slate-950 py-2.5 rounded-lg transition-colors disabled:opacity-50 mt-2">
+                <Zap className="w-4 h-4" />
+                {connecting ? 'Холбогдож байна...' : 'MT5 Холбох'}
+              </button>
+              <p className="text-[10px] text-slate-600 text-center">Read-only горим — арилжаа нээх боломжгүй</p>
+            </div>
+          )}
+
+          {/* Step 3: Done */}
+          {step === 'done' && (
+            <div className="text-center py-4">
+              <div className="w-12 h-12 rounded-full bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center mx-auto mb-3">
+                <Check className="w-6 h-6 text-emerald-400" />
+              </div>
+              <p className="text-sm font-semibold text-white">Амжилттай холбогдлоо!</p>
+              <p className="text-xs text-slate-400 mt-1">Арилжааны түүх татагдаж байна...</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -275,6 +465,7 @@ export function JournalPage() {
   const [isExportModalOpen, setIsExportModalOpen]   = useState(false);
   const [isImportMethodOpen, setIsImportMethodOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen]   = useState(false);
+  const [isAddAccountOpen, setIsAddAccountOpen]     = useState(false);
   const [selectedTrade, setSelectedTrade]           = useState(null);
   const [editingTrade, setEditingTrade]             = useState(null);
   const [page, setPage]                             = useState(1);
@@ -394,11 +585,27 @@ export function JournalPage() {
           accountsLoading={accountsLoading || isLoading}
           trades={trades}
           onSelect={handleSelectAccount}
-          onAddTrade={() => { setEditingTrade(null); setIsAddModalOpen(true); }}
+          onAddAccount={() => setIsAddAccountOpen(true)}
+        />
+
+        <AddAccountModal
+          isOpen={isAddAccountOpen}
+          onClose={() => setIsAddAccountOpen(false)}
+          onSuccess={(action) => {
+            if (action === 'csv') { setIsImportModalOpen(true); }
+            else { loadAccounts(); }
+          }}
+          onManualTrade={() => {
+            handleSelectAccount({ id: 'personal', login: 'Үндсэн данс', server: 'Гараар оруулсан' });
+            setTimeout(() => { setEditingTrade(null); setIsAddModalOpen(true); }, 100);
+          }}
         />
 
         {isAddModalOpen && (
           <AddTradeModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} initialData={editingTrade} />
+        )}
+        {isImportModalOpen && (
+          <ImportModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} onImportComplete={() => { setIsImportModalOpen(false); invalidate(); }} />
         )}
       </>
     );
@@ -557,7 +764,8 @@ export function JournalPage() {
         isOpen={isImportMethodOpen}
         onClose={() => setIsImportMethodOpen(false)}
         onCSVImport={() => setIsImportModalOpen(true)}
-        onImportComplete={invalidate}
+        onAutoSync={() => setIsAddAccountOpen(true)}
+        onManual={() => { setEditingTrade(null); setIsAddModalOpen(true); }}
       />
       <ImportModal
         isOpen={isImportModalOpen}
