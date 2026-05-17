@@ -75,8 +75,8 @@ function AccountCard({ account, stats, onClick }) {
             <BarChart2 className="w-4 h-4 text-slate-400" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white font-mono leading-none">{account.login}</p>
-            <p className="text-[11px] text-slate-500 mt-0.5">{account.server}</p>
+            <p className="text-sm font-bold text-white font-mono leading-none">{account.name || account.login}</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">{account.sync_type === 'MANUAL' ? 'Гараар оруулсан' : account.server}</p>
           </div>
         </div>
         {account.status && (
@@ -255,14 +255,35 @@ function PortfolioView({ accounts, accountsLoading, trades, onSelect, onAddAccou
 const inputCls = 'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/10 transition-all';
 
 function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
-  const [step, setStep] = useState('method'); // method | autosync | done
+  const [step, setStep] = useState('method'); // method | autosync | manual | done
   const [form, setForm] = useState({ login: '', investorPassword: '', server: '' });
+  const [manualForm, setManualForm] = useState({ name: '', startingBalance: '' });
   const [showPass, setShowPass] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
 
-  const reset = () => { setStep('method'); setForm({ login: '', investorPassword: '', server: '' }); setError(''); setConnecting(false); };
+  const reset = () => {
+    setStep('method');
+    setForm({ login: '', investorPassword: '', server: '' });
+    setManualForm({ name: '', startingBalance: '' });
+    setError(''); setConnecting(false);
+  };
   const close = () => { reset(); onClose(); };
+
+  const handleCreateManual = async () => {
+    if (!manualForm.name.trim()) { setError('Дансны нэр оруулна уу'); return; }
+    setError(''); setConnecting(true);
+    try {
+      const res = await fetch(`${API_BASE}/mt5/manual`, {
+        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify({ name: manualForm.name, startingBalance: parseFloat(manualForm.startingBalance) || 0 }),
+      });
+      const d = await res.json();
+      if (!d.success) { setError(d.error || 'Данс үүсгэхэд алдаа гарлаа'); setConnecting(false); return; }
+      setStep('done');
+      setTimeout(() => { onSuccess(); onManualTrade(d.data); close(); }, 1500);
+    } catch (e) { setError(e.message); setConnecting(false); }
+  };
 
   const handleConnect = async () => {
     setError(''); setConnecting(true);
@@ -299,7 +320,7 @@ function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
           <div>
             <h2 className="text-base font-bold text-white">Шинэ данс нэмэх</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {step === 'method' ? 'Аргаа сонгоно уу' : step === 'autosync' ? 'MT5 мэдээлэл оруулна уу' : 'Холбогдлоо!'}
+              {step === 'method' ? 'Аргаа сонгоно уу' : step === 'autosync' ? 'MT5 мэдээлэл оруулна уу' : step === 'manual' ? 'Шинэ гараар данс' : 'Амжилттай!'}
             </p>
           </div>
           <button onClick={close} className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors">
@@ -352,7 +373,7 @@ function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
               </button>
 
               {/* Manual */}
-              <button onClick={() => { close(); onManualTrade(); }}
+              <button onClick={() => setStep('manual')}
                 className="group w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700 transition-all">
                 <div className="flex items-start gap-3.5">
                   <div className="shrink-0 w-9 h-9 rounded-xl bg-slate-700/50 flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -429,6 +450,46 @@ function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
                 {connecting ? 'Холбогдож байна...' : 'MT5 Холбох'}
               </button>
               <p className="text-[10px] text-slate-600 text-center">Read-only горим — арилжаа нээх боломжгүй</p>
+            </div>
+          )}
+
+          {/* Step 2b: Manual account form */}
+          {step === 'manual' && (
+            <div className="space-y-3">
+              <button onClick={() => { setStep('method'); setError(''); }}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors mb-1">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Буцах
+              </button>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Дансны нэр <span className="text-rose-400">*</span></label>
+                <input type="text" value={manualForm.name}
+                  onChange={e => setManualForm({...manualForm, name: e.target.value})}
+                  placeholder="жш: Forex данс, Scalping данс..."
+                  disabled={connecting} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Эхний үлдэгдэл (USD)</label>
+                <input type="number" value={manualForm.startingBalance}
+                  onChange={e => setManualForm({...manualForm, startingBalance: e.target.value})}
+                  placeholder="жш: 1000"
+                  disabled={connecting} className={inputCls} />
+                <p className="text-[10px] text-slate-600 mt-1">Дансаа эхлүүлэхэд байсан мөнгөн дүн</p>
+              </div>
+
+              {error && (
+                <p className="text-xs text-rose-400 bg-rose-400/5 border border-rose-400/15 rounded-lg px-3 py-2">{error}</p>
+              )}
+
+              <button onClick={handleCreateManual}
+                disabled={connecting || !manualForm.name.trim()}
+                className="w-full flex items-center justify-center gap-2 text-sm font-semibold bg-accent hover:bg-accent-hover text-slate-950 py-2.5 rounded-lg transition-colors disabled:opacity-50 mt-2">
+                <Plus className="w-4 h-4" />
+                {connecting ? 'Үүсгэж байна...' : 'Данс үүсгэх'}
+              </button>
             </div>
           )}
 
@@ -595,9 +656,12 @@ export function JournalPage() {
             if (action === 'csv') { setIsImportModalOpen(true); }
             else { loadAccounts(); }
           }}
-          onManualTrade={() => {
-            handleSelectAccount({ id: 'personal', login: 'Үндсэн данс', server: 'Гараар оруулсан' });
-            setTimeout(() => { setEditingTrade(null); setIsAddModalOpen(true); }, 100);
+          onManualTrade={(newAccount) => {
+            if (newAccount) {
+              loadAccounts();
+              handleSelectAccount({ ...newAccount, login: newAccount.name || newAccount.login });
+              setTimeout(() => { setEditingTrade(null); setIsAddModalOpen(true); }, 150);
+            }
           }}
         />
 

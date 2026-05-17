@@ -229,12 +229,32 @@ async function _runSync(accountId, userId, dbAccount, months) {
   }
 }
 
+// ── Create manual account ─────────────────────────────────────────────────────
+
+export const createManualAccount = async (req, res) => {
+  const { name, startingBalance } = req.body;
+  const userId = req.user.id;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ success: false, error: 'Дансны нэр шаардлагатай' });
+  }
+  try {
+    const result = await query(
+      `INSERT INTO mt5_accounts (user_id, name, login, server, sync_type, status, starting_balance)
+       VALUES ($1,$2,$3,'Гараар','MANUAL','CONNECTED',$4) RETURNING *`,
+      [userId, name.trim(), name.trim(), parseFloat(startingBalance) || 0]
+    );
+    res.json({ success: true, data: result.rows[0] });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+};
+
 // ── Get connected accounts ────────────────────────────────────────────────────
 
 export const getAccounts = async (req, res) => {
   try {
     const result = await query(
-      `SELECT id, login, server, sync_type, status, last_synced_at, last_sync_error, created_at
+      `SELECT id, name, login, server, sync_type, status, last_synced_at, last_sync_error, starting_balance, created_at
        FROM mt5_accounts WHERE user_id=$1 ORDER BY created_at DESC`,
       [req.user.id]
     );

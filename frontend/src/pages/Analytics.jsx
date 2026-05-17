@@ -188,20 +188,20 @@ export function AnalyticsPage() {
               <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-400">
                 <SummaryCards data={summary} timeRange={timeRange} currency={currency} />
 
-                <ChartWithTabs
-                  equityCurve={charts.equityCurve}
-                  perfData={performance}
-                  currency={currency}
-                />
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
                   <div className="lg:col-span-2">
-                    <TradeCalendar trades={trades} />
+                    <ChartWithTabs
+                      equityCurve={charts.equityCurve}
+                      perfData={performance}
+                      currency={currency}
+                    />
                   </div>
                   <div>
                     <MyGoalPanel />
                   </div>
                 </div>
+
+                <TradeCalendar trades={trades} />
               </div>
             )
           )}

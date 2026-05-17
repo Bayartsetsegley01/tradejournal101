@@ -3,10 +3,13 @@ import { authenticateToken } from '../middleware/auth.js';
 import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
 import {
   connectAccount, syncAccount, getAccounts, deleteAccount,
-  eaSyncTrade, getApiKey, generateApiKey,
+  createManualAccount, eaSyncTrade, getApiKey, generateApiKey,
 } from '../controllers/mt5Controller.js';
 
 const router = express.Router();
+
+// Manual account
+router.post('/manual',             authenticateToken, createManualAccount);
 
 // Auto-Sync (JWT auth)
 router.post('/connect',            authenticateToken, connectAccount);

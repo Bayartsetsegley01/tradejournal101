@@ -450,3 +450,13 @@ DO $$ BEGIN
     ALTER TABLE mt5_accounts ADD COLUMN last_sync_error TEXT;
   END IF;
 END $$;
+
+-- Manual account fields
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mt5_accounts' AND column_name='name') THEN
+    ALTER TABLE mt5_accounts ADD COLUMN name VARCHAR(100);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mt5_accounts' AND column_name='starting_balance') THEN
+    ALTER TABLE mt5_accounts ADD COLUMN starting_balance DECIMAL DEFAULT 0;
+  END IF;
+END $$;

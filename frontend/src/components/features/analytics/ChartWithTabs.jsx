@@ -258,18 +258,18 @@ export function ChartWithTabs({ equityCurve = [], perfData = null, currency = '$
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl flex flex-col shadow-sm" style={{ height: 380 }}>
+    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl flex flex-col hover:border-slate-700 transition-all duration-300" style={{ height: 360 }}>
       {/* Tab bar */}
-      <div className="flex items-center border-b border-slate-200 px-4 shrink-0 overflow-x-auto">
+      <div className="flex items-center border-b border-slate-800/60 px-4 shrink-0 overflow-x-auto">
         {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={cn(
-              'px-3 py-3.5 text-[13px] font-medium whitespace-nowrap border-b-2 transition-all duration-150 -mb-px',
+              'px-3 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-all duration-150 -mb-px',
               tab === t.id
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-accent text-white'
+                : 'border-transparent text-slate-500 hover:text-slate-300'
             )}
           >
             {lang === 'mn' ? t.mn : t.en}
@@ -278,7 +278,7 @@ export function ChartWithTabs({ equityCurve = [], perfData = null, currency = '$
       </div>
 
       {/* Chart area */}
-      <div className="flex-1 p-4 min-h-0 overflow-hidden">
+      <div className="flex-1 px-4 pb-4 pt-3 min-h-0 overflow-hidden">
         {tab === 'growth'  && <GrowthChart  equityCurve={equityCurve} currency={currency} />}
         {tab === 'monthly' && <MonthlyChart byMonth={perfData?.byMonth} currency={currency} />}
         {tab === 'setup'   && <SetupChart   byStrategy={perfData?.byStrategy} currency={currency} />}
