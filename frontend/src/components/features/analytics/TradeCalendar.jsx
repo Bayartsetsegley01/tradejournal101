@@ -88,7 +88,7 @@ export function TradeCalendar({ trades = [] }) {
   }, [calendarDays]);
 
   return (
-    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl p-5 hover:border-slate-700 transition-all duration-300">
+    <div className="bg-slate-900 border border-slate-800/60 rounded-2xl p-5 hover:border-slate-700 transition-all duration-300 max-w-2xl w-full mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
