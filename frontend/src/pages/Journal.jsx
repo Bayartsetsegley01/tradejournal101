@@ -56,6 +56,7 @@ function MiniChart({ data, positive }) {
 const STATUS = {
   CONNECTED:  { dot: 'bg-emerald-400 animate-pulse', text: 'text-emerald-400' },
   CONNECTING: { dot: 'bg-amber-400 animate-pulse',   text: 'text-amber-400' },
+  SYNCING:    { dot: 'bg-blue-400 animate-pulse',    text: 'text-blue-400' },
   ERROR:      { dot: 'bg-rose-400',                  text: 'text-rose-400' },
 };
 
@@ -82,7 +83,7 @@ function AccountCard({ account, stats, onClick }) {
         {account.status && (
           <span className={`flex items-center gap-1 text-[10px] font-semibold ${st.text}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
-            {account.status === 'CONNECTED' ? 'Холбогдсон' : account.status === 'CONNECTING' ? 'Холбогдож байна' : 'Алдаа'}
+            {account.status === 'CONNECTED' ? 'Холбогдсон' : account.status === 'CONNECTING' ? 'Холбогдож байна' : account.status === 'SYNCING' ? 'Sync хийгдэж байна' : 'Алдаа'}
           </span>
         )}
       </div>
@@ -666,7 +667,12 @@ export function JournalPage() {
         />
 
         {isAddModalOpen && (
-          <AddTradeModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} initialData={editingTrade} />
+          <AddTradeModal
+            isOpen={isAddModalOpen}
+            onClose={handleCloseAddModal}
+            initialData={editingTrade}
+            accountId={selectedAccount?.id !== 'personal' ? selectedAccount?.id : null}
+          />
         )}
         {isImportModalOpen && (
           <ImportModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} onImportComplete={() => { setIsImportModalOpen(false); invalidate(); }} />
@@ -810,7 +816,12 @@ export function JournalPage() {
 
       {/* Modals */}
       {isAddModalOpen && (
-        <AddTradeModal isOpen={isAddModalOpen} onClose={handleCloseAddModal} initialData={editingTrade} />
+        <AddTradeModal
+          isOpen={isAddModalOpen}
+          onClose={handleCloseAddModal}
+          initialData={editingTrade}
+          accountId={selectedAccount?.id !== 'personal' ? selectedAccount?.id : null}
+        />
       )}
       {selectedTrade && (
         <TradeDetailModal

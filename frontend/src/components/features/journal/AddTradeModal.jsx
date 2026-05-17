@@ -13,7 +13,7 @@ const TABS = [
   { id: 'journal', label: 'Journal & Media', icon: LayoutTemplate, description: 'Тэмдэглэл, зураг' },
 ];
 
-export function AddTradeModal({ isOpen, onClose, initialData = null }) {
+export function AddTradeModal({ isOpen, onClose, initialData = null, accountId = null }) {
   const [activeTab, setActiveTab] = useState('setup');
   const [customTagModal, setCustomTagModal] = useState(null); // { type: 'emotion' | 'positive' | 'mistake' }
   
@@ -244,6 +244,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null }) {
         status: isDraft ? 'DRAFT' : (formData.status || 'CLOSED'),
         market_type: formData.market,
         entry_date: formData.date,
+        account_id: accountId || null,
       };
 
       if (payload.id) {

@@ -113,18 +113,19 @@ export const addTrade = async (req, res) => {
     }
 
     const screenshotUrl = await resolveScreenshot(b.screenshot_url || null, userId);
+    const accountId = b.account_id || null;
 
-    console.log('[addTrade] payload:', { symbol: b.symbol, direction: b.direction, entryPrice, exitPrice, pnl, riskPercent, positionSize });
+    console.log('[addTrade] payload:', { symbol: b.symbol, direction: b.direction, entryPrice, exitPrice, pnl, riskPercent, positionSize, accountId });
 
     const result = await query(
-      `INSERT INTO trades (user_id, status, symbol, market_type, direction, strategy, session,
+      `INSERT INTO trades (user_id, account_id, status, symbol, market_type, direction, strategy, session,
         entry_date, exit_date, entry_price, exit_price, stop_loss, take_profit,
         position_size, pnl, rr_ratio, risk_percent, notes, lessons_learned, screenshot_url,
         emotion_before, emotion_after, positive_tags, mistake_tags,
         why_entered, what_happened, what_went_well, mistakes_made, setup_description)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
-        $21,$22,$23,$24,$25,$26,$27,$28,$29) RETURNING *`,
-      [userId, b.status||'CLOSED', b.symbol, marketType, b.direction, b.strategy, b.session,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,
+        $22,$23,$24,$25,$26,$27,$28,$29,$30) RETURNING *`,
+      [userId, accountId, b.status||'CLOSED', b.symbol, marketType, b.direction, b.strategy, b.session,
         entryDate?new Date(entryDate):null, exitDate?new Date(exitDate):null,
         entryPrice, exitPrice, stopLoss, takeProfit,
         positionSize, pnl, rrRatio, riskPercent, notes, lessonsLearned, screenshotUrl,
