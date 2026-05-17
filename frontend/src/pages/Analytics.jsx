@@ -6,7 +6,7 @@ import { MyGoalPanel } from "@/components/features/analytics/MyGoalPanel";
 import { TradeCalendar } from "@/components/features/analytics/TradeCalendar";
 import { analyticsService } from "@/services/analyticsService";
 import { tradeService } from "@/services/tradeService";
-import { AlertTriangle, ChevronDown, BarChart2, Sparkles } from "lucide-react";
+import { AlertTriangle, ChevronDown, BarChart2 } from "lucide-react";
 import { useLang } from "@/contexts/LanguageContext";
 import { useTradesUpdated } from "@/lib/tradesSync";
 
@@ -138,24 +138,19 @@ export function AnalyticsPage() {
   const hasData = summary && charts && summary.totalTrades > 0;
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/60 px-6 h-16 flex items-center justify-between gap-4 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-accent" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-white leading-none">
-              {lang === 'mn' ? 'Анализ' : 'Analytics'}
-            </h1>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              {lang === 'mn' ? 'Гүйцэтгэлийн дүн шинжилгээ' : 'Performance overview'}
-            </p>
-          </div>
-        </div>
+    <div className="p-8 max-w-[1400px] mx-auto w-full flex flex-col gap-6">
 
-        <div className="flex items-center gap-2 ml-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            {lang === 'mn' ? 'Анализ' : 'Analytics'}
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            {lang === 'mn' ? 'Гүйцэтгэлийн дүн шинжилгээ' : 'Performance overview'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
           <AccountDropdown value={accountId} onChange={setAccountId} accounts={mt5Accounts} />
           <CurrencyToggle value={currency} onChange={setCurrency} />
           <TimeFilter
@@ -168,11 +163,9 @@ export function AnalyticsPage() {
             }}
           />
         </div>
-      </header>
+      </div>
 
-      {/* Content */}
-      <div className="flex-1 p-6">
-        <div className="max-w-7xl mx-auto space-y-5">
+      <div className="space-y-5">
 
           {error && (
             <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
@@ -206,7 +199,6 @@ export function AnalyticsPage() {
             )
           )}
 
-        </div>
       </div>
     </div>
   );
