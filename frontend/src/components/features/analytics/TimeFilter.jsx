@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { Calendar, X } from "lucide-react";
+import { Check, ChevronDown, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useLang } from "@/contexts/LanguageContext";
 
 const LS_RANGE = 'analytics_time_range';
 const LS_CUSTOM = 'analytics_custom_range';
@@ -15,17 +14,20 @@ function getLast7Days() {
   return { start, end };
 }
 
+const OPTIONS = [
+  { id: 'all',    label: 'Бүгд' },
+  { id: '1y',     label: '1 жил' },
+  { id: '6m',     label: '6 сар' },
+  { id: '3m',     label: '3 сар' },
+  { id: '1m',     label: '1 сар' },
+  { id: '7d',     label: '7 хоног' },
+  { id: 'today',  label: 'Өнөөдөр' },
+  { id: 'custom', label: 'Хугацаа сонгох', icon: Calendar },
+];
+
 export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }) {
-  const { t } = useLang();
-  const filters = [
-    { id: "1y",    label: t('filter1y') },
-    { id: "6m",    label: t('filter6m') },
-    { id: "3m",    label: t('filter3m') },
-    { id: "1m",    label: t('filter1m') },
-    { id: "7d",    label: t('filter7d') },
-    { id: "today", label: t('filterToday') },
-  ];
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
   const [startDate, setStartDate] = useState(() => {
     if (customRange?.startDate) return new Date(customRange.startDate);
     return getLast7Days().start;
@@ -34,35 +36,36 @@ export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }
     if (customRange?.endDate) return new Date(customRange.endDate);
     return getLast7Days().end;
   });
-  const popoverRef = useRef(null);
+
+  const ref = useRef(null);
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target)) setIsOpen(false);
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        setShowPicker(false);
+      }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleRangeChange = (id) => {
+  const selectedOption = OPTIONS.find(o => o.id === value) ?? OPTIONS[0];
+
+  const handleSelect = (id) => {
+    if (id === 'custom') {
+      const saved = (() => { try { return JSON.parse(localStorage.getItem(LS_CUSTOM)); } catch { return null; } })();
+      if (saved?.startDate) setStartDate(new Date(saved.startDate));
+      else setStartDate(getLast7Days().start);
+      if (saved?.endDate) setEndDate(new Date(saved.endDate));
+      else setEndDate(getLast7Days().end);
+      setShowPicker(true);
+      return;
+    }
+    setShowPicker(false);
     onChange(id);
     localStorage.setItem(LS_RANGE, id);
-  };
-
-  const handleOpenCustom = () => {
-    // Load last saved custom range or default to last 7 days
-    const saved = (() => { try { return JSON.parse(localStorage.getItem(LS_CUSTOM)); } catch { return null; } })();
-    if (saved?.startDate) setStartDate(new Date(saved.startDate));
-    else setStartDate(getLast7Days().start);
-    if (saved?.endDate) setEndDate(new Date(saved.endDate));
-    else setEndDate(getLast7Days().end);
-    setIsOpen(!isOpen);
-  };
-
-  const handleDateChange = (dates) => {
-    const [s, e] = dates;
-    setStartDate(s);
-    setEndDate(e);
+    setOpen(false);
   };
 
   const handleApply = () => {
@@ -77,110 +80,87 @@ export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }
     onChange('custom');
     localStorage.setItem(LS_RANGE, 'custom');
     localStorage.setItem(LS_CUSTOM, JSON.stringify(range));
-    setIsOpen(false);
-  };
-
-  const handleClear = () => {
-    setStartDate(getLast7Days().start);
-    setEndDate(getLast7Days().end);
-    onCustomRangeChange(null);
-    onChange('all');
-    localStorage.setItem(LS_RANGE, 'all');
-    setIsOpen(false);
+    setOpen(false);
+    setShowPicker(false);
   };
 
   const customLabel = value === 'custom' && customRange?.start && customRange?.end
     ? `${customRange.start} – ${customRange.end}`
-    : t('selectDateRange');
+    : 'Хугацаа сонгох';
+
+  const displayLabel = value === 'custom' ? customLabel : selectedOption.label;
 
   return (
-    <div className="relative flex items-center gap-1 bg-slate-900/50 p-1 rounded-lg border border-slate-800">
-      {/* All — leftmost */}
+    <div className="relative" ref={ref}>
+      {/* Trigger button */}
       <button
-        onClick={() => handleRangeChange('all')}
+        onClick={() => { setOpen(p => !p); setShowPicker(false); }}
         className={cn(
-          "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-          value === 'all' ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+          "flex items-center gap-2 px-3.5 py-2 rounded-xl border text-sm font-medium transition-all",
+          open
+            ? "bg-slate-800 border-slate-600 text-white"
+            : "bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-600 hover:text-white"
         )}
       >
-        {t('filterAll')}
+        <span className="max-w-[160px] truncate">{displayLabel}</span>
+        <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform duration-200", open && "rotate-180")} />
       </button>
 
-      <div className="w-px h-4 bg-slate-800 mx-0.5" />
-
-      {filters.map((f) => (
-        <button
-          key={f.id}
-          onClick={() => handleRangeChange(f.id)}
-          className={cn(
-            "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-            value === f.id ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
-          )}
-        >
-          {f.label}
-        </button>
-      ))}
-
-      <div className="w-px h-4 bg-slate-800 mx-0.5" />
-
-      {/* Custom button — rightmost */}
-      <button
-        onClick={handleOpenCustom}
-        className={cn(
-          "px-3 py-1.5 text-xs font-medium rounded-md flex items-center gap-1.5 transition-colors",
-          value === 'custom' || isOpen
-            ? "bg-slate-800 text-white shadow-sm"
-            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
-        )}
-      >
-        <Calendar className="w-3.5 h-3.5" />
-        {customLabel}
-      </button>
-
-      {/* Custom date picker popup */}
-      {isOpen && (
-        <div
-          ref={popoverRef}
-          className="absolute top-full right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-        >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-white">{t('selectDateRange')}</h3>
-            <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition-colors">
-              <X className="w-4 h-4" />
-            </button>
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute top-full right-0 mt-2 w-52 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/40 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="py-1.5">
+            {OPTIONS.map((opt, i) => {
+              const isSelected = value === opt.id;
+              const isCustom = opt.id === 'custom';
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => handleSelect(opt.id)}
+                  className={cn(
+                    "w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors text-left",
+                    isSelected
+                      ? "text-white bg-slate-800/60"
+                      : "text-slate-300 hover:bg-slate-800/40 hover:text-white",
+                    isCustom && i > 0 && "border-t border-slate-800/60 mt-1 pt-3"
+                  )}
+                >
+                  <span className={cn("flex items-center gap-2", isCustom && "text-slate-400")}>
+                    {isCustom && <Calendar className="w-3.5 h-3.5" />}
+                    {opt.label}
+                  </span>
+                  {isSelected && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
+                </button>
+              );
+            })}
           </div>
 
-          <DatePicker
-            selected={startDate}
-            onChange={handleDateChange}
-            startDate={startDate}
-            endDate={endDate}
-            selectsRange
-            inline
-            calendarClassName="custom-range-picker"
-          />
-
-          {startDate && endDate && (
-            <p className="text-xs text-slate-400 text-center mt-2">
-              {startDate.toLocaleDateString('mn-MN')} – {endDate.toLocaleDateString('mn-MN')}
-            </p>
+          {/* Inline date picker for custom */}
+          {showPicker && (
+            <div className="border-t border-slate-800 px-3 pb-3 pt-2">
+              <DatePicker
+                selected={startDate}
+                onChange={(dates) => { const [s, e] = dates; setStartDate(s); setEndDate(e); }}
+                startDate={startDate}
+                endDate={endDate}
+                selectsRange
+                inline
+                calendarClassName="custom-range-picker"
+              />
+              {startDate && endDate && (
+                <p className="text-[11px] text-slate-500 text-center mt-2 mb-2">
+                  {startDate.toLocaleDateString('mn-MN')} – {endDate.toLocaleDateString('mn-MN')}
+                </p>
+              )}
+              <button
+                onClick={handleApply}
+                disabled={!startDate || !endDate}
+                className="w-full px-3 py-2 bg-accent hover:bg-accent-hover text-slate-950 text-xs font-bold rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Хэрэгжүүлэх
+              </button>
+            </div>
           )}
-
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={handleClear}
-              className="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium rounded-lg transition-colors"
-            >
-              {t('clear')}
-            </button>
-            <button
-              onClick={handleApply}
-              disabled={!startDate || !endDate}
-              className="flex-1 px-3 py-2 bg-accent hover:bg-accent-hover text-slate-950 text-xs font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {t('apply')}
-            </button>
-          </div>
         </div>
       )}
     </div>
