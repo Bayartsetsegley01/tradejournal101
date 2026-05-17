@@ -203,6 +203,20 @@ export const getMistakes = async (req, res) => {
   }
 };
 
+const SESSION_DISPLAY = {
+  'tokyo':     { mn: 'Токио',    en: 'Tokyo' },
+  'asia':      { mn: 'Токио',    en: 'Tokyo' },
+  'asian':     { mn: 'Токио',    en: 'Tokyo' },
+  'new-york':  { mn: 'Нью-Йорк', en: 'New York' },
+  'new_york':  { mn: 'Нью-Йорк', en: 'New York' },
+  'newyork':   { mn: 'Нью-Йорк', en: 'New York' },
+  'american':  { mn: 'Нью-Йорк', en: 'New York' },
+  'london':    { mn: 'Лондон',   en: 'London' },
+  'european':  { mn: 'Лондон',   en: 'London' },
+  'sydney':    { mn: 'Сидней',   en: 'Sydney' },
+};
+const SESSION_ORDER = ['tokyo', 'new-york', 'london', 'sydney'];
+
 // Performance charts - бодит дата (market_type, strategy-р задаргаа)
 export const getPerformance = async (req, res) => {
   try {
@@ -211,7 +225,8 @@ export const getPerformance = async (req, res) => {
     const filter = addAccountFilter(getDateFilter(req.query.range || req.query.timeRange), req.query.account_id);
 
     const result = await query(
-      `SELECT market_type, strategy, direction, pnl, rr_ratio,
+      `SELECT market_type, strategy, direction, pnl, rr_ratio, session,
+              TO_CHAR(entry_date AT TIME ZONE 'UTC', 'YYYY-MM') as month,
               EXTRACT(DOW FROM entry_date) as day_of_week
        FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date IS NOT NULL ${filter.sql}`,
       [userId, ...filter.params]
@@ -268,7 +283,56 @@ export const getPerformance = async (req, res) => {
     const wins = rows.filter(t => parseFloat(t.pnl) > 0).length;
     const losses = rows.length - wins;
 
-    res.json({ success: true, data: { byAsset, byStrategy, byDayOfWeek, winLoss: [
+    // By session (using the session DB field)
+    const sessionMap = {};
+    rows.forEach(t => {
+      const raw = (t.session || '').toLowerCase().trim();
+      if (!raw) return;
+      const disp = SESSION_DISPLAY[raw];
+      // Normalize aliases to canonical key (e.g. 'asia' → 'tokyo')
+      const normKey = disp ? (SESSION_ORDER.find(k => SESSION_DISPLAY[k]?.en === disp.en) || raw) : raw;
+      if (!sessionMap[normKey]) {
+        sessionMap[normKey] = {
+          key: normKey,
+          name: disp ? disp.mn : raw,
+          nameEn: disp ? disp.en : raw,
+          pnl: 0, trades: 0, wins: 0,
+          order: SESSION_ORDER.indexOf(normKey),
+        };
+      }
+      sessionMap[normKey].pnl += parseFloat(t.pnl) || 0;
+      sessionMap[normKey].trades++;
+      if (parseFloat(t.pnl) > 0) sessionMap[normKey].wins++;
+    });
+    const bySession = Object.values(sessionMap)
+      .sort((a, b) => (a.order < 0 ? 99 : a.order) - (b.order < 0 ? 99 : b.order))
+      .map(s => ({
+        key: s.key, name: s.name, nameEn: s.nameEn,
+        value: parseFloat(s.pnl.toFixed(2)),
+        trades: s.trades,
+        winRate: s.trades > 0 ? parseFloat(((s.wins / s.trades) * 100).toFixed(1)) : 0,
+      }));
+
+    // By month
+    const monthMap = {};
+    rows.forEach(t => {
+      const k = t.month;
+      if (!k) return;
+      if (!monthMap[k]) monthMap[k] = { month: k, pnl: 0, trades: 0, wins: 0 };
+      monthMap[k].pnl += parseFloat(t.pnl) || 0;
+      monthMap[k].trades++;
+      if (parseFloat(t.pnl) > 0) monthMap[k].wins++;
+    });
+    const byMonth = Object.values(monthMap)
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .map(m => ({
+        month: m.month,
+        value: parseFloat(m.pnl.toFixed(2)),
+        trades: m.trades,
+        winRate: m.trades > 0 ? parseFloat(((m.wins / m.trades) * 100).toFixed(1)) : 0,
+      }));
+
+    res.json({ success: true, data: { byAsset, byStrategy, byDayOfWeek, bySession, byMonth, winLoss: [
       { name: 'Ялалт', value: wins },
       { name: 'Ялагдал', value: losses }
     ]}});

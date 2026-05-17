@@ -39,7 +39,8 @@ export const MISTAKE_TAGS = [
 ];
 
 export const SESSIONS = [
-  { id: 'london', label: 'London' },
+  { id: 'tokyo',    label: 'Tokyo' },
+  { id: 'london',   label: 'London' },
   { id: 'new-york', label: 'New York' },
-  { id: 'asia', label: 'Asia' },
+  { id: 'sydney',   label: 'Sydney' },
 ];

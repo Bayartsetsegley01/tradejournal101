@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { TimeFilter } from "@/components/features/analytics/TimeFilter";
 import { AnalyticsTabs } from "@/components/features/analytics/AnalyticsTabs";
 import { SummaryCards } from "@/components/features/analytics/SummaryCards";
-import { EquityChart } from "@/components/features/analytics/EquityChart";
+import { ChartWithTabs } from "@/components/features/analytics/ChartWithTabs";
 import { PerformanceCharts } from "@/components/features/analytics/PerformanceCharts";
 import { MyGoalPanel } from "@/components/features/analytics/MyGoalPanel";
 import { TradeCalendar } from "@/components/features/analytics/TradeCalendar";
@@ -191,6 +191,7 @@ export function AnalyticsPage() {
   const [summary, setSummary]       = useState(null);
   const [charts, setCharts]         = useState(null);
   const [mistakesData, setMistakesData] = useState(null);
+  const [performance, setPerformance] = useState(null);
   const [trades, setTrades]         = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState(null);
@@ -218,10 +219,11 @@ export function AnalyticsPage() {
 
       const fetchRange = timeRange === 'custom' ? `${customRange.start}_${customRange.end}` : timeRange;
 
-      const [summaryRes, chartsRes, mistakesRes, tradesRes] = await Promise.all([
+      const [summaryRes, chartsRes, mistakesRes, perfRes, tradesRes] = await Promise.all([
         analyticsService.getSummary(fetchRange, accountId),
         analyticsService.getCharts(fetchRange, accountId),
         analyticsService.getMistakes(fetchRange, accountId),
+        analyticsService.getPerformance(fetchRange, accountId),
         tradeService.getTrades(),
       ]);
 
@@ -229,6 +231,7 @@ export function AnalyticsPage() {
         setSummary(summaryRes.data);
         setCharts(chartsRes.data);
         if (mistakesRes.success) setMistakesData(mistakesRes.data);
+        if (perfRes.success) setPerformance(perfRes.data);
         if (tradesRes.success) setTrades(tradesRes.data);
         if (summaryRes.mode === 'mock') setMode('mock');
         else setMode('database');
@@ -236,6 +239,7 @@ export function AnalyticsPage() {
         setMode('mock');
         setSummary({ netPnl: 0, winRate: 0, profitFactor: 0, totalTrades: 0 });
         setCharts({ equityCurve: [] });
+        setPerformance(null);
       }
     } catch (err) {
       console.error(err);
@@ -317,16 +321,20 @@ export function AnalyticsPage() {
               <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-400">
                 <SummaryCards data={summary} timeRange={timeRange} currency={currency} />
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                  {/* Left column: Charts */}
-                  <div className="lg:col-span-2 flex flex-col gap-5">
-                    <EquityChart data={charts.equityCurve} currency={currency} />
-                    <TradeCalendar trades={trades} />
-                  </div>
+                <div className="space-y-5">
+                  <ChartWithTabs
+                    equityCurve={charts.equityCurve}
+                    perfData={performance}
+                    currency={currency}
+                  />
 
-                  {/* Right column: Goal */}
-                  <div className="flex flex-col gap-5">
-                    <MyGoalPanel />
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                    <div className="lg:col-span-2">
+                      <TradeCalendar trades={trades} />
+                    </div>
+                    <div>
+                      <MyGoalPanel />
+                    </div>
                   </div>
                 </div>
               </div>
