@@ -8,22 +8,21 @@ export const generateInsights = async (tradesData) => {
 
   try {
     const formattedTrades = tradesData.map(t => ({
-      date: t.exit_date || t.entry_date,
-      market: t.market_type,
-      symbol: t.symbol,
-      direction: t.direction,
-      pnl: t.pnl,
-      rr: t.rr_ratio,
-      strategy: t.strategy,
-      notes: t.notes,
-      lessons: t.lessons_learned,
+      date:         t.exit_date || t.entry_date,
+      market:       t.market_type,
+      symbol:       t.symbol,
+      direction:    t.direction,
+      pnl:          t.pnl,
+      rr:           t.rr_ratio,
+      strategy:     t.strategy,
       emotionBefore: t.emotion_before,
-      emotionAfter: t.emotion_after,
-      positiveTags: t.positive_tags,
-      mistakeTags: t.mistake_tags,
-      whyEntered: t.why_entered,
-      whatHappened: t.what_happened,
-    }));
+      emotionAfter:  t.emotion_after,
+      positiveTags:  t.positive_tags,
+      mistakeTags:   t.mistake_tags,
+      whyEntered:    t.why_entered    || null,
+      whatHappened:  t.what_happened  || null,
+      lessonLearned: t.lessons_learned || null,
+    })).filter(t => t.pnl != null);
 
     const systemPrompt = `Та мэргэшсэн арилжааны сэтгэл судлаач болон шинжээч.
 Хэрэглэгчийн арилжааны дата-г шинжлэн монгол хэл дээр тодорхой, практик зөвлөмж өгнө.
@@ -81,9 +80,15 @@ export const chatWithAI = async (messages, tradesContext = []) => {
   try {
     const contextSummary = tradesContext.length > 0
       ? `Хэрэглэгчийн сүүлийн ${tradesContext.length} арилжааны товч:\n` +
-        tradesContext.slice(0, 20).map(t =>
-          `- ${t.symbol} ${t.direction} PnL:${t.pnl}${t.emotion_before ? ' Сэтгэл:'+t.emotion_before : ''}`
-        ).join('\n')
+        tradesContext.slice(0, 20).map(t => {
+          let line = `- ${t.symbol} ${t.direction} PnL:${t.pnl}`;
+          if (t.strategy)        line += ` Стратеги:${t.strategy}`;
+          if (t.emotion_before)  line += ` Сэтгэл:${t.emotion_before}`;
+          if (t.why_entered)     line += `\n  Яагаад: ${t.why_entered}`;
+          if (t.what_happened)   line += `\n  Юу болсон: ${t.what_happened}`;
+          if (t.lessons_learned) line += `\n  Сургамж: ${t.lessons_learned}`;
+          return line;
+        }).join('\n')
       : 'Арилжааны дата байхгүй.';
 
     const systemPrompt = `Та TradeJournal101 апп-ийн арилжааны AI зөвлөх.

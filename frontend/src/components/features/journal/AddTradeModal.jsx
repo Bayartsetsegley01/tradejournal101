@@ -598,32 +598,21 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
 
             <div className="space-y-4">
               <div>
-                <label className={labelCls}>Яагаад орсон бэ? (Setup & Reason)</label>
+                <label className={labelCls}>Яагаад орсон бэ?</label>
                 <textarea rows={3} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
-                  placeholder="15m дээр liquidity sweep хийгээд CHoCH өгсөн тул..."
+                  placeholder="Setup, дохио, шалтгаан..."
                   value={formData.whyEntered} onChange={e => setFormData({...formData, whyEntered: e.target.value})} />
               </div>
               <div>
                 <label className={labelCls}>Юу болсон бэ?</label>
-                <textarea rows={2} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
+                <textarea rows={3} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
+                  placeholder="Зах зээл хэрхэн хөдөлсөн, TP/SL-д хүрсэн эсэх..."
                   value={formData.whatHappened} onChange={e => setFormData({...formData, whatHappened: e.target.value})} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Юуг сайн хийсэн бэ?</label>
-                  <textarea rows={2} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
-                    value={formData.whatWentWell} onChange={e => setFormData({...formData, whatWentWell: e.target.value})} />
-                </div>
-                <div>
-                  <label className={labelCls}>Ямар алдаа гаргасан бэ?</label>
-                  <textarea rows={2} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
-                    value={formData.mistakesMade} onChange={e => setFormData({...formData, mistakesMade: e.target.value})} />
-                </div>
-              </div>
               <div>
-                <label className={labelCls}>Юу сурсан бэ? (Lesson)</label>
+                <label className={labelCls}>Юу сурсан бэ?</label>
                 <textarea rows={3} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
-                  placeholder="Төлөвлөгөөгөө яг дагасан нь зөв байлаа..."
+                  placeholder="Сургамж, дараа анхаарах зүйл..."
                   value={formData.lessonLearned} onChange={e => setFormData({...formData, lessonLearned: e.target.value})} />
               </div>
 

@@ -43,8 +43,6 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
     editData.strategy !== original.strategy ||
     editData.whyEntered !== original.whyEntered ||
     editData.whatHappened !== original.whatHappened ||
-    editData.whatWentWell !== original.whatWentWell ||
-    editData.mistakesMade !== original.mistakesMade ||
     editData.lessonLearned !== original.lessonLearned ||
     editData.notes !== original.notes ||
     JSON.stringify(editData.positiveTags) !== JSON.stringify(original.positiveTags) ||
@@ -256,7 +254,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
           </div>
 
           {/* Journal notes (editable) */}
-          <div className="px-5 py-4 border-b border-slate-800/60 space-y-4">
+          <div className="px-5 py-4 border-b border-slate-800/60 space-y-3">
             <label className={labelCls}>Тэмдэглэл</label>
             <div>
               <p className="text-[10px] text-slate-600 mb-1">Яагаад орсон бэ?</p>
@@ -265,20 +263,8 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
             </div>
             <div>
               <p className="text-[10px] text-slate-600 mb-1">Юу болсон бэ?</p>
-              <textarea rows={2} className={textareaCls} placeholder=""
+              <textarea rows={2} className={textareaCls} placeholder="Зах зээл хэрхэн хөдөлсөн..."
                 value={editData.whatHappened} onChange={e => setEditData(p => ({ ...p, whatHappened: e.target.value }))} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-[10px] text-slate-600 mb-1">Юуг сайн хийсэн?</p>
-                <textarea rows={2} className={textareaCls}
-                  value={editData.whatWentWell} onChange={e => setEditData(p => ({ ...p, whatWentWell: e.target.value }))} />
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-600 mb-1">Ямар алдаа?</p>
-                <textarea rows={2} className={textareaCls}
-                  value={editData.mistakesMade} onChange={e => setEditData(p => ({ ...p, mistakesMade: e.target.value }))} />
-              </div>
             </div>
             <div>
               <p className="text-[10px] text-slate-600 mb-1">Юу сурсан бэ?</p>
