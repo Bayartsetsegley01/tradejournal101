@@ -177,7 +177,7 @@ export function TradeCalendar({ trades = [] }) {
               cls: monthlySummary.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400',
             },
             { label: lang === 'mn' ? 'Ашигтай өдөр' : 'Win Days', value: monthlySummary.winDays, cls: 'text-emerald-400' },
-            { label: lang === 'mn' ? 'Алдагдалтай' : 'Loss Days', value: monthlySummary.lossDays, cls: 'text-rose-400' },
+            { label: lang === 'mn' ? 'Алдагдалтай өдөр' : 'Loss Days', value: monthlySummary.lossDays, cls: 'text-rose-400' },
           ].map((item, i) => (
             <div key={i} className="text-center">
               <p className="text-[10px] text-slate-500 mb-0.5 font-medium">{item.label}</p>
