@@ -574,6 +574,12 @@ export function JournalPage() {
     catch (err) { console.error(err); invalidate(); alert("Алдаа гарлаа. Устгаж чадсангүй."); }
   };
 
+  const handleBulkDelete = async (ids) => {
+    ids.forEach(id => applyRemove(id));
+    try { await Promise.all(ids.map(id => tradeService.deleteTrade(id))); invalidate(); }
+    catch (err) { console.error(err); invalidate(); }
+  };
+
   const handleMediaUpdate = (id, mediaUrls) => applyUpdate(id, { media_urls: mediaUrls });
 
   const handlePatch = async (id, changes) => {
@@ -773,6 +779,7 @@ export function JournalPage() {
                 onDelete={handleDelete}
                 onPatch={handlePatch}
                 onMediaUpdate={handleMediaUpdate}
+                onBulkDelete={handleBulkDelete}
               />
 
               {filteredTrades.length > 0 && (

@@ -4,7 +4,7 @@ import {
   FileText, ArrowUpRight, ArrowDownRight,
   Bitcoin, DollarSign, LineChart, Coins, Box, Activity, Clock, Layers,
   MoreHorizontal, Edit2, Copy, Trash2, Pencil, CheckCircle2, XCircle,
-  X, Camera, Loader2,
+  X, Camera, Loader2, AlertTriangle,
 } from "lucide-react";
 import { EMOTIONS, MARKET_TYPES } from "@/lib/constants";
 import { safeFormatDate } from "@/lib/utils";
@@ -143,7 +143,9 @@ function MediaCell({ trade, onMediaUpdate }) {
 }
 
 // ── Main table ────────────────────────────────────────────────────────────────
-export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, onPatch, onMediaUpdate }) {
+export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, onPatch, onMediaUpdate, onBulkDelete }) {
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingCell, setEditingCell] = useState(null);
   const [vals, setVals] = useState({});
   const [flashes, setFlashes] = useState({});
@@ -266,6 +268,32 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
     ].filter(Boolean).join(' ');
   };
 
+  // ── Selection helpers ────────────────────────────────────────────────────
+  const allSelected = trades.length > 0 && trades.every(t => selectedIds.has(t.id));
+  const someSelected = trades.some(t => selectedIds.has(t.id));
+
+  const toggleAll = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(trades.map(t => t.id)));
+  };
+
+  const toggleOne = (e, id) => {
+    e.stopPropagation();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+    setConfirmDelete(false);
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    const ids = [...selectedIds];
+    setSelectedIds(new Set());
+    setConfirmDelete(false);
+    await onBulkDelete?.(ids);
+  };
+
   if (trades.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-500">
@@ -281,6 +309,16 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
       <table className="w-full text-left text-sm text-slate-400 border-collapse">
         <thead className="text-xs text-slate-500 uppercase tracking-wider bg-slate-900/95 backdrop-blur-sm sticky top-0 z-20 shadow-sm">
           <tr>
+            {/* Select-all checkbox */}
+            <th className="pl-4 pr-2 py-4 border-b border-slate-800 w-10" onClick={e => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                onChange={toggleAll}
+                className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-accent cursor-pointer accent-accent"
+              />
+            </th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800">Огноо</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800">Market & Symbol</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800">L/S</th>
@@ -307,11 +345,22 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
             const notesRaw = [t.why_entered, t.what_happened, t.lessons_learned].filter(Boolean).join(' · ');
             const notesPreview = notesRaw.length > 50 ? notesRaw.slice(0, 50) + '…' : notesRaw;
 
+            const isSelected = selectedIds.has(t.id);
+
             return (
               <tr
                 key={t.id}
-                className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-all cursor-default group"
+                className={`border-b border-slate-800/50 transition-all cursor-default group ${isSelected ? 'bg-accent/5' : 'hover:bg-slate-800/30'}`}
               >
+                {/* ── CHECKBOX ─────────────────── */}
+                <td className="pl-4 pr-2 py-4 w-10" onClick={e => toggleOne(e, t.id)}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => {}}
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 cursor-pointer accent-accent"
+                  />
+                </td>
 
                 {/* ── DATE ──────────────────────── */}
                 <td className={cellCls(t.id, 'entry_date')} onClick={(e) => startEdit(e, t.id, 'entry_date', t.entry_date || t.date || null)}>
@@ -592,6 +641,53 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
           })}
         </tbody>
       </table>
+
+      {/* ── Bulk action bar ─────────────────────────────────────────────────── */}
+      {selectedIds.size > 0 && createPortal(
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9998] animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <div className="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-2xl px-5 py-3 shadow-2xl shadow-black/50">
+            <span className="text-sm font-semibold text-white">
+              {selectedIds.size} арилжаа сонгогдлоо
+            </span>
+            <div className="w-px h-5 bg-slate-700" />
+            <button
+              onClick={() => { setSelectedIds(new Set()); setConfirmDelete(false); }}
+              className="text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              Болих
+            </button>
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 text-sm font-semibold rounded-xl transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+                Устгах
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 text-amber-400 text-sm">
+                  <AlertTriangle className="w-4 h-4" />
+                  Баталгаажуулах уу?
+                </div>
+                <button
+                  onClick={handleBulkDeleteConfirm}
+                  className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold rounded-xl transition-colors"
+                >
+                  Тийм, устга
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-xl transition-colors"
+                >
+                  Болих
+                </button>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* ── Notes popup ─────────────────────────────────────────────────────── */}
       {notePopup && createPortal(
