@@ -56,12 +56,12 @@ export function Sidebar() {
         {/* Logo */}
         <div className="px-5 py-5 border-b border-slate-800/60">
           <Link to="/app/analytics" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center shrink-0">
-              <span className="text-slate-950 font-black text-sm leading-none">TJ</span>
+            <div className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center shrink-0 shadow-[0_0_14px_rgba(200,240,122,0.25)]">
+              <BarChart2 className="w-4.5 h-4.5 text-slate-950" style={{ width: 18, height: 18 }} />
             </div>
             <div>
               <span className="font-bold text-white text-sm tracking-tight block leading-none">TradeJournal</span>
-              <span className="text-[10px] text-slate-600 font-medium">Pro Analytics</span>
+              <span className="text-[10px] text-slate-500 font-medium">101</span>
             </div>
           </Link>
         </div>
