@@ -424,6 +424,23 @@ BEGIN
   END IF;
 END $$;
 
+-- ─── Chat sessions & messages ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS chat_sessions (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+  title      VARCHAR(255) NOT NULL DEFAULT 'Шинэ чат',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID REFERENCES chat_sessions(id) ON DELETE CASCADE,
+  role       VARCHAR(20)  NOT NULL,  -- 'user' | 'assistant'
+  content    TEXT         NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- MT5 connected accounts (one user can have multiple)
 CREATE TABLE IF NOT EXISTS mt5_accounts (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),

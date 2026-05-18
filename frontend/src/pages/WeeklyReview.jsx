@@ -2,6 +2,9 @@ import { useLang } from "@/contexts/LanguageContext";
 import { useState, useEffect, useCallback } from "react";
 import { CalendarDays, TrendingUp, TrendingDown, Target, Brain, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { analyticsService } from "@/services/analyticsService";
+import { emotionService } from "@/services/emotionService";
+import { tagService } from "@/services/tagService";
+import { EMOTIONS, POSITIVE_TAGS, MISTAKE_TAGS } from "@/lib/constants";
 import { useTradesUpdated } from "@/lib/tradesSync";
 
 function getWeekRange(offset = 0) {
@@ -36,6 +39,24 @@ export function WeeklyReviewPage() {
   const [monthOffset, setMonthOffset] = useState(0);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [emotionLookup, setEmotionLookup] = useState({});
+  const [tagLookup, setTagLookup] = useState({});
+
+  useEffect(() => {
+    const staticEmotions = Object.fromEntries(EMOTIONS.map(e => [e.id, `${e.emoji} ${e.label}`]));
+    const staticTags = Object.fromEntries([...POSITIVE_TAGS, ...MISTAKE_TAGS].map(tg => [tg.id, `${tg.emoji} ${tg.label}`]));
+    Promise.all([emotionService.getEmotions(), tagService.getTags()])
+      .then(([eRes, tRes]) => {
+        const customEmotions = eRes?.success ? Object.fromEntries(eRes.data.map(e => [e.id, e.label])) : {};
+        const customTags = tRes?.success ? Object.fromEntries(tRes.data.map(tg => [tg.id, tg.label])) : {};
+        setEmotionLookup({ ...staticEmotions, ...customEmotions });
+        setTagLookup({ ...staticTags, ...customTags });
+      })
+      .catch(() => {
+        setEmotionLookup(staticEmotions);
+        setTagLookup(staticTags);
+      });
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -180,10 +201,10 @@ export function WeeklyReviewPage() {
                   <Target className="w-4 h-4 text-rose-400" /> {t('topMistakes')}
                 </h3>
                 <ul className="space-y-2">
-                  {data.topMistakeTags.map((t, i) => (
+                  {data.topMistakeTags.map((item, i) => (
                     <li key={i} className="flex justify-between items-center text-sm">
-                      <span className="text-slate-300">{t.tag}</span>
-                      <span className="text-rose-400 font-semibold">{t.count}x</span>
+                      <span className="text-slate-300">{tagLookup[item.tag] || item.tag}</span>
+                      <span className="text-rose-400 font-semibold">{item.count}x</span>
                     </li>
                   ))}
                 </ul>
@@ -195,10 +216,10 @@ export function WeeklyReviewPage() {
                   <TrendingUp className="w-4 h-4 text-emerald-400" /> Давуу талууд
                 </h3>
                 <ul className="space-y-2">
-                  {data.topPositiveTags.map((t, i) => (
+                  {data.topPositiveTags.map((item, i) => (
                     <li key={i} className="flex justify-between items-center text-sm">
-                      <span className="text-slate-300">{t.tag}</span>
-                      <span className="text-emerald-400 font-semibold">{t.count}x</span>
+                      <span className="text-slate-300">{tagLookup[item.tag] || item.tag}</span>
+                      <span className="text-emerald-400 font-semibold">{item.count}x</span>
                     </li>
                   ))}
                 </ul>
@@ -215,7 +236,7 @@ export function WeeklyReviewPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {Object.entries(data.emotionStats).map(([emotion, stats]) => (
                   <div key={emotion} className="bg-slate-800/50 rounded-xl p-3">
-                    <p className="text-xs text-slate-400 mb-1">{emotion}</p>
+                    <p className="text-xs text-slate-400 mb-1">{emotionLookup[emotion] || emotion}</p>
                     <p className="text-xs text-slate-500">{stats.count} арилжаа</p>
                     <p className={`text-sm font-bold ${stats.totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {fmtPnl(stats.totalPnl)}
