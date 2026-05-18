@@ -48,7 +48,7 @@ ${JSON.stringify(formattedTrades, null, 2)}
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
@@ -103,7 +103,7 @@ export const chatWithAI = async (messages, tradesContext = []) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 512,
         system: systemPrompt,
         messages,
