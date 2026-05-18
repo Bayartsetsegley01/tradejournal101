@@ -7,7 +7,6 @@ import { TradeDetailModal } from "@/components/features/journal/TradeDetailModal
 import { ExportModal } from "@/components/features/journal/ExportModal";
 import { ImportModal } from "@/components/features/journal/ImportModal";
 import { ImportMethodModal } from "@/components/features/journal/ImportMethodModal";
-import { TimeFilter } from "@/components/features/analytics/TimeFilter";
 import {
   Plus, Download, Loader2, Upload, ChevronLeft, ChevronRight,
   ArrowLeft, BarChart2, Wallet, TrendingUp, TrendingDown, RefreshCw,
@@ -735,15 +734,14 @@ export function JournalPage() {
           </div>
         </div>
 
-        <TimeFilter
-          value={filters.timeRange}
-          onChange={(v) => setFilters(f => ({ ...f, timeRange: v }))}
-          customRange={customRange}
-          onCustomRangeChange={(r) => { setCustomRange(r); if (r) localStorage.setItem('analytics_custom_range', JSON.stringify(r)); }}
-        />
       </div>
 
-      <TradeFilters filters={filters} setFilters={setFilters} />
+      <TradeFilters
+        filters={filters}
+        setFilters={setFilters}
+        customRange={customRange}
+        onCustomRangeChange={(r) => { setCustomRange(r); if (r) localStorage.setItem('analytics_custom_range', JSON.stringify(r)); }}
+      />
 
       {/* Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex-1 flex flex-col">
