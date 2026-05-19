@@ -14,6 +14,14 @@ const EN_MONTHS = [
 const MN_DAYS = ["Дав","Мяг","Лха","Пүр","Баа","Бям","Ням"];
 const EN_DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
+// Convert any Date to "YYYY-MM-DD" using LOCAL timezone (not UTC)
+const toLocalDateStr = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
 export function TradeCalendar({ trades = [] }) {
   const { lang } = useLang();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -21,22 +29,22 @@ export function TradeCalendar({ trades = [] }) {
   const year  = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  const MONTHS   = lang === "mn" ? MN_MONTHS : EN_MONTHS;
-  const DAY_NAMES = lang === "mn" ? MN_DAYS : EN_DAYS;
+  const MONTHS    = lang === "mn" ? MN_MONTHS : EN_MONTHS;
+  const DAY_NAMES = lang === "mn" ? MN_DAYS   : EN_DAYS;
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
   const now      = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = toLocalDateStr(now); // local date, no UTC shift
 
-  // Group trades by exit_date (fallback entry_date) — PnL is realized at exit
+  // Group trades by LOCAL exit_date (fallback entry_date)
   const tradeMap = useMemo(() => {
     const map = {};
     trades.forEach((t) => {
       const raw = t.exit_date || t.entry_date;
-      const d   = raw?.slice(0, 10);
-      if (!d) return;
+      if (!raw) return;
+      const d = toLocalDateStr(new Date(raw)); // parse as UTC, convert to local
       if (!map[d]) map[d] = { pnl: 0, count: 0, wins: 0, losses: 0 };
       const p = parseFloat(t.pnl);
       if (!isNaN(p)) {
@@ -50,24 +58,24 @@ export function TradeCalendar({ trades = [] }) {
   }, [trades]);
 
   const calendarDays = useMemo(() => {
-    const rawFirst  = new Date(year, month, 1).getDay();
-    const firstDay  = (rawFirst + 6) % 7;
+    const rawFirst    = new Date(year, month, 1).getDay();
+    const firstDay    = (rawFirst + 6) % 7; // Mon = 0
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysInPrev  = new Date(year, month, 0).getDate();
     const days = [];
 
     for (let i = firstDay - 1; i >= 0; i--) {
       const d       = daysInPrev - i;
-      const dateStr = new Date(year, month - 1, d).toISOString().split("T")[0];
+      const dateStr = toLocalDateStr(new Date(year, month - 1, d));
       days.push({ day: d, dateStr, current: false, ...tradeMap[dateStr] });
     }
     for (let i = 1; i <= daysInMonth; i++) {
-      const dateStr = new Date(year, month, i).toISOString().split("T")[0];
+      const dateStr = toLocalDateStr(new Date(year, month, i));
       days.push({ day: i, dateStr, current: true, ...tradeMap[dateStr] });
     }
     const remaining = 42 - days.length;
     for (let i = 1; i <= remaining; i++) {
-      const dateStr = new Date(year, month + 1, i).toISOString().split("T")[0];
+      const dateStr = toLocalDateStr(new Date(year, month + 1, i));
       days.push({ day: i, dateStr, current: false, ...tradeMap[dateStr] });
     }
     return days;
@@ -149,7 +157,7 @@ export function TradeCalendar({ trades = [] }) {
               key={idx}
               className={`
                 relative group cursor-default rounded-xl border transition-all duration-150
-                flex flex-col min-h-[70px] sm:min-h-[84px] p-1.5 sm:p-2
+                aspect-square flex flex-col p-1.5 sm:p-2
                 ${bg}
                 ${isToday ? "ring-2 ring-accent/60 ring-offset-1 ring-offset-slate-900" : ""}
               `}
