@@ -367,10 +367,12 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
     rr && parseFloat(rr) < 1 && 'R/R харьцаа 1-ээс бага байна!',
   ].filter(Boolean);
 
-  // ── Merged tag lists ──────────────────────────────────────────────────────────
-  const allEmotions      = [...EMOTIONS,      ...customEmotions.filter(e => !EMOTIONS.some(s => s.id === e.id))];
-  const allPositiveTags  = [...POSITIVE_TAGS, ...customPositiveTags.filter(t => !POSITIVE_TAGS.some(s => s.id === t.id))];
-  const allMistakeTags   = [...MISTAKE_TAGS,  ...customMistakeTags.filter(t => !MISTAKE_TAGS.some(s => s.id === t.id))];
+  // ── Tag lists: DB-only when available, static fallback ───────────────────────
+  // Static IDs ('calm', 'confident'…) and DB UUIDs never match, so merging
+  // always causes duplicates. Use DB exclusively when it returns data.
+  const allEmotions     = customEmotions.length     > 0 ? customEmotions     : EMOTIONS;
+  const allPositiveTags = customPositiveTags.length > 0 ? customPositiveTags : POSITIVE_TAGS;
+  const allMistakeTags  = customMistakeTags.length  > 0 ? customMistakeTags  : MISTAKE_TAGS;
 
   const inputCls  = "w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all text-sm font-mono";
   const labelCls  = "block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide";
@@ -582,19 +584,16 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             <div className="mb-4">
               <label className={labelCls}>Орох үеийн сэтгэл зүй</label>
               <div className="flex flex-wrap gap-1.5">
-                {allEmotions.map(e => {
-                  const isCustom = !EMOTIONS.some(s => s.id === e.id);
-                  return (
-                    <TagChip
-                      key={`before-${e.id}`}
-                      tag={e}
-                      isSelected={formData.emotionBefore === e.id}
-                      onClick={() => setV('emotionBefore', formData.emotionBefore === e.id ? '' : e.id)}
-                      onDelete={isCustom ? () => handleDeleteEmotion(e.id) : null}
-                      colorSelected="bg-slate-800 border-slate-500 text-white"
-                    />
-                  );
-                })}
+                {allEmotions.map(e => (
+                  <TagChip
+                    key={`before-${e.id}`}
+                    tag={e}
+                    isSelected={formData.emotionBefore === e.id}
+                    onClick={() => setV('emotionBefore', formData.emotionBefore === e.id ? '' : e.id)}
+                    onDelete={e.isDefault === false ? () => handleDeleteEmotion(e.id) : null}
+                    colorSelected="bg-slate-800 border-slate-500 text-white"
+                  />
+                ))}
                 <button type="button" onClick={() => setCustomTagModal({ type: 'emotion' })}
                   className="px-3 py-1.5 rounded-lg text-xs bg-slate-950 text-slate-500 border border-dashed border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-all flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Нэмэх
@@ -606,19 +605,16 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             <div className="mb-4">
               <label className={labelCls}>Гарах үеийн сэтгэл зүй</label>
               <div className="flex flex-wrap gap-1.5">
-                {allEmotions.map(e => {
-                  const isCustom = !EMOTIONS.some(s => s.id === e.id);
-                  return (
-                    <TagChip
-                      key={`after-${e.id}`}
-                      tag={e}
-                      isSelected={formData.emotionAfter === e.id}
-                      onClick={() => setV('emotionAfter', formData.emotionAfter === e.id ? '' : e.id)}
-                      onDelete={isCustom ? () => handleDeleteEmotion(e.id) : null}
-                      colorSelected="bg-slate-800 border-slate-500 text-white"
-                    />
-                  );
-                })}
+                {allEmotions.map(e => (
+                  <TagChip
+                    key={`after-${e.id}`}
+                    tag={e}
+                    isSelected={formData.emotionAfter === e.id}
+                    onClick={() => setV('emotionAfter', formData.emotionAfter === e.id ? '' : e.id)}
+                    onDelete={e.isDefault === false ? () => handleDeleteEmotion(e.id) : null}
+                    colorSelected="bg-slate-800 border-slate-500 text-white"
+                  />
+                ))}
                 <button type="button" onClick={() => setCustomTagModal({ type: 'emotion' })}
                   className="px-3 py-1.5 rounded-lg text-xs bg-slate-950 text-slate-500 border border-dashed border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-all flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Нэмэх
@@ -632,19 +628,16 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                 <Check className="w-3 h-3" /> Давуу тал (Positive Tags)
               </label>
               <div className="flex flex-wrap gap-1.5">
-                {allPositiveTags.map(t => {
-                  const isCustom = !POSITIVE_TAGS.some(s => s.id === t.id);
-                  return (
-                    <TagChip
-                      key={t.id}
-                      tag={t}
-                      isSelected={formData.positiveTags.includes(t.id)}
-                      onClick={() => toggleTag('positiveTags', t.id)}
-                      onDelete={isCustom ? () => handleDeleteTag('positive', t.id) : null}
-                      colorSelected="bg-accent/10 border-accent/50 text-accent"
-                    />
-                  );
-                })}
+                {allPositiveTags.map(t => (
+                  <TagChip
+                    key={t.id}
+                    tag={t}
+                    isSelected={formData.positiveTags.includes(t.id)}
+                    onClick={() => toggleTag('positiveTags', t.id)}
+                    onDelete={t.isDefault === false ? () => handleDeleteTag('positive', t.id) : null}
+                    colorSelected="bg-accent/10 border-accent/50 text-accent"
+                  />
+                ))}
                 <button type="button" onClick={() => setCustomTagModal({ type: 'positive' })}
                   className="px-2.5 py-1 rounded-lg text-xs bg-slate-950 text-slate-500 border border-dashed border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-all flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Нэмэх
@@ -658,19 +651,16 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                 <X className="w-3 h-3" /> Алдаа (Mistake Tags)
               </label>
               <div className="flex flex-wrap gap-1.5">
-                {allMistakeTags.map(t => {
-                  const isCustom = !MISTAKE_TAGS.some(s => s.id === t.id);
-                  return (
-                    <TagChip
-                      key={t.id}
-                      tag={t}
-                      isSelected={formData.mistakeTags.includes(t.id)}
-                      onClick={() => toggleTag('mistakeTags', t.id)}
-                      onDelete={isCustom ? () => handleDeleteTag('mistake', t.id) : null}
-                      colorSelected="bg-rose-500/10 border-rose-500/50 text-rose-400"
-                    />
-                  );
-                })}
+                {allMistakeTags.map(t => (
+                  <TagChip
+                    key={t.id}
+                    tag={t}
+                    isSelected={formData.mistakeTags.includes(t.id)}
+                    onClick={() => toggleTag('mistakeTags', t.id)}
+                    onDelete={t.isDefault === false ? () => handleDeleteTag('mistake', t.id) : null}
+                    colorSelected="bg-rose-500/10 border-rose-500/50 text-rose-400"
+                  />
+                ))}
                 <button type="button" onClick={() => setCustomTagModal({ type: 'mistake' })}
                   className="px-2.5 py-1 rounded-lg text-xs bg-slate-950 text-slate-500 border border-dashed border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-all flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Нэмэх

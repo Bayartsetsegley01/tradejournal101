@@ -69,7 +69,7 @@ export function AIAdvisorPage() {
   ];
 
   const modeQuickQ = {
-    analysis: [t("quickQ1"), t("quickQ2")],
+    analysis: [t("quickQ2"), "Ямар стратеги хамгийн ашигтай байна вэ?"],
     advice:   [t("quickQ3"), t("quickQ4"), "Эрсдэлийн удирдлагаа хэрхэн сайжруулах вэ?"],
     learning: ["Риск/Ашгийн харьцаа гэж юу вэ?", "Арилжааны тэмдэглэл яагаад хэрэгтэй вэ?", "Win rate гэж юу вэ?"],
   };
