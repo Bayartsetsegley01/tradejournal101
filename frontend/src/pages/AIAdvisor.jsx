@@ -56,6 +56,19 @@ export function AIAdvisorPage() {
     return [{ role: "assistant", content: t("aiWelcome") }];
   });
 
+  // One-time migration: wipe localStorage if it contains the removed question
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && saved.includes("хамгийн сайн стратеги")) {
+        const fresh = [{ role: "assistant", content: t("aiWelcome") }];
+        setChatMessages(fresh);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Persist to localStorage whenever messages change ──────────────────────
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(chatMessages)); }
@@ -69,7 +82,7 @@ export function AIAdvisorPage() {
   ];
 
   const modeQuickQ = {
-    analysis: [t("quickQ2"), "Ямар стратеги хамгийн ашигтай байна вэ?"],
+    analysis: [t("quickQ2"), "Ямар өдөр хамгийн сайн гүйцэтгэлтэй байдаг вэ?"],
     advice:   [t("quickQ3"), t("quickQ4"), "Эрсдэлийн удирдлагаа хэрхэн сайжруулах вэ?"],
     learning: ["Риск/Ашгийн харьцаа гэж юу вэ?", "Арилжааны тэмдэглэл яагаад хэрэгтэй вэ?", "Win rate гэж юу вэ?"],
   };
