@@ -31,4 +31,13 @@ export const aiService = {
       method: 'POST',
       body: JSON.stringify({ message, history, mode }),
     }),
+
+  sessions: {
+    list:        ()             => safeFetch(`${API_BASE_URL}/ai/sessions`),
+    create:      (title)        => safeFetch(`${API_BASE_URL}/ai/sessions`, { method: 'POST', body: JSON.stringify({ title }) }),
+    getMessages: (id)           => safeFetch(`${API_BASE_URL}/ai/sessions/${id}/messages`),
+    delete:      (id)           => safeFetch(`${API_BASE_URL}/ai/sessions/${id}`, { method: 'DELETE' }),
+    saveMessage: (id, role, content) => safeFetch(`${API_BASE_URL}/ai/sessions/${id}/messages`, { method: 'POST', body: JSON.stringify({ role, content }) }),
+    updateTitle: (id, title)    => safeFetch(`${API_BASE_URL}/ai/sessions/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
+  },
 };
