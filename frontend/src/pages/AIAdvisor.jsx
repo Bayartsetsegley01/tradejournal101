@@ -252,11 +252,11 @@ export function AIAdvisorPage() {
                     {/* Avatar */}
                     <div
                       className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                        isUser ? "bg-blue-600" : "bg-slate-700"
+                        isUser ? "bg-accent/20" : "bg-slate-700"
                       }`}
                     >
                       {isUser
-                        ? <User className="w-3.5 h-3.5 text-white" />
+                        ? <User className="w-3.5 h-3.5 text-accent" />
                         : <Bot  className="w-3.5 h-3.5 text-slate-300" />
                       }
                     </div>
@@ -265,11 +265,11 @@ export function AIAdvisorPage() {
                     <div
                       className={`max-w-[78%] text-sm leading-relaxed ${
                         isUser
-                          ? "rounded-[12px] rounded-br-[4px] text-white"
+                          ? "rounded-[12px] rounded-br-[4px] text-slate-950"
                           : "rounded-[12px] rounded-bl-[4px] text-[#111827]"
                       }`}
                       style={{
-                        background : isUser ? "#2563EB" : "#F3F4F6",
+                        background : isUser ? "#c8f07a" : "#F3F4F6",
                         padding    : "12px 16px",
                       }}
                     >
@@ -329,15 +329,16 @@ export function AIAdvisorPage() {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder={t("aiInputPlaceholder")}
-                  className="flex-1 bg-slate-950 border-2 border-slate-700 hover:border-slate-600 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition-colors placeholder:text-slate-500"
+                  className="flex-1 bg-slate-950 border-2 border-slate-700 hover:border-slate-600 focus:border-accent/60 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition-colors placeholder:text-slate-500"
                 />
                 <button
                   type="submit"
                   disabled={!chatInput.trim() || isChatLoading}
-                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-150 active:scale-95"
-                  style={{ background: chatInput.trim() && !isChatLoading ? "#2563EB" : "#1e3a5f", opacity: chatInput.trim() && !isChatLoading ? 1 : 0.5 }}
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-150 active:scale-95 ${
+                    chatInput.trim() && !isChatLoading ? 'bg-accent' : 'bg-slate-700 opacity-40'
+                  }`}
                 >
-                  <Send className="w-4 h-4 text-white" />
+                  <Send className={`w-4 h-4 ${chatInput.trim() && !isChatLoading ? 'text-slate-950' : 'text-slate-400'}`} />
                 </button>
               </div>
             </form>
