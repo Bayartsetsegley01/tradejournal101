@@ -13,22 +13,34 @@ import { emotionService } from "@/services/emotionService";
 function Section({ icon: Icon, title, sectionKey, openSections, onToggle, children, accent }) {
   const isOpen = openSections[sectionKey];
   return (
-    <div className="border-b border-slate-800/60">
+    <div className={`mx-4 my-2 rounded-2xl border transition-all duration-200 overflow-hidden ${
+      isOpen
+        ? 'bg-slate-800/30 border-slate-700/60'
+        : 'bg-slate-800/10 border-slate-800/40 hover:border-slate-700/50'
+    }`}>
       <button
         type="button"
         onClick={() => onToggle(sectionKey)}
-        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-800/20 transition-colors group"
+        className="w-full flex items-center justify-between px-4 py-3.5 transition-colors group"
       >
-        <span className={`text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 ${accent || 'text-slate-400'}`}>
-          {Icon && <Icon className="w-3.5 h-3.5" />}
+        <span className={`text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 ${accent || 'text-slate-300'}`}>
+          {Icon && <Icon className="w-3.5 h-3.5 opacity-70" />}
           {title}
         </span>
-        {isOpen
-          ? <ChevronUp className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors" />
-          : <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors" />
-        }
+        <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+          isOpen ? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-500 group-hover:text-slate-300'
+        }`}>
+          {isOpen
+            ? <ChevronUp   className="w-3.5 h-3.5" />
+            : <ChevronDown className="w-3.5 h-3.5" />
+          }
+        </div>
       </button>
-      {isOpen && <div className="px-5 pb-5">{children}</div>}
+      {isOpen && (
+        <div className="px-4 pb-4 border-t border-slate-700/40 pt-4">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -381,7 +393,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto custom-scrollbar py-2">
 
           {/* ══ SECTION 1: Зах зээл & Чиглэл ══ */}
           <Section icon={Target} title="Зах зээл & Чиглэл" sectionKey="market" openSections={openSections} onToggle={toggleSection}>
