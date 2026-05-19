@@ -8,13 +8,19 @@ export const generateInsights = async (tradesData) => {
 
   try {
     const formattedTrades = tradesData.map(t => ({
-      date:         t.exit_date || t.entry_date,
-      market:       t.market_type,
-      symbol:       t.symbol,
-      direction:    t.direction,
-      pnl:          t.pnl,
-      rr:           t.rr_ratio,
-      strategy:     t.strategy,
+      date:          t.exit_date || t.entry_date,
+      entry_date:    t.entry_date,
+      exit_date:     t.exit_date,
+      market:        t.market_type,
+      symbol:        t.symbol,
+      direction:     t.direction,
+      pnl:           t.pnl,
+      rr:            t.rr_ratio,
+      rr_ratio:      t.rr_ratio,
+      stop_loss:     t.stop_loss,
+      take_profit:   t.take_profit,
+      position_size: t.position_size,
+      strategy:      t.strategy,
       emotionBefore: t.emotion_before,
       emotionAfter:  t.emotion_after,
       positiveTags:  t.positive_tags,
@@ -30,6 +36,8 @@ export const generateInsights = async (tradesData) => {
 
     const userPrompt = `Дараах арилжааны өдрийн тэмдэглэлийн дата-г шинжлээрэй:
 
+Тэмдэглэл: зарим талбар null байвал хэрэглэгч бүртгээгүй гэсэн үг. Байгаа датаар л дүгнэлт хий.
+
 ${JSON.stringify(formattedTrades, null, 2)}
 
 Дараах JSON бүтцээр хариулна уу:
@@ -37,7 +45,8 @@ ${JSON.stringify(formattedTrades, null, 2)}
   "summary": "Трейдерийн ерөнхий гүйцэтгэлийн товч дүгнэлт (2-3 өгүүлбэр)",
   "mistakes": ["Алдаа 1", "Алдаа 2", "Алдаа 3"],
   "strengths": ["Давуу тал 1", "Давуу тал 2", "Давуу тал 3"],
-  "advice": "Дараагийн арилжааны сессид хэрэгжүүлэх нэг тодорхой зөвлөмж"
+  "advice": "Дараагийн арилжааны сессид хэрэгжүүлэх нэг тодорхой зөвлөмж",
+  "missing_data": "Хэрэглэгчид дутуу байгаа дата, нэмж бүртгэхийг зөвлөх"
 }`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
