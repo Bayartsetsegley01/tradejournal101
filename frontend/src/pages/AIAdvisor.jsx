@@ -105,7 +105,7 @@ export function AIAdvisorPage() {
     setIsChatLoading(true);
     try {
       const apiMessages = newMessages.map(m => ({ role: m.role, content: m.content }));
-      const data = await aiService.sendChat(userMsg, apiMessages);
+      const data = await aiService.sendChat(userMsg, apiMessages, chatMode);
       if (data.success && data.reply) {
         setChatMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
       } else {

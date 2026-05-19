@@ -26,9 +26,9 @@ export const aiService = {
       body: JSON.stringify(trades),
     }),
 
-  sendChat: (message, history = []) =>
+  sendChat: (message, history = [], mode = 'analysis') =>
     safeFetch(`${API_BASE_URL}/ai/chat`, {
       method: 'POST',
-      body: JSON.stringify({ message, history }),
+      body: JSON.stringify({ message, history, mode }),
     }),
 };

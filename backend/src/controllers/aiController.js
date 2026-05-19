@@ -10,10 +10,18 @@ const isQuotaError = (err) =>
 
 // ── Session helpers ────────────────────────────────────────────────────────────
 
-const buildSystemPrompt = async (tradeContext, userId) => {
+const MODE_PROMPTS = {
+  analysis: 'Хэрэглэгчийн арилжааны дата-г гүнзгий шинжилж, тоо баримтад суурилсан ажиглалт хий. Хэв маяг, давтагдсан алдаа, давуу талуудыг тодорхойл.',
+  advice:   'Практик, хэрэгжүүлэх боломжтой зөвлөгөө өг. Тодорхой алхамуудыг дугаарлаж жагсаа. Стратеги, эрсдэлийн удирдлага дээр анхаарал хандуул.',
+  learning: 'Боловсролын горимд ажиллана уу. Ойлгомжтой тайлбар, жишээ, аналоги ашигла. Арилжааны суурь болон дэвшилтэт ойлголтуудыг тайлбарла.',
+};
+
+const buildSystemPrompt = async (tradeContext, userId, mode = 'analysis') => {
   let prompt = `Та бол мэргэжлийн арилжааны зөвлөх AI юм. Монгол хэлээр богино, тодорхой хариулт өгнө.
 Хариултаа 3-5 өгүүлбэрт хэмжлэг. Markdown **bold** ашиглаж болно.
-Арилжааны психологи, эрсдэлийн удирдлага, техникийн анализын мэргэжилтэн.`;
+Арилжааны психологи, эрсдэлийн удирдлага, техникийн анализын мэргэжилтэн.
+
+Одоогийн горим: ${MODE_PROMPTS[mode] || MODE_PROMPTS.analysis}`;
 
   if (tradeContext) {
     prompt += `\n\nХэрэглэгчийн арилжааны статистик:
@@ -45,7 +53,7 @@ const buildSystemPrompt = async (tradeContext, userId) => {
 // POST /api/ai/chat
 export const chat = async (req, res) => {
   try {
-    const { message, history = [], tradeContext, session_id } = req.body;
+    const { message, history = [], tradeContext, session_id, mode = 'analysis' } = req.body;
     const userId = req.user.id;
 
     if (!message?.trim()) {
@@ -102,7 +110,7 @@ export const chat = async (req, res) => {
       ];
     }
 
-    const systemPrompt = await buildSystemPrompt(tradeContext, userId);
+    const systemPrompt = await buildSystemPrompt(tradeContext, userId, mode);
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-6',

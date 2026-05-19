@@ -1,37 +1,82 @@
 import { useState, useEffect } from "react";
-import { X, Image as ImageIcon, Target, LineChart, Brain, LayoutTemplate, UploadCloud, Check, Plus, Save, AlertCircle } from "lucide-react";
+import {
+  X, Image as ImageIcon, Target, LineChart, Brain, LayoutTemplate,
+  UploadCloud, Check, Plus, Save, AlertCircle, ChevronDown, ChevronUp, Trash2,
+} from "lucide-react";
 import { MARKET_TYPES, EMOTIONS, POSITIVE_TAGS, MISTAKE_TAGS, SESSIONS } from "@/lib/constants";
 import { CustomTagModal } from "./CustomTagModal";
 import { tradeService } from "@/services/tradeService";
 import { tagService } from "@/services/tagService";
 import { emotionService } from "@/services/emotionService";
 
+// ── Collapsible section wrapper ───────────────────────────────────────────────
+function Section({ icon: Icon, title, sectionKey, openSections, onToggle, children, accent }) {
+  const isOpen = openSections[sectionKey];
+  return (
+    <div className="border-b border-slate-800/60">
+      <button
+        type="button"
+        onClick={() => onToggle(sectionKey)}
+        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-800/20 transition-colors group"
+      >
+        <span className={`text-[11px] font-bold uppercase tracking-widest flex items-center gap-2 ${accent || 'text-slate-400'}`}>
+          {Icon && <Icon className="w-3.5 h-3.5" />}
+          {title}
+        </span>
+        {isOpen
+          ? <ChevronUp className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors" />
+          : <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors" />
+        }
+      </button>
+      {isOpen && <div className="px-5 pb-5">{children}</div>}
+    </div>
+  );
+}
+
+// ── Deletable tag chip ────────────────────────────────────────────────────────
+function TagChip({ tag, isSelected, onClick, onDelete, colorSelected, colorDefault }) {
+  return (
+    <div className="relative group/chip">
+      <button
+        type="button"
+        onClick={onClick}
+        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border flex items-center gap-1.5 pr-${onDelete ? '6' : '3'} ${
+          isSelected
+            ? colorSelected || 'bg-slate-800 border-slate-500 text-white'
+            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+        }`}
+      >
+        {tag.emoji && <span>{tag.emoji}</span>}
+        {tag.label}
+      </button>
+      {onDelete && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDelete(tag.id); }}
+          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white flex items-center justify-center opacity-0 group-hover/chip:opacity-100 transition-opacity z-10"
+        >
+          <X className="w-2.5 h-2.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function AddTradeModal({ isOpen, onClose, initialData = null, accountId = null }) {
   const [customTagModal, setCustomTagModal] = useState(null);
-
-  const [customEmotions, setCustomEmotions] = useState([]);
+  const [customEmotions, setCustomEmotions]         = useState([]);
   const [customPositiveTags, setCustomPositiveTags] = useState([]);
-  const [customMistakeTags, setCustomMistakeTags] = useState([]);
+  const [customMistakeTags, setCustomMistakeTags]   = useState([]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    emotionService.getEmotions().then(res => {
-      if (res?.data) {
-        const dbEmotions = res.data.map(e => ({ id: e.id, label: e.name, emoji: e.emoji || '' }));
-        setCustomEmotions(dbEmotions);
-      }
-    }).catch(() => {});
-    tagService.getTags().then(res => {
-      if (res?.data) {
-        const pos = res.data.filter(t => t.type === 'POSITIVE').map(t => ({ id: t.id, label: t.name }));
-        const mis = res.data.filter(t => t.type === 'MISTAKE').map(t => ({ id: t.id, label: t.name }));
-        setCustomPositiveTags(pos);
-        setCustomMistakeTags(mis);
-      }
-    }).catch(() => {});
-  }, [isOpen]);
+  const [openSections, setOpenSections] = useState({
+    market:     true,
+    execution:  true,
+    psychology: true,
+    journal:    false,
+  });
+  const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
 
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving]   = useState(false);
   const [saveError, setSaveError] = useState(null);
 
   const toLocalISO = (d = new Date()) =>
@@ -43,6 +88,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
     market: 'forex',
     symbol: '',
     direction: 'LONG',
+    strategy: '',
     session: '',
     exchange: '',
     leverage: '',
@@ -67,14 +113,30 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
     mistakesMade: '',
     whatWentWell: '',
     lessonLearned: '',
+    notes: '',
     screenshot_url: null,
   });
 
+  // ── Fetch custom emotions & tags on open ─────────────────────────────────────
+  useEffect(() => {
+    if (!isOpen) return;
+    emotionService.getEmotions().then(res => {
+      if (res?.data) {
+        setCustomEmotions(res.data.map(e => ({ id: e.id, label: e.name, emoji: e.emoji || '', isDefault: e.is_default })));
+      }
+    }).catch(() => {});
+    tagService.getTags().then(res => {
+      if (res?.data) {
+        setCustomPositiveTags(res.data.filter(t => t.type === 'POSITIVE').map(t => ({ id: t.id, label: t.name, isDefault: t.is_default })));
+        setCustomMistakeTags(res.data.filter(t => t.type === 'MISTAKE').map(t => ({ id: t.id, label: t.name, isDefault: t.is_default })));
+      }
+    }).catch(() => {});
+  }, [isOpen]);
+
+  // ── Draft auto-save ───────────────────────────────────────────────────────────
   useEffect(() => {
     const timer = setInterval(() => {
-      if (!initialData && formData.symbol) {
-        localStorage.setItem('trade_draft', JSON.stringify(formData));
-      }
+      if (!initialData && formData.symbol) localStorage.setItem('trade_draft', JSON.stringify(formData));
     }, 2000);
     return () => clearInterval(timer);
   }, [formData, initialData]);
@@ -82,233 +144,224 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
   useEffect(() => {
     if (!initialData) {
       const draft = localStorage.getItem('trade_draft');
-      if (draft) {
-        try { setFormData(JSON.parse(draft)); } catch (e) {}
-      }
+      if (draft) { try { setFormData(JSON.parse(draft)); } catch {} }
     }
   }, [initialData]);
 
+  // ── Auto TP / Qty calculation ─────────────────────────────────────────────────
   useEffect(() => {
     if (!formData.entry || !formData.stopLoss) return;
     const entry = parseFloat(formData.entry);
-    const sl = parseFloat(formData.stopLoss);
+    const sl    = parseFloat(formData.stopLoss);
     if (isNaN(entry) || isNaN(sl)) return;
 
     if (!initialData && !formData.takeProfit) {
       const riskPerShare = Math.abs(entry - sl);
-      const suggestedTp = formData.direction === 'LONG'
-        ? entry + (riskPerShare * 2)
-        : entry - (riskPerShare * 2);
-      if (suggestedTp > 0) {
-        setFormData(prev => ({ ...prev, takeProfit: suggestedTp.toFixed(5) }));
-      }
+      const suggestedTp  = formData.direction === 'LONG' ? entry + riskPerShare * 2 : entry - riskPerShare * 2;
+      if (suggestedTp > 0) setFormData(prev => ({ ...prev, takeProfit: suggestedTp.toFixed(5) }));
     }
 
     const riskPercent = parseFloat(formData.riskPercent);
-    const balance = parseFloat(formData.accountBalance);
+    const balance     = parseFloat(formData.accountBalance);
     if (!isNaN(riskPercent) && !isNaN(balance) && riskPercent > 0 && balance > 0) {
-      if (!formData.quantity || formData.quantity === '') {
-        const riskAmount = balance * (riskPercent / 100);
+      if (!formData.quantity) {
+        const riskAmount   = balance * (riskPercent / 100);
         const riskPerShare = Math.abs(entry - sl);
-        if (riskPerShare > 0) {
-          setFormData(prev => ({ ...prev, quantity: (riskAmount / riskPerShare).toFixed(2) }));
-        }
+        if (riskPerShare > 0) setFormData(prev => ({ ...prev, quantity: (riskAmount / riskPerShare).toFixed(2) }));
       }
     }
   }, [formData.entry, formData.stopLoss, formData.direction, formData.riskPercent, formData.accountBalance, formData.quantity, formData.takeProfit, initialData]);
 
+  // ── Load initialData ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (initialData) {
-      let formattedDate = toLocalISO();
-      try {
-        const raw = initialData.date || initialData.entry_date;
-        if (raw) {
-          const d = new Date(raw);
-          if (!isNaN(d.getTime())) formattedDate = toLocalISO(d);
-        }
-      } catch (e) {}
+    if (!initialData) return;
+    let formattedDate = toLocalISO();
+    try {
+      const raw = initialData.date || initialData.entry_date;
+      if (raw) { const d = new Date(raw); if (!isNaN(d)) formattedDate = toLocalISO(d); }
+    } catch {}
 
-      let formattedExpiry = '';
-      try {
-        const raw = initialData.expiry || initialData.expiry_date;
-        if (raw) {
-          const d = new Date(raw);
-          if (!isNaN(d.getTime())) formattedExpiry = d.toISOString().slice(0, 10);
-        }
-      } catch (e) {}
+    let formattedExpiry = '';
+    try {
+      const raw = initialData.expiry || initialData.expiry_date;
+      if (raw) { const d = new Date(raw); if (!isNaN(d)) formattedExpiry = d.toISOString().slice(0, 10); }
+    } catch {}
 
-      const parseTags = (v) => {
-        if (Array.isArray(v)) return v;
-        if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } }
-        return [];
-      };
+    const parseTags = (v) => {
+      if (Array.isArray(v)) return v;
+      if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } }
+      return [];
+    };
 
-      setFormData(prev => ({
-        ...prev,
-        ...initialData,
-        date:          formattedDate,
-        expiry:        formattedExpiry,
-        entry:         initialData.entry_price   ?? initialData.entry         ?? '',
-        exit:          initialData.exit_price    ?? initialData.exit          ?? '',
-        stopLoss:      initialData.stop_loss     ?? initialData.stopLoss      ?? '',
-        takeProfit:    initialData.take_profit   ?? initialData.takeProfit    ?? '',
-        quantity:      initialData.position_size ?? initialData.quantity      ?? '',
-        market:        initialData.market_type   || initialData.market        || 'forex',
-        emotionBefore: initialData.emotionBefore || initialData.emotion_before || '',
-        emotionAfter:  initialData.emotionAfter  || initialData.emotion_after  || '',
-        positiveTags:  parseTags(initialData.positiveTags || initialData.positive_tags),
-        mistakeTags:   parseTags(initialData.mistakeTags  || initialData.mistake_tags),
-        whyEntered:    initialData.whyEntered    || initialData.why_entered    || '',
-        whatHappened:  initialData.whatHappened  || initialData.what_happened  || '',
-        whatWentWell:  initialData.whatWentWell  || initialData.what_went_well || '',
-        mistakesMade:  initialData.mistakesMade  || initialData.mistakes_made  || '',
-        lessonLearned: initialData.lessonLearned || initialData.lessons_learned || '',
-        notes:         initialData.notes || '',
-        riskPercent:   initialData.riskPercent || (initialData.risk_percent != null ? String(initialData.risk_percent) : ''),
-        screenshot_url: initialData.screenshot_url || null,
-      }));
-    }
+    setFormData(prev => ({
+      ...prev, ...initialData,
+      date:          formattedDate,
+      expiry:        formattedExpiry,
+      entry:         initialData.entry_price   ?? initialData.entry         ?? '',
+      exit:          initialData.exit_price    ?? initialData.exit          ?? '',
+      stopLoss:      initialData.stop_loss     ?? initialData.stopLoss      ?? '',
+      takeProfit:    initialData.take_profit   ?? initialData.takeProfit    ?? '',
+      quantity:      initialData.position_size ?? initialData.quantity      ?? '',
+      market:        initialData.market_type   || initialData.market        || 'forex',
+      strategy:      initialData.strategy      || '',
+      emotionBefore: initialData.emotionBefore || initialData.emotion_before || '',
+      emotionAfter:  initialData.emotionAfter  || initialData.emotion_after  || '',
+      positiveTags:  parseTags(initialData.positiveTags || initialData.positive_tags),
+      mistakeTags:   parseTags(initialData.mistakeTags  || initialData.mistake_tags),
+      whyEntered:    initialData.whyEntered    || initialData.why_entered    || '',
+      whatHappened:  initialData.whatHappened  || initialData.what_happened  || '',
+      whatWentWell:  initialData.whatWentWell  || initialData.what_went_well || '',
+      mistakesMade:  initialData.mistakesMade  || initialData.mistakes_made  || '',
+      lessonLearned: initialData.lessonLearned || initialData.lessons_learned || '',
+      notes:         initialData.notes         || '',
+      riskPercent:   initialData.riskPercent   || (initialData.risk_percent != null ? String(initialData.risk_percent) : ''),
+      screenshot_url: initialData.screenshot_url || null,
+    }));
   }, [initialData]);
 
   if (!isOpen) return null;
 
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+  const set = (field) => (e) => setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  const setV = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+
   const toggleTag = (type, tagId) => {
     setFormData(prev => {
       const tags = prev[type];
-      if (tags.includes(tagId)) return { ...prev, [type]: tags.filter(t => t !== tagId) };
-      return { ...prev, [type]: [...tags, tagId] };
+      return { ...prev, [type]: tags.includes(tagId) ? tags.filter(t => t !== tagId) : [...tags, tagId] };
     });
   };
 
+  // ── Delete handlers ───────────────────────────────────────────────────────────
+  const handleDeleteEmotion = async (id) => {
+    try {
+      await emotionService.deleteEmotion(id);
+      setCustomEmotions(prev => prev.filter(e => e.id !== id));
+      setFormData(prev => ({
+        ...prev,
+        emotionBefore: prev.emotionBefore === id ? '' : prev.emotionBefore,
+        emotionAfter:  prev.emotionAfter  === id ? '' : prev.emotionAfter,
+      }));
+    } catch {}
+  };
+
+  const handleDeleteTag = async (type, id) => {
+    try {
+      await tagService.deleteTag(id);
+      if (type === 'positive') {
+        setCustomPositiveTags(prev => prev.filter(t => t.id !== id));
+        setFormData(prev => ({ ...prev, positiveTags: prev.positiveTags.filter(tid => tid !== id) }));
+      } else {
+        setCustomMistakeTags(prev => prev.filter(t => t.id !== id));
+        setFormData(prev => ({ ...prev, mistakeTags: prev.mistakeTags.filter(tid => tid !== id) }));
+      }
+    } catch {}
+  };
+
+  // ── Custom tag save ───────────────────────────────────────────────────────────
+  const handleCustomTagSave = async (newTag) => {
+    try {
+      if (customTagModal.type === 'emotion') {
+        const result = await emotionService.createEmotion({ name: newTag.label, emoji: newTag.emoji, color: newTag.color });
+        const saved = result.data;
+        setCustomEmotions(prev => [...prev, { id: saved.id, label: saved.name, emoji: saved.emoji || '', isDefault: false }]);
+        setV('emotionBefore', saved.id);
+      } else {
+        const result = await tagService.createTag({
+          type: customTagModal.type === 'positive' ? 'POSITIVE' : 'MISTAKE',
+          name: newTag.label, label: newTag.label, color: newTag.color,
+        });
+        const saved = result.data;
+        const entry = { id: saved.id, label: saved.name, isDefault: false };
+        if (customTagModal.type === 'positive') {
+          setCustomPositiveTags(prev => [...prev, entry]);
+          toggleTag('positiveTags', saved.id);
+        } else {
+          setCustomMistakeTags(prev => [...prev, entry]);
+          toggleTag('mistakeTags', saved.id);
+        }
+      }
+    } catch (err) { console.error('Failed to save custom tag', err); }
+  };
+
+  // ── Validation ────────────────────────────────────────────────────────────────
   const validateForm = () => {
-    if (!formData.symbol) return "Симбол (Symbol) оруулна уу";
-    if (!formData.entry) return "Орох үнэ (Entry price) оруулна уу";
-    if (!formData.stopLoss) return "Алдагдал зогсоох (Stop Loss) оруулна уу";
-    if (!formData.takeProfit) return "Ашиг авах (Take Profit) оруулна уу";
-    if (!formData.quantity) return "Хэмжээ (Quantity/Lot) оруулна уу";
-    if (!formData.whyEntered) return "Яагаад орсон шалтгаанаа бичнэ үү (Setup & Reason)";
+    if (!formData.symbol)    return 'Симбол (Symbol) оруулна уу';
+    if (!formData.entry)     return 'Орох үнэ (Entry price) оруулна уу';
+    if (!formData.stopLoss)  return 'Stop Loss оруулна уу';
+    if (!formData.takeProfit) return 'Take Profit оруулна уу';
+    if (!formData.quantity)  return 'Хэмжээ (Quantity/Lot) оруулна уу';
+    if (!formData.whyEntered) return 'Яагаад орсон шалтгаанаа бичнэ үү';
     if (formData.status === 'CLOSED') {
-      if (!formData.exit) return "Хаасан үнэ (Exit price) оруулна уу";
-      if (!formData.whatHappened) return "Юу болсныг бичнэ үү (What happened)";
-      if (!formData.lessonLearned) return "Юу сурснаа бичнэ үү (Lesson learned)";
+      if (!formData.exit) return 'Хаасан үнэ (Exit price) оруулна уу';
+      if (!formData.whatHappened) return 'Юу болсныг бичнэ үү';
+      if (!formData.lessonLearned) return 'Юу сурснаа бичнэ үү';
     }
     return null;
   };
 
   const handleSave = async (isDraft = false) => {
     setSaveError(null);
-    const validationError = validateForm();
-    if (!isDraft && validationError) { setSaveError(validationError); return; }
+    if (!isDraft && validateForm()) { setSaveError(validateForm()); return; }
     setIsSaving(true);
     try {
       const payload = {
         ...formData,
-        status: isDraft ? 'DRAFT' : (formData.status || 'CLOSED'),
+        status:      isDraft ? 'DRAFT' : (formData.status || 'CLOSED'),
         market_type: formData.market,
-        entry_date: formData.date,
-        account_id: accountId || null,
+        entry_date:  formData.date,
+        account_id:  accountId || null,
       };
-      if (payload.id) {
-        await tradeService.updateTrade(payload.id, payload);
-      } else {
-        await tradeService.createTrade(payload);
-      }
-      if (payload.status === 'CLOSED' && pnl) {
-        const currentBalance = parseFloat(localStorage.getItem('account_balance') || '10000');
-        const newBalance = currentBalance + parseFloat(pnl);
-        localStorage.setItem('account_balance', newBalance.toString());
-      }
+      if (payload.id) await tradeService.updateTrade(payload.id, payload);
+      else            await tradeService.createTrade(payload);
       localStorage.removeItem('trade_draft');
       onClose();
     } catch (err) {
-      setSaveError(err.message || "Алдаа гарлаа. Дахин оролдоно уу.");
+      setSaveError(err.message || 'Алдаа гарлаа. Дахин оролдоно уу.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const calculateRR = () => {
-    if (!formData.entry || !formData.stopLoss || !formData.takeProfit) return null;
-    const entry = parseFloat(formData.entry);
-    const sl = parseFloat(formData.stopLoss);
-    const tp = parseFloat(formData.takeProfit);
-    if (isNaN(entry) || isNaN(sl) || isNaN(tp)) return null;
-    const risk = Math.abs(entry - sl);
-    const reward = Math.abs(tp - entry);
-    if (risk === 0) return null;
-    return (reward / risk).toFixed(2);
-  };
+  // ── Calculations ──────────────────────────────────────────────────────────────
+  const rr = (() => {
+    const e = parseFloat(formData.entry), sl = parseFloat(formData.stopLoss), tp = parseFloat(formData.takeProfit);
+    if (!e || !sl || !tp || isNaN(e) || isNaN(sl) || isNaN(tp)) return null;
+    const risk = Math.abs(e - sl); return risk === 0 ? null : (Math.abs(tp - e) / risk).toFixed(2);
+  })();
 
-  const calculatePnL = () => {
+  const pnl = (() => {
     if (!formData.entry || !formData.quantity) return null;
-    const entry = parseFloat(formData.entry);
-    const qty = parseFloat(formData.quantity);
-    const exitPrice = formData.status === 'CLOSED' && formData.exit
-      ? parseFloat(formData.exit)
-      : parseFloat(formData.takeProfit);
-    if (isNaN(entry) || isNaN(exitPrice) || isNaN(qty)) return null;
-    const diff = formData.direction === 'LONG' ? exitPrice - entry : entry - exitPrice;
-    const market = (formData.market || 'forex').toLowerCase();
-    if (market === 'forex') {
-      if (entry < 10) { const pips = diff / 0.0001; return (pips * 10 * qty).toFixed(2); }
-      else if (entry < 500) { const pips = diff / 0.01; return (pips * 10 * qty).toFixed(2); }
+    const e = parseFloat(formData.entry), qty = parseFloat(formData.quantity);
+    const ex = formData.status === 'CLOSED' && formData.exit ? parseFloat(formData.exit) : parseFloat(formData.takeProfit);
+    if (isNaN(e) || isNaN(ex) || isNaN(qty)) return null;
+    const diff = formData.direction === 'LONG' ? ex - e : e - ex;
+    const mkt = (formData.market || 'forex').toLowerCase();
+    if (mkt === 'forex') {
+      if (e < 10)   return (diff / 0.0001 * 10 * qty).toFixed(2);
+      if (e < 500)  return (diff / 0.01 * 10 * qty).toFixed(2);
     }
     return (diff * qty).toFixed(2);
-  };
+  })();
 
-  const calculateRiskAmount = () => {
-    if (!formData.accountBalance || !formData.riskPercent) return null;
-    const balance = parseFloat(formData.accountBalance);
-    const riskPct = parseFloat(formData.riskPercent);
-    if (isNaN(balance) || isNaN(riskPct)) return null;
-    return (balance * (riskPct / 100)).toFixed(2);
-  };
+  const riskAmount = (() => {
+    const b = parseFloat(formData.accountBalance), r = parseFloat(formData.riskPercent);
+    return (!isNaN(b) && !isNaN(r)) ? (b * r / 100).toFixed(2) : null;
+  })();
 
-  const rr = calculateRR();
-  const pnl = calculatePnL();
-  const riskAmount = calculateRiskAmount();
+  const warnings = [
+    formData.riskPercent && parseFloat(formData.riskPercent) > 3 && 'Risk 3%-аас их байна!',
+    !formData.stopLoss && formData.entry && 'Stop Loss тавиагүй байна!',
+    rr && parseFloat(rr) < 1 && 'R/R харьцаа 1-ээс бага байна!',
+  ].filter(Boolean);
 
-  const warnings = [];
-  if (formData.riskPercent && parseFloat(formData.riskPercent) > 3) warnings.push("Risk is higher than 3%!");
-  if (!formData.stopLoss && formData.entry) warnings.push("No Stop Loss set!");
-  if (rr && parseFloat(rr) < 1) warnings.push("Risk/Reward ratio is less than 1!");
+  // ── Merged tag lists ──────────────────────────────────────────────────────────
+  const allEmotions      = [...EMOTIONS,      ...customEmotions.filter(e => !EMOTIONS.some(s => s.id === e.id))];
+  const allPositiveTags  = [...POSITIVE_TAGS, ...customPositiveTags.filter(t => !POSITIVE_TAGS.some(s => s.id === t.id))];
+  const allMistakeTags   = [...MISTAKE_TAGS,  ...customMistakeTags.filter(t => !MISTAKE_TAGS.some(s => s.id === t.id))];
 
-  const handleCustomTagSave = async (newTag) => {
-    try {
-      if (customTagModal.type === 'emotion') {
-        const result = await emotionService.createEmotion({ name: newTag.label, emoji: newTag.emoji, color: newTag.color });
-        const savedTag = result.data;
-        const newEntry = { id: savedTag.id, label: savedTag.name, emoji: savedTag.emoji || '' };
-        setCustomEmotions(prev => [...prev, newEntry]);
-        setFormData(prev => ({ ...prev, emotionBefore: savedTag.id }));
-      } else {
-        const result = await tagService.createTag({
-          type: customTagModal.type === 'positive' ? 'POSITIVE' : 'MISTAKE',
-          name: newTag.label, label: newTag.label, color: newTag.color
-        });
-        const savedTag = result.data;
-        const newEntry = { id: savedTag.id, label: savedTag.name };
-        if (customTagModal.type === 'positive') {
-          setCustomPositiveTags(prev => [...prev, newEntry]);
-          toggleTag('positiveTags', savedTag.id);
-        } else {
-          setCustomMistakeTags(prev => [...prev, newEntry]);
-          toggleTag('mistakeTags', savedTag.id);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to save custom tag", err);
-    }
-  };
-
-  const allEmotions = [...EMOTIONS, ...customEmotions];
-  const allPositiveTags = [...POSITIVE_TAGS, ...customPositiveTags];
-  const allMistakeTags = [...MISTAKE_TAGS, ...customMistakeTags];
-
-  const inputCls = "w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all text-sm font-mono";
-  const labelCls = "block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide";
-  const sectionCls = "px-5 py-4 border-b border-slate-800/60";
-  const sectionTitleCls = "text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2";
+  const inputCls  = "w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all text-sm font-mono";
+  const labelCls  = "block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide";
 
   return (
     <div className="fixed inset-0 z-50">
@@ -320,7 +373,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 shrink-0">
           <div>
             <h2 className="text-base font-bold text-white">{initialData ? 'Арилжаа засах' : 'Шинэ арилжаа нэмэх'}</h2>
-            <p className="text-[11px] text-slate-500 mt-0.5">Доош гүйлгэн бүх хэсгийг бөглөнө үү</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">Хэсэг бүрийг нээж бөглөнө үү</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors">
             <X className="w-5 h-5" />
@@ -330,16 +383,15 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
 
-          {/* ── SECTION 1: Зах зээл & Үндсэн мэдээлэл ── */}
-          <div className={sectionCls}>
-            <p className={sectionTitleCls}><Target className="w-3 h-3" /> Зах зээл & Чиглэл</p>
+          {/* ══ SECTION 1: Зах зээл & Чиглэл ══ */}
+          <Section icon={Target} title="Зах зээл & Чиглэл" sectionKey="market" openSections={openSections} onToggle={toggleSection}>
 
-            {/* Market Type */}
+            {/* Market type */}
             <div className="mb-4">
               <label className={labelCls}>Зах зээлийн төрөл</label>
               <div className="flex flex-wrap gap-1.5">
                 {MARKET_TYPES.map(m => (
-                  <button key={m.id} onClick={() => setFormData({ ...formData, market: m.id })}
+                  <button key={m.id} type="button" onClick={() => setV('market', m.id)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                       formData.market === m.id
                         ? 'bg-accent/10 border-accent/50 text-accent'
@@ -352,30 +404,34 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
                 <label className={labelCls}>Огноо, Цаг</label>
-                <input type="datetime-local" className={inputCls} value={formData.date || ''} onChange={e => setFormData({...formData, date: e.target.value})} />
+                <input type="datetime-local" className={inputCls} value={formData.date || ''} onChange={set('date')} />
               </div>
               <div>
                 <label className={labelCls}>Symbol / Asset</label>
-                <input type="text" placeholder="EURUSD, BTC, AAPL" className={`${inputCls} uppercase`} value={formData.symbol} onChange={e => setFormData({...formData, symbol: e.target.value.toUpperCase()})} />
+                <input type="text" placeholder="EURUSD, BTC, AAPL" className={`${inputCls} uppercase`}
+                  value={formData.symbol} onChange={e => setV('symbol', e.target.value.toUpperCase())} />
               </div>
+            </div>
+
+            {/* Strategy */}
+            <div className="mb-3">
+              <label className={labelCls}>Стратеги</label>
+              <input type="text" placeholder="ICT, SMC, Supply & Demand, Scalping…" className={inputCls}
+                value={formData.strategy} onChange={set('strategy')} />
             </div>
 
             {/* Direction */}
             <div className="mb-3">
               <label className={labelCls}>Чиглэл</label>
               <div className="flex gap-2">
-                <button onClick={() => setFormData({ ...formData, direction: 'LONG' })}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all border ${
-                    formData.direction === 'LONG'
-                      ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
-                  }`}>LONG ↑</button>
-                <button onClick={() => setFormData({ ...formData, direction: 'SHORT' })}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all border ${
-                    formData.direction === 'SHORT'
-                      ? 'bg-rose-500/10 border-rose-500/50 text-rose-400'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
-                  }`}>SHORT ↓</button>
+                {[['LONG','LONG ↑','emerald'],['SHORT','SHORT ↓','rose']].map(([val, lbl, col]) => (
+                  <button key={val} type="button" onClick={() => setV('direction', val)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all border ${
+                      formData.direction === val
+                        ? `bg-${col}-500/10 border-${col}-500/50 text-${col}-400`
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
+                    }`}>{lbl}</button>
+                ))}
               </div>
             </div>
 
@@ -383,8 +439,8 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             <div className="mb-3">
               <label className={labelCls}>Төлөв</label>
               <div className="flex gap-2">
-                {['PLANNED', 'OPEN', 'CLOSED'].map(s => (
-                  <button key={s} onClick={() => setFormData({ ...formData, status: s })}
+                {['PLANNED','OPEN','CLOSED'].map(s => (
+                  <button key={s} type="button" onClick={() => setV('status', s)}
                     className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border ${
                       formData.status === s ? 'bg-slate-800 border-slate-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
                     }`}>{s}</button>
@@ -392,13 +448,13 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
               </div>
             </div>
 
-            {/* Dynamic fields by market */}
+            {/* Market-specific fields */}
             {(formData.market === 'forex' || formData.market === 'indices' || formData.market === 'gold') && (
               <div>
                 <label className={labelCls}>Trading Session</label>
                 <div className="flex flex-wrap gap-2">
                   {SESSIONS.map(s => (
-                    <button key={s.id} onClick={() => setFormData({ ...formData, session: s.id })}
+                    <button key={s.id} type="button" onClick={() => setV('session', s.id)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                         formData.session === s.id ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
                       }`}>{s.label}</button>
@@ -410,11 +466,11 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>Exchange</label>
-                  <input type="text" placeholder="Binance, Bybit" className={inputCls} value={formData.exchange} onChange={e => setFormData({...formData, exchange: e.target.value})} />
+                  <input type="text" placeholder="Binance, Bybit" className={inputCls} value={formData.exchange} onChange={set('exchange')} />
                 </div>
                 <div>
                   <label className={labelCls}>Leverage (x)</label>
-                  <input type="number" placeholder="10" className={inputCls} value={formData.leverage} onChange={e => setFormData({...formData, leverage: e.target.value})} />
+                  <input type="number" placeholder="10" className={inputCls} value={formData.leverage} onChange={set('leverage')} />
                 </div>
               </div>
             )}
@@ -423,8 +479,8 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                 <div>
                   <label className={labelCls}>Option Type</label>
                   <div className="flex gap-2">
-                    {['CALL', 'PUT'].map(type => (
-                      <button key={type} onClick={() => setFormData({ ...formData, optionType: type })}
+                    {['CALL','PUT'].map(type => (
+                      <button key={type} type="button" onClick={() => setV('optionType', type)}
                         className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${
                           formData.optionType === type ? 'bg-slate-800 border-slate-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
                         }`}>{type}</button>
@@ -433,73 +489,67 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                 </div>
                 <div>
                   <label className={labelCls}>Strike Price</label>
-                  <input type="number" className={inputCls} value={formData.strike} onChange={e => setFormData({...formData, strike: e.target.value})} />
+                  <input type="number" className={inputCls} value={formData.strike} onChange={set('strike')} />
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>Expiry Date</label>
-                  <input type="date" className={inputCls} value={formData.expiry || ''} onChange={e => setFormData({...formData, expiry: e.target.value})} />
+                  <input type="date" className={inputCls} value={formData.expiry || ''} onChange={set('expiry')} />
                 </div>
               </div>
             )}
-          </div>
+          </Section>
 
-          {/* ── SECTION 2: Execution & Risk ── */}
-          <div className={sectionCls}>
-            <p className={sectionTitleCls}><LineChart className="w-3 h-3" /> Гүйцэтгэл & Эрсдэл</p>
-
+          {/* ══ SECTION 2: Гүйцэтгэл & Эрсдэл ══ */}
+          <Section icon={LineChart} title="Гүйцэтгэл & Эрсдэл" sectionKey="execution" openSections={openSections} onToggle={toggleSection}>
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
                 <label className={labelCls}>Entry Price</label>
-                <input type="number" step="any" className={`${inputCls} text-white`} value={formData.entry} onChange={e => setFormData({...formData, entry: e.target.value})} />
+                <input type="number" step="any" className={inputCls} value={formData.entry} onChange={set('entry')} />
               </div>
               <div>
-                <label className={labelCls}>Exit Price <span className="text-slate-600 normal-case font-normal">(optional)</span></label>
-                <input type="number" step="any" className={inputCls} value={formData.exit} onChange={e => setFormData({...formData, exit: e.target.value})} />
+                <label className={labelCls}>Exit Price <span className="text-slate-600 normal-case font-normal">(opt)</span></label>
+                <input type="number" step="any" className={inputCls} value={formData.exit} onChange={set('exit')} />
               </div>
               <div>
                 <label className={labelCls}>Stop Loss</label>
-                <input type="number" step="any" className={`${inputCls} text-rose-400`} value={formData.stopLoss} onChange={e => setFormData({...formData, stopLoss: e.target.value})} />
+                <input type="number" step="any" className={`${inputCls} text-rose-400`} value={formData.stopLoss} onChange={set('stopLoss')} />
               </div>
               <div>
                 <label className={labelCls}>Take Profit</label>
-                <input type="number" step="any" className={`${inputCls} text-emerald-400`} value={formData.takeProfit} onChange={e => setFormData({...formData, takeProfit: e.target.value})} />
+                <input type="number" step="any" className={`${inputCls} text-emerald-400`} value={formData.takeProfit} onChange={set('takeProfit')} />
               </div>
               <div>
                 <label className={labelCls}>Quantity / Lot</label>
-                <input type="number" step="any" placeholder="0.5" className={inputCls} value={formData.quantity} onChange={e => setFormData({...formData, quantity: e.target.value})} />
+                <input type="number" step="any" placeholder="0.5" className={inputCls} value={formData.quantity} onChange={set('quantity')} />
               </div>
               <div>
                 <label className={labelCls}>Risk %</label>
                 <div className="relative">
-                  <input type="number" step="any" placeholder="1.0" className={`${inputCls} pr-8`} value={formData.riskPercent} onChange={e => setFormData({...formData, riskPercent: e.target.value})} />
+                  <input type="number" step="any" placeholder="1.0" className={`${inputCls} pr-8`} value={formData.riskPercent} onChange={set('riskPercent')} />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">%</span>
                 </div>
               </div>
             </div>
 
-            <div>
+            <div className="mb-3">
               <label className={labelCls}>Account Balance</label>
               <input type="number" step="any" className={inputCls} value={formData.accountBalance}
-                onChange={e => { setFormData({...formData, accountBalance: e.target.value}); localStorage.setItem('account_balance', e.target.value); }} />
+                onChange={e => { setV('accountBalance', e.target.value); localStorage.setItem('account_balance', e.target.value); }} />
             </div>
 
-            {/* Auto calculations */}
-            <div className="mt-3 bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+            {/* Calculations */}
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4">
               <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">R/R Харьцаа</div>
-                  <div className="text-lg font-mono font-bold text-white">{rr ? `${rr}R` : '—'}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Est. P&L</div>
-                  <div className={`text-lg font-mono font-bold ${pnl > 0 ? 'text-emerald-400' : pnl < 0 ? 'text-rose-400' : 'text-white'}`}>
-                    {pnl ? `${pnl > 0 ? '+' : ''}$${pnl}` : '—'}
+                {[
+                  { label: 'R/R Харьцаа', value: rr ? `${rr}R` : '—', cls: 'text-white' },
+                  { label: 'Est. P&L',    value: pnl ? `${pnl > 0 ? '+' : ''}$${pnl}` : '—', cls: parseFloat(pnl) > 0 ? 'text-emerald-400' : parseFloat(pnl) < 0 ? 'text-rose-400' : 'text-white' },
+                  { label: 'Risk $',      value: riskAmount ? `$${riskAmount}` : '—', cls: 'text-rose-400' },
+                ].map((item, i) => (
+                  <div key={i}>
+                    <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{item.label}</div>
+                    <div className={`text-lg font-mono font-bold ${item.cls}`}>{item.value}</div>
                   </div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Risk $</div>
-                  <div className="text-lg font-mono font-bold text-rose-400">{riskAmount ? `$${riskAmount}` : '—'}</div>
-                </div>
+                ))}
               </div>
               {warnings.length > 0 && (
                 <div className="mt-3 space-y-1.5">
@@ -511,110 +561,128 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                 </div>
               )}
             </div>
-          </div>
+          </Section>
 
-          {/* ── SECTION 3: Psychology & Tags ── */}
-          <div className={sectionCls}>
-            <p className={sectionTitleCls}><Brain className="w-3 h-3" /> Сэтгэл зүй & Үнэлгээ</p>
+          {/* ══ SECTION 3: Сэтгэл зүй & Үнэлгээ ══ */}
+          <Section icon={Brain} title="Сэтгэл зүй & Үнэлгэ" sectionKey="psychology" openSections={openSections} onToggle={toggleSection}>
 
+            {/* Emotion before */}
             <div className="mb-4">
               <label className={labelCls}>Орох үеийн сэтгэл зүй</label>
               <div className="flex flex-wrap gap-1.5">
-                {allEmotions.map(e => (
-                  <button key={`before-${e.id}`} onClick={() => setFormData({ ...formData, emotionBefore: e.id })}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border flex items-center gap-1.5 ${
-                      formData.emotionBefore === e.id ? 'bg-slate-800 border-slate-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
-                    }`}><span>{e.emoji}</span>{e.label}</button>
-                ))}
-                <button onClick={() => setCustomTagModal({ type: 'emotion' })}
+                {allEmotions.map(e => {
+                  const isCustom = !EMOTIONS.some(s => s.id === e.id);
+                  return (
+                    <TagChip
+                      key={`before-${e.id}`}
+                      tag={e}
+                      isSelected={formData.emotionBefore === e.id}
+                      onClick={() => setV('emotionBefore', formData.emotionBefore === e.id ? '' : e.id)}
+                      onDelete={isCustom ? () => handleDeleteEmotion(e.id) : null}
+                      colorSelected="bg-slate-800 border-slate-500 text-white"
+                    />
+                  );
+                })}
+                <button type="button" onClick={() => setCustomTagModal({ type: 'emotion' })}
                   className="px-3 py-1.5 rounded-lg text-xs bg-slate-950 text-slate-500 border border-dashed border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-all flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Нэмэх
                 </button>
               </div>
             </div>
 
+            {/* Emotion after */}
             <div className="mb-4">
               <label className={labelCls}>Гарах үеийн сэтгэл зүй</label>
               <div className="flex flex-wrap gap-1.5">
-                {allEmotions.map(e => (
-                  <button key={`after-${e.id}`} onClick={() => setFormData({ ...formData, emotionAfter: e.id })}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border flex items-center gap-1.5 ${
-                      formData.emotionAfter === e.id ? 'bg-slate-800 border-slate-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
-                    }`}><span>{e.emoji}</span>{e.label}</button>
-                ))}
-                <button onClick={() => setCustomTagModal({ type: 'emotion' })}
+                {allEmotions.map(e => {
+                  const isCustom = !EMOTIONS.some(s => s.id === e.id);
+                  return (
+                    <TagChip
+                      key={`after-${e.id}`}
+                      tag={e}
+                      isSelected={formData.emotionAfter === e.id}
+                      onClick={() => setV('emotionAfter', formData.emotionAfter === e.id ? '' : e.id)}
+                      onDelete={isCustom ? () => handleDeleteEmotion(e.id) : null}
+                      colorSelected="bg-slate-800 border-slate-500 text-white"
+                    />
+                  );
+                })}
+                <button type="button" onClick={() => setCustomTagModal({ type: 'emotion' })}
                   className="px-3 py-1.5 rounded-lg text-xs bg-slate-950 text-slate-500 border border-dashed border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-all flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Нэмэх
                 </button>
               </div>
             </div>
 
+            {/* Positive tags */}
             <div className="mb-4">
               <label className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-2">
                 <Check className="w-3 h-3" /> Давуу тал (Positive Tags)
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {allPositiveTags.map(t => {
-                  const isSelected = formData.positiveTags.includes(t.id);
+                  const isCustom = !POSITIVE_TAGS.some(s => s.id === t.id);
                   return (
-                    <button key={t.id} onClick={() => toggleTag('positiveTags', t.id)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
-                        isSelected ? 'bg-accent/10 border-accent/50 text-accent' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
-                      }`}>{t.label}</button>
+                    <TagChip
+                      key={t.id}
+                      tag={t}
+                      isSelected={formData.positiveTags.includes(t.id)}
+                      onClick={() => toggleTag('positiveTags', t.id)}
+                      onDelete={isCustom ? () => handleDeleteTag('positive', t.id) : null}
+                      colorSelected="bg-accent/10 border-accent/50 text-accent"
+                    />
                   );
                 })}
-                <button onClick={() => setCustomTagModal({ type: 'positive' })}
+                <button type="button" onClick={() => setCustomTagModal({ type: 'positive' })}
                   className="px-2.5 py-1 rounded-lg text-xs bg-slate-950 text-slate-500 border border-dashed border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-all flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Нэмэх
                 </button>
               </div>
             </div>
 
+            {/* Mistake tags */}
             <div>
               <label className="flex items-center gap-1.5 text-xs font-semibold text-rose-400 uppercase tracking-wide mb-2">
                 <X className="w-3 h-3" /> Алдаа (Mistake Tags)
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {allMistakeTags.map(t => {
-                  const isSelected = formData.mistakeTags.includes(t.id);
+                  const isCustom = !MISTAKE_TAGS.some(s => s.id === t.id);
                   return (
-                    <button key={t.id} onClick={() => toggleTag('mistakeTags', t.id)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
-                        isSelected ? 'bg-rose-500/10 border-rose-500/50 text-rose-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
-                      }`}>{t.label}</button>
+                    <TagChip
+                      key={t.id}
+                      tag={t}
+                      isSelected={formData.mistakeTags.includes(t.id)}
+                      onClick={() => toggleTag('mistakeTags', t.id)}
+                      onDelete={isCustom ? () => handleDeleteTag('mistake', t.id) : null}
+                      colorSelected="bg-rose-500/10 border-rose-500/50 text-rose-400"
+                    />
                   );
                 })}
-                <button onClick={() => setCustomTagModal({ type: 'mistake' })}
+                <button type="button" onClick={() => setCustomTagModal({ type: 'mistake' })}
                   className="px-2.5 py-1 rounded-lg text-xs bg-slate-950 text-slate-500 border border-dashed border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-all flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Нэмэх
                 </button>
               </div>
             </div>
-          </div>
+          </Section>
 
-          {/* ── SECTION 4: Journal & Media ── */}
-          <div className="px-5 py-4">
-            <p className={sectionTitleCls}><LayoutTemplate className="w-3 h-3" /> Тэмдэглэл & Зураг</p>
-
+          {/* ══ SECTION 4: Тэмдэглэл & Зураг ══ */}
+          <Section icon={LayoutTemplate} title="Тэмдэглэл & Зураг" sectionKey="journal" openSections={openSections} onToggle={toggleSection}>
             <div className="space-y-4">
-              <div>
-                <label className={labelCls}>Яагаад орсон бэ?</label>
-                <textarea rows={3} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
-                  placeholder="Setup, дохио, шалтгаан..."
-                  value={formData.whyEntered} onChange={e => setFormData({...formData, whyEntered: e.target.value})} />
-              </div>
-              <div>
-                <label className={labelCls}>Юу болсон бэ?</label>
-                <textarea rows={3} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
-                  placeholder="Зах зээл хэрхэн хөдөлсөн, TP/SL-д хүрсэн эсэх..."
-                  value={formData.whatHappened} onChange={e => setFormData({...formData, whatHappened: e.target.value})} />
-              </div>
-              <div>
-                <label className={labelCls}>Юу сурсан бэ?</label>
-                <textarea rows={3} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
-                  placeholder="Сургамж, дараа анхаарах зүйл..."
-                  value={formData.lessonLearned} onChange={e => setFormData({...formData, lessonLearned: e.target.value})} />
-              </div>
+              {[
+                { field: 'whyEntered',    label: 'Яагаад орсон бэ?',  placeholder: 'Setup, дохио, шалтгаан…' },
+                { field: 'whatHappened',  label: 'Юу болсон бэ?',     placeholder: 'Зах зээл хэрхэн хөдөлсөн, TP/SL-д хүрсэн эсэх…' },
+                { field: 'lessonLearned', label: 'Юу сурсан бэ?',     placeholder: 'Сургамж, дараа анхаарах зүйл…' },
+              ].map(({ field, label, placeholder }) => (
+                <div key={field}>
+                  <label className={labelCls}>{label}</label>
+                  <textarea rows={3}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 resize-none transition-all"
+                    placeholder={placeholder}
+                    value={formData[field]} onChange={set(field)} />
+                </div>
+              ))}
 
               {/* Screenshot */}
               <div>
@@ -627,10 +695,11 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                         Солих
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                           const file = e.target.files[0];
-                          if (file) { const reader = new FileReader(); reader.onloadend = () => setFormData({...formData, screenshot_url: reader.result}); reader.readAsDataURL(file); }
+                          if (file) { const r = new FileReader(); r.onloadend = () => setV('screenshot_url', r.result); r.readAsDataURL(file); }
                         }} />
                       </label>
-                      <button onClick={() => setFormData({...formData, screenshot_url: null})} className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-xs font-medium rounded-lg">Устгах</button>
+                      <button type="button" onClick={() => setV('screenshot_url', null)}
+                        className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-xs font-medium rounded-lg">Устгах</button>
                     </div>
                   </div>
                 ) : (
@@ -640,13 +709,13 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                     <p className="text-xs text-slate-600 mt-1">PNG, JPG, GIF (Max 5MB)</p>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                       const file = e.target.files[0];
-                      if (file) { const reader = new FileReader(); reader.onloadend = () => setFormData({...formData, screenshot_url: reader.result}); reader.readAsDataURL(file); }
+                      if (file) { const r = new FileReader(); r.onloadend = () => setV('screenshot_url', r.result); r.readAsDataURL(file); }
                     }} />
                   </label>
                 )}
               </div>
             </div>
-          </div>
+          </Section>
 
         </div>
 
@@ -658,11 +727,11 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             </div>
           )}
           <div className="flex gap-2">
-            <button onClick={() => handleSave(true)} disabled={isSaving}
+            <button type="button" onClick={() => handleSave(true)} disabled={isSaving}
               className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold py-2.5 px-4 rounded-xl transition-colors disabled:opacity-50 border border-slate-700">
-              <Save className="w-4 h-4" />{isSaving ? '...' : 'Ноорог'}
+              <Save className="w-4 h-4" />{isSaving ? '…' : 'Ноорог'}
             </button>
-            <button onClick={() => handleSave(false)} disabled={isSaving}
+            <button type="button" onClick={() => handleSave(false)} disabled={isSaving}
               className="flex-1 bg-accent hover:bg-accent-hover text-slate-950 text-sm font-bold py-2.5 px-4 rounded-xl transition-all shadow-[0_0_15px_rgba(200,240,122,0.2)] disabled:opacity-50 flex items-center justify-center">
               {isSaving ? <div className="w-5 h-5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" /> : 'Бүртгэх'}
             </button>

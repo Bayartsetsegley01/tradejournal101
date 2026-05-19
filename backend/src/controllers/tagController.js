@@ -26,3 +26,19 @@ export const createTag = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+export const deleteTag = async (req, res) => {
+  try {
+    if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
+    const { id } = req.params;
+    const userId = req.user.id;
+    const result = await query(
+      'DELETE FROM tag_definitions WHERE id=$1 AND user_id=$2 AND is_default=false RETURNING id',
+      [id, userId]
+    );
+    if (!result.rows.length) return res.status(404).json({ success: false, error: 'Tag not found or cannot be deleted' });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

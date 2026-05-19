@@ -7,6 +7,7 @@ const getHeaders = () => {
 };
 
 export const tagService = {
-  getTags: async () => { const r = await fetch(`${API_BASE_URL}/tags`, { headers: getHeaders(), credentials: 'include' }); return r.json(); },
-  createTag: async (d) => { const r = await fetch(`${API_BASE_URL}/tags`, { method:'POST', headers: getHeaders(), credentials:'include', body: JSON.stringify(d) }); return r.json(); }
+  getTags:   async ()  => { const r = await fetch(`${API_BASE_URL}/tags`, { headers: getHeaders(), credentials: 'include' }); return r.json(); },
+  createTag: async (d) => { const r = await fetch(`${API_BASE_URL}/tags`, { method: 'POST',   headers: getHeaders(), credentials: 'include', body: JSON.stringify(d) }); return r.json(); },
+  deleteTag: async (id) => { const r = await fetch(`${API_BASE_URL}/tags/${id}`, { method: 'DELETE', headers: getHeaders(), credentials: 'include' }); return r.json(); },
 };
