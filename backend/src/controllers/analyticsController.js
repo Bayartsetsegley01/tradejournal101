@@ -342,6 +342,18 @@ export const getPerformance = async (req, res) => {
   }
 };
 
+async function buildLookupMaps() {
+  const [tagDefsRes, emotionDefsRes] = await Promise.all([
+    query('SELECT id, name FROM tag_definitions'),
+    query('SELECT id, name, emoji FROM emotion_tags'),
+  ]);
+  const tagMap = {};
+  tagDefsRes.rows.forEach(t => { tagMap[t.id] = t.name; });
+  const emotionMap = {};
+  emotionDefsRes.rows.forEach(e => { emotionMap[e.id] = e.emoji ? `${e.name} ${e.emoji}` : e.name; });
+  return { tagMap, emotionMap };
+}
+
 export const getWeeklyReview = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
@@ -356,11 +368,14 @@ export const getWeeklyReview = async (req, res) => {
     weekEnd.setHours(23, 59, 59, 999);
     const start = req.query.start ? new Date(req.query.start) : weekStart;
     const end = req.query.end ? new Date(req.query.end) : weekEnd;
-    const result = await query(
-      `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date >= $2 AND entry_date <= $3 ORDER BY entry_date ASC`,
-      [userId, start.toISOString(), end.toISOString()]
-    );
-    res.json({ success: true, data: buildReview(result.rows, 'weekly', start, end) });
+    const [result, lookups] = await Promise.all([
+      query(
+        `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date >= $2 AND entry_date <= $3 ORDER BY entry_date ASC`,
+        [userId, start.toISOString(), end.toISOString()]
+      ),
+      buildLookupMaps(),
+    ]);
+    res.json({ success: true, data: buildReview(result.rows, 'weekly', start, end, lookups) });
   } catch (error) {
     console.error('getWeeklyReview error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -376,24 +391,31 @@ export const getMonthlyReview = async (req, res) => {
     const month = parseInt(req.query.month) || now.getMonth() + 1;
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59, 999);
-    const result = await query(
-      `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date >= $2 AND entry_date <= $3 ORDER BY entry_date ASC`,
-      [userId, start.toISOString(), end.toISOString()]
-    );
-    res.json({ success: true, data: buildReview(result.rows, 'monthly', start, end) });
+    const [result, lookups] = await Promise.all([
+      query(
+        `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date >= $2 AND entry_date <= $3 ORDER BY entry_date ASC`,
+        [userId, start.toISOString(), end.toISOString()]
+      ),
+      buildLookupMaps(),
+    ]);
+    res.json({ success: true, data: buildReview(result.rows, 'monthly', start, end, lookups) });
   } catch (error) {
     console.error('getMonthlyReview error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
-function buildReview(trades, type, start, end) {
+function buildReview(trades, type, start, end, lookups = {}) {
   if (trades.length === 0) {
     return { type, period: { start, end }, totalTrades: 0, winningTrades: 0, losingTrades: 0,
       winRate: 0, netPnl: 0, grossProfit: 0, grossLoss: 0, profitFactor: 0, avgWin: 0, avgLoss: 0,
       bestTrade: null, worstTrade: null, avgRR: 0, topMistakeTags: [], topPositiveTags: [],
       emotionStats: {}, dailyBreakdown: [], summary: 'Энэ хугацаанд арилжаа байхгүй байна.' };
   }
+  const { tagMap = {}, emotionMap = {} } = lookups;
+  const resolveTag = (id) => tagMap[id] || TAG_NAME_MAP[id] || String(id);
+  const resolveEmotion = (id) => emotionMap[id] || EMOTION_NAME_MAP[id] || String(id);
+
   const winners = trades.filter(t => parseFloat(t.pnl) > 0);
   const losers = trades.filter(t => parseFloat(t.pnl) <= 0);
   const netPnl = trades.reduce((s, t) => s + (parseFloat(t.pnl) || 0), 0);
@@ -407,13 +429,14 @@ function buildReview(trades, type, start, end) {
   const mistakeCount = {}, positiveCount = {}, emotionStats = {};
   trades.forEach(t => {
     let mt = t.mistake_tags; if (typeof mt === 'string') { try { mt = JSON.parse(mt); } catch { mt = []; } }
-    (mt || []).forEach(tag => { mistakeCount[tag] = (mistakeCount[tag] || 0) + 1; });
+    (mt || []).forEach(id => { const name = resolveTag(id); mistakeCount[name] = (mistakeCount[name] || 0) + 1; });
     let pt = t.positive_tags; if (typeof pt === 'string') { try { pt = JSON.parse(pt); } catch { pt = []; } }
-    (pt || []).forEach(tag => { positiveCount[tag] = (positiveCount[tag] || 0) + 1; });
+    (pt || []).forEach(id => { const name = resolveTag(id); positiveCount[name] = (positiveCount[name] || 0) + 1; });
     if (t.emotion_before) {
-      if (!emotionStats[t.emotion_before]) emotionStats[t.emotion_before] = { count: 0, totalPnl: 0 };
-      emotionStats[t.emotion_before].count++;
-      emotionStats[t.emotion_before].totalPnl += parseFloat(t.pnl) || 0;
+      const eName = resolveEmotion(t.emotion_before);
+      if (!emotionStats[eName]) emotionStats[eName] = { count: 0, totalPnl: 0 };
+      emotionStats[eName].count++;
+      emotionStats[eName].totalPnl += parseFloat(t.pnl) || 0;
     }
   });
   const topMistakeTags = Object.entries(mistakeCount).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([tag,count])=>({tag,count}));
