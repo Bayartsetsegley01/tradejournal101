@@ -52,6 +52,7 @@ export const login = async (req, res) => {
     const user = r.rows[0];
     if (!user.password_hash) return res.status(401).json({ error: 'Энэ имэйл Google-ээр бүртгүүлсэн. Google-ээр нэвтэрнэ үү.' });
     if (!await bcrypt.compare(password, user.password_hash)) return res.status(401).json({ error: 'И-мэйл эсвэл нууц үг буруу байна' });
+    if (user.is_active === false) return res.status(403).json({ error: 'Таны бүртгэл түр хаагдсан байна. Дэлгэрэнгүй мэдээллийг тулд администраторт хандана уу.' });
 
     await updateLastLogin(user.id);
     const token = createToken(user);

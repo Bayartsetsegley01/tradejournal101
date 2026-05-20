@@ -62,21 +62,53 @@ export const getDashboardStats = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const result = await query(`
-      SELECT u.id, u.name, u.email, u.role, u.is_active, u.created_at,
-             u.last_login_at, u.auth_provider, u.avatar_url,
-             COUNT(t.id)::int AS trade_count
-      FROM users u
-      LEFT JOIN trades t ON t.user_id = u.id
-      GROUP BY u.id
-      ORDER BY u.created_at DESC
-    `);
+    const page    = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit   = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset  = (page - 1) * limit;
+    const search  = req.query.search?.trim() || '';
+    const status  = req.query.status || '';
+
+    const SORT_COLS = { name: 'u.name', created_at: 'u.created_at', last_login_at: 'u.last_login_at', trades: 'trade_count' };
+    const sortCol = SORT_COLS[req.query.sort] || 'u.created_at';
+    const sortDir = req.query.order === 'asc' ? 'ASC' : 'DESC';
+
+    const conditions = [];
+    const params = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(u.name ILIKE $${params.length} OR u.email ILIKE $${params.length})`);
+    }
+    if (status === 'active')   { conditions.push('COALESCE(u.is_active, true) = true'); }
+    if (status === 'inactive') { conditions.push('COALESCE(u.is_active, true) = false'); }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const countRes = await query(
+      `SELECT COUNT(*)::int AS total FROM users u ${where}`,
+      params
+    );
+    const total = countRes.rows[0].total;
+
+    params.push(limit, offset);
+    const result = await query(
+      `SELECT u.id, u.name, u.email, u.role, u.is_active, u.created_at,
+              u.last_login_at, u.auth_provider, u.avatar_url,
+              COUNT(t.id)::int AS trade_count
+       FROM users u
+       LEFT JOIN trades t ON t.user_id = u.id
+       ${where}
+       GROUP BY u.id
+       ORDER BY ${sortCol} ${sortDir} NULLS LAST
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
 
     res.json({
       users: result.rows,
-      total: result.rows.length,
-      page: 1,
-      pages: 1,
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
     });
   } catch (err) {
     console.error('Admin getUsers error:', err);
