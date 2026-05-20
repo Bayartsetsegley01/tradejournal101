@@ -5,13 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-export function LoginPage() {
+export function LoginPage({ defaultMode = 'login' }) {
   const navigate = useNavigate();
   const { login, register } = useAuth();
 
-  const [mode, setMode] = useState('login');
+  const [mode, setMode] = useState(defaultMode);
   const [animState, setAnimState] = useState('idle'); // 'idle' | 'out' | 'in'
-  const [visibleMode, setVisibleMode] = useState('login');
+  const [visibleMode, setVisibleMode] = useState(defaultMode);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);

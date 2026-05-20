@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import { BarChart2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Header() {
+  const { user } = useAuth();
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/50">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -19,13 +22,30 @@ export function Header() {
           <a href="#faq" className="hover:text-white transition-colors">Асуулт</a>
         </nav>
 
-        <div className="flex items-center gap-4">
-          <Link to="/app" className="text-sm font-medium text-slate-300 hover:text-white transition-colors hidden sm:block">
-            Нэвтрэх
-          </Link>
-          <Link to="/app" className="bg-accent hover:bg-accent-hover text-slate-950 text-sm font-semibold py-2 px-4 rounded-lg transition-colors">
-            Үнэгүй эхлэх
-          </Link>
+        <div className="flex items-center gap-3">
+          {user ? (
+            <Link
+              to="/app"
+              className="bg-accent hover:bg-accent-hover text-slate-950 text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
+            >
+              Апп руу орох →
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="text-sm font-medium text-slate-300 hover:text-white transition-colors hidden sm:block"
+              >
+                Нэвтрэх
+              </Link>
+              <Link
+                to="/register"
+                className="bg-accent hover:bg-accent-hover text-slate-950 text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
+              >
+                Үнэгүй эхлэх
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

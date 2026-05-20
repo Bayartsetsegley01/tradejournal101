@@ -34,6 +34,14 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Public pages — redirect already-logged-in users to the app
+const GuestRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <Spinner />;
+  if (user) return <Navigate to="/app" replace />;
+  return children;
+};
+
 // Requires auth, redirects away if onboarding already done
 const OnboardingRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -75,9 +83,9 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<LoginPage />} />
+          <Route path="/" element={<GuestRoute><LandingPage /></GuestRoute>} />
+          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+          <Route path="/register" element={<GuestRoute><LoginPage defaultMode="register" /></GuestRoute>} />
 
           {/* Onboarding */}
           <Route path="/onboarding" element={<OnboardingRoute><OnboardingPage /></OnboardingRoute>} />
