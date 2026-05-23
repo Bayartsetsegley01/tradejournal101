@@ -155,6 +155,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
   const textareaCls = "w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-slate-600 resize-none transition-all placeholder-slate-700";
 
   return (
+    <>
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={onClose} />
 
@@ -463,7 +464,6 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
       </div>
     </div>
 
-    {/* Lightbox */}
     {lightbox && createPortal(
       <div
         className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4"
@@ -483,5 +483,6 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
       </div>,
       document.body
     )}
+    </>
   );
 }

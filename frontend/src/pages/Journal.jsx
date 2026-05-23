@@ -587,8 +587,12 @@ export function JournalPage() {
     const trade = trades.find(t => t.id === id);
     if (!trade) return;
     applyUpdate(id, changes);
-    try { await tradeService.updateTrade(id, { ...trade, ...changes }); invalidate(); }
-    catch (err) { applyUpdate(id, trade); throw err; }
+    try {
+      const payload = { ...trade, ...changes };
+      if (!('screenshot_url' in changes)) delete payload.screenshot_url;
+      await tradeService.updateTrade(id, payload);
+      invalidate();
+    } catch (err) { applyUpdate(id, trade); throw err; }
   };
 
   const handleCloseAddModal = () => { setIsAddModalOpen(false); setEditingTrade(null); invalidate(); };
