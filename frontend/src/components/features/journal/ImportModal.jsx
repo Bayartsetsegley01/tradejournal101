@@ -172,6 +172,8 @@ const FIELD_ALIASES = {
   what_happened:   ['what happened','trade notes','execution notes'],
   lessons_learned: ['lesson learned','lessons learned','lesson','lessons','takeaway'],
   notes:           ['note','notes','comment','comments','description','rating','rating 1 5','rating(1 5)'],
+  emotion_before:  ['emotion before','psychology','mood before'],
+  emotion_after:   ['emotion after','mood after'],
 };
 
 const ALIAS_MAP = Object.entries(FIELD_ALIASES).reduce((acc, [field, aliases]) => {
@@ -230,7 +232,7 @@ const SYSTEM_FIELDS = [
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export function ImportModal({ isOpen, onClose, onImportComplete }) {
+export function ImportModal({ isOpen, onClose, onImportComplete, accountId = null }) {
   const [step, setStep]                 = useState('upload'); // upload | mapping | preview | result
   const [file, setFile]                 = useState(null);
   const [rawRows, setRawRows]           = useState([]);
@@ -325,7 +327,7 @@ export function ImportModal({ isOpen, onClose, onImportComplete }) {
         method: 'POST',
         headers: getHeaders(),
         credentials: 'include',
-        body: JSON.stringify({ trades: preview }),
+        body: JSON.stringify({ trades: preview.map(t => ({ ...t, account_id: accountId })) }),
       });
       const data = await res.json();
       if (data.success) { setResult(data.data); setStep('result'); }

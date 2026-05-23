@@ -527,6 +527,7 @@ export function JournalPage() {
   const [isImportMethodOpen, setIsImportMethodOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen]   = useState(false);
   const [isAddAccountOpen, setIsAddAccountOpen]     = useState(false);
+  const [pendingAccountId, setPendingAccountId]     = useState(null);
   const [selectedTrade, setSelectedTrade]           = useState(null);
   const [editingTrade, setEditingTrade]             = useState(null);
   const [page, setPage]                             = useState(1);
@@ -658,8 +659,8 @@ export function JournalPage() {
         <AddAccountModal
           isOpen={isAddAccountOpen}
           onClose={() => setIsAddAccountOpen(false)}
-          onSuccess={(action) => {
-            if (action === 'csv') { setIsImportModalOpen(true); }
+          onSuccess={(action, newAccountId) => {
+            if (action === 'csv') { setPendingAccountId(newAccountId || null); setIsImportModalOpen(true); }
             else { loadAccounts(); }
           }}
           onManualTrade={(newAccount) => {
@@ -680,7 +681,7 @@ export function JournalPage() {
           />
         )}
         {isImportModalOpen && (
-          <ImportModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} onImportComplete={() => { setIsImportModalOpen(false); invalidate(); }} />
+          <ImportModal isOpen={isImportModalOpen} onClose={() => setIsImportModalOpen(false)} onImportComplete={() => { setIsImportModalOpen(false); invalidate(); }} accountId={pendingAccountId} />
         )}
       </>
     );
@@ -851,6 +852,7 @@ export function JournalPage() {
         isOpen={isImportModalOpen}
         onClose={() => { setIsImportModalOpen(false); invalidate(); }}
         onImportComplete={invalidate}
+        accountId={selectedAccount?.id !== 'personal' ? selectedAccount?.id : null}
       />
     </div>
   );
