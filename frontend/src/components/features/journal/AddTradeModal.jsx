@@ -345,7 +345,10 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
   const pnl = (() => {
     if (!formData.entry || !formData.quantity) return null;
     const e = parseFloat(formData.entry), qty = parseFloat(formData.quantity);
-    const ex = formData.status === 'CLOSED' && formData.exit ? parseFloat(formData.exit) : parseFloat(formData.takeProfit);
+    // CLOSED бол exit price, бусад тохиолдолд TP ашиглана (est. P&L)
+    const ex = formData.status === 'CLOSED'
+      ? (formData.exit ? parseFloat(formData.exit) : parseFloat(formData.takeProfit))
+      : parseFloat(formData.takeProfit);
     if (isNaN(e) || isNaN(ex) || isNaN(qty)) return null;
     const diff = formData.direction === 'LONG' ? ex - e : e - ex;
     const mkt = (formData.market || 'forex').toLowerCase();
@@ -547,7 +550,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
 
             <div className="mb-3">
               <label className={labelCls}>Account Balance</label>
-              <input type="number" step="any" className={inputCls} value={formData.accountBalance}
+              <input type="number" step="any" className={inputCls} value={formData.accountBalance ? parseFloat(formData.accountBalance).toFixed(2) : ''}
                 onChange={e => { setV('accountBalance', e.target.value); localStorage.setItem('account_balance', e.target.value); }} />
             </div>
 
