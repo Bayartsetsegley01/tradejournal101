@@ -24,7 +24,7 @@ function AccountDropdown({ value, onChange, accounts }) {
         <option value="all">{lang === 'mn' ? 'Бүх данс' : 'All Accounts'}</option>
         <option value="personal">{lang === 'mn' ? 'Үндсэн данс' : 'Manual Trades'}</option>
         {accounts.map(a => (
-          <option key={a.id} value={a.id}>{a.server} · {a.login}</option>
+          <option key={a.id} value={a.id}>{a.name || a.login} · {a.server}</option>
         ))}
       </select>
       <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
@@ -119,7 +119,16 @@ export function AnalyticsPage() {
         setSummary(summaryRes.data);
         setCharts(chartsRes.data);
         if (perfRes.success) setPerformance(perfRes.data);
-        if (tradesRes.success) setTrades(tradesRes.data);
+        if (tradesRes.success) {
+          // accountId-р filter хийж calendar болон chart-д зөв дата дамжуулна
+          const allTrades = tradesRes.data;
+          const filtered = accountId === 'all'
+            ? allTrades
+            : accountId === 'personal'
+              ? allTrades.filter(t => !t.account_id)
+              : allTrades.filter(t => String(t.account_id) === String(accountId));
+          setTrades(filtered);
+        }
       } else {
         setSummary({ netPnl: 0, winRate: 0, profitFactor: 0, totalTrades: 0 });
         setCharts({ equityCurve: [] });
@@ -147,7 +156,12 @@ export function AnalyticsPage() {
             {lang === 'mn' ? 'Анализ' : 'Analytics'}
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            {lang === 'mn' ? 'Гүйцэтгэлийн дүн шинжилгээ' : 'Performance overview'}
+            {accountId === 'all'
+              ? (lang === 'mn' ? 'Гүйцэтгэлийн дүн шинжилгээ' : 'Performance overview')
+              : accountId === 'personal'
+                ? (lang === 'mn' ? 'Үндсэн данс · Гүйцэтгэлийн дүн шинжилгээ' : 'Manual Trades · Performance overview')
+                : (() => { const a = mt5Accounts.find(x => String(x.id) === String(accountId)); return a ? `${a.name || a.login} · ${a.server}` : 'Гүйцэтгэлийн дүн шинжилгээ'; })()
+            }
           </p>
         </div>
         <div className="flex items-center gap-2">

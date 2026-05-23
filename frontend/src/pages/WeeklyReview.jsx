@@ -1,6 +1,6 @@
 import { useLang } from "@/contexts/LanguageContext";
 import { useState, useEffect, useCallback } from "react";
-import { CalendarDays, TrendingUp, TrendingDown, Target, Brain, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { CalendarDays, TrendingUp, TrendingDown, Target, Brain, ChevronLeft, ChevronRight, Loader2, ChevronDown } from "lucide-react";
 import { analyticsService } from "@/services/analyticsService";
 import { emotionService } from "@/services/emotionService";
 import { tagService } from "@/services/tagService";
@@ -41,6 +41,17 @@ export function WeeklyReviewPage() {
   const [loading, setLoading] = useState(false);
   const [emotionLookup, setEmotionLookup] = useState({});
   const [tagLookup, setTagLookup] = useState({});
+  const [accountId, setAccountId] = useState('all');
+  const [mt5Accounts, setMt5Accounts] = useState([]);
+
+  useEffect(() => {
+    fetch((import.meta.env.VITE_API_URL || '') + '/api/mt5/accounts', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    })
+      .then(r => r.json())
+      .then(d => { if (d.success) setMt5Accounts(d.data || []); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const staticEmotions = Object.fromEntries(EMOTIONS.map(e => [e.id, `${e.emoji} ${e.label}`]));
@@ -65,10 +76,10 @@ export function WeeklyReviewPage() {
       let res;
       if (mode === 'weekly') {
         const { start, end } = getWeekRange(weekOffset);
-        res = await analyticsService.getWeeklyReview(start.toISOString(), end.toISOString());
+        res = await analyticsService.getWeeklyReview(start.toISOString(), end.toISOString(), accountId);
       } else {
         const { year, month } = getMonthRange(monthOffset);
-        res = await analyticsService.getMonthlyReview(year, month);
+        res = await analyticsService.getMonthlyReview(year, month, accountId);
       }
       if (res.success) setData(res.data);
     } catch (e) {
@@ -76,7 +87,7 @@ export function WeeklyReviewPage() {
     } finally {
       setLoading(false);
     }
-  }, [mode, weekOffset, monthOffset]);
+  }, [mode, weekOffset, monthOffset, accountId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -101,10 +112,30 @@ export function WeeklyReviewPage() {
             <CalendarDays className="w-6 h-6 text-accent" />
             {mode === 'weekly' ? t('weeklyTitle') : t('monthlyTitle')}
           </h1>
-          <p className="text-sm text-slate-400 mt-1">Арилжааны гүйцэтгэлийн автомат тайлан</p>
+          <p className="text-sm text-slate-400 mt-1">
+            {accountId === 'all' ? 'Арилжааны гүйцэтгэлийн автомат тайлан'
+              : accountId === 'personal' ? 'Үндсэн данс · Автомат тайлан'
+              : (() => { const a = mt5Accounts.find(x => String(x.id) === String(accountId)); return a ? `${a.name || a.login} · Автомат тайлан` : 'Автомат тайлан'; })()}
+          </p>
         </div>
-        {/* Mode toggle */}
-        <div className="flex bg-slate-800 rounded-xl p-1 gap-1">
+        <div className="flex items-center gap-2">
+          {/* Account selector */}
+          <div className="relative">
+            <select
+              value={accountId}
+              onChange={e => setAccountId(e.target.value)}
+              className="appearance-none bg-slate-900 border border-slate-700/60 text-slate-300 text-xs rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-accent/50 cursor-pointer hover:border-slate-600 transition-colors font-medium"
+            >
+              <option value="all">Бүх данс</option>
+              <option value="personal">Үндсэн данс</option>
+              {mt5Accounts.map(a => (
+                <option key={a.id} value={a.id}>{a.name || a.login} · {a.server}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+          </div>
+          {/* Mode toggle */}
+          <div className="flex bg-slate-800 rounded-xl p-1 gap-1">
           <button onClick={() => setMode('weekly')} className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${mode==='weekly' ? 'bg-accent text-slate-950' : 'text-slate-400 hover:text-white'}`}>
             7 хоног
           </button>

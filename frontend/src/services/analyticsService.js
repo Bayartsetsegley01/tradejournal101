@@ -34,16 +34,18 @@ export const analyticsService = {
     if (accountId && accountId !== 'all') p.set('account_id', accountId);
     return safeFetch(`${API_BASE_URL}/analytics/performance?${p}`);
   },
-getWeeklyReview: async (start, end) => {
+getWeeklyReview: async (start, end, accountId) => {
     const params = new URLSearchParams();
     if (start) params.append('start', start);
     if (end) params.append('end', end);
+    if (accountId && accountId !== 'all') params.append('account_id', accountId);
     return safeFetch(`${API_BASE_URL}/analytics/weekly-review?${params}`);
   },
-  getMonthlyReview: async (year, month) => {
+  getMonthlyReview: async (year, month, accountId) => {
     const params = new URLSearchParams();
     if (year) params.append('year', year);
     if (month) params.append('month', month);
+    if (accountId && accountId !== 'all') params.append('account_id', accountId);
     return safeFetch(`${API_BASE_URL}/analytics/monthly-review?${params}`);
   },
   getAiInsights: async (trades = []) => safeFetch(`${API_BASE_URL}/ai/insights`, {

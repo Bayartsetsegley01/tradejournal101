@@ -368,11 +368,14 @@ export const getWeeklyReview = async (req, res) => {
     weekEnd.setHours(23, 59, 59, 999);
     const start = req.query.start ? new Date(req.query.start) : weekStart;
     const end = req.query.end ? new Date(req.query.end) : weekEnd;
+    const accountId = req.query.account_id;
+    let sql = `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date >= $2 AND entry_date <= $3`;
+    let params = [userId, start.toISOString(), end.toISOString()];
+    if (accountId === 'personal') { sql += ' AND account_id IS NULL'; }
+    else if (accountId) { sql += ` AND account_id=$4`; params.push(accountId); }
+    sql += ' ORDER BY entry_date ASC';
     const [result, lookups] = await Promise.all([
-      query(
-        `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date >= $2 AND entry_date <= $3 ORDER BY entry_date ASC`,
-        [userId, start.toISOString(), end.toISOString()]
-      ),
+      query(sql, params),
       buildLookupMaps(),
     ]);
     res.json({ success: true, data: buildReview(result.rows, 'weekly', start, end, lookups) });
@@ -391,11 +394,14 @@ export const getMonthlyReview = async (req, res) => {
     const month = parseInt(req.query.month) || now.getMonth() + 1;
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59, 999);
+    const accountId = req.query.account_id;
+    let sql = `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date >= $2 AND entry_date <= $3`;
+    let params = [userId, start.toISOString(), end.toISOString()];
+    if (accountId === 'personal') { sql += ' AND account_id IS NULL'; }
+    else if (accountId) { sql += ` AND account_id=$4`; params.push(accountId); }
+    sql += ' ORDER BY entry_date ASC';
     const [result, lookups] = await Promise.all([
-      query(
-        `SELECT * FROM trades WHERE user_id=$1 AND status='CLOSED' AND entry_date >= $2 AND entry_date <= $3 ORDER BY entry_date ASC`,
-        [userId, start.toISOString(), end.toISOString()]
-      ),
+      query(sql, params),
       buildLookupMaps(),
     ]);
     res.json({ success: true, data: buildReview(result.rows, 'monthly', start, end, lookups) });
