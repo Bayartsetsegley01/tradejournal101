@@ -836,6 +836,7 @@ export function JournalPage() {
           onEdit={() => { setSelectedTrade(null); handleEdit(selectedTrade); }}
           onDuplicate={() => { setSelectedTrade(null); handleDuplicate(selectedTrade); }}
           onDelete={() => { handleDelete(selectedTrade.id); setSelectedTrade(null); }}
+          onSaved={invalidate}
         />
       )}
       {isExportModalOpen && (

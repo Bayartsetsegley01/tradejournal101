@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { X, ArrowUpRight, ArrowDownRight, Calendar, Clock, Check, Save, Image as ImageIcon, Copy, Trash2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, ArrowUpRight, ArrowDownRight, Calendar, Clock, Check, Save, Camera, Loader2, Copy, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom";
 import { safeFormatDate } from "@/lib/utils";
 import { EMOTIONS, POSITIVE_TAGS, MISTAKE_TAGS, SESSIONS } from "@/lib/constants";
 import { tradeService } from "@/services/tradeService";
 
-export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete }) {
+export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete, onSaved }) {
   const parseTags = (v) => {
     if (Array.isArray(v)) return v;
     if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } }
@@ -30,6 +31,40 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
   const [isSaving, setIsSaving]   = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [savedOk, setSavedOk]     = useState(false);
+
+  // Media state (separate from save — uploads immediately)
+  const [mediaUrls, setMediaUrls] = useState(
+    Array.isArray(trade.media_urls) ? trade.media_urls :
+    Array.isArray(trade.mediaUrls)  ? trade.mediaUrls  : []
+  );
+  const [uploading, setUploading]   = useState(false);
+  const [lightbox, setLightbox]     = useState(null);
+  const fileInputRef                = useRef(null);
+
+  const handleUpload = async (file) => {
+    if (!file?.type.startsWith('image/')) return;
+    if (mediaUrls.length >= 3) return;
+    setUploading(true);
+    try {
+      const res = await tradeService.uploadMedia(trade.id, file);
+      setMediaUrls(res.data.media_urls);
+      onSaved?.();
+    } catch (e) {
+      console.error('Upload failed', e);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveMedia = async (url) => {
+    try {
+      const res = await tradeService.removeMedia(trade.id, url);
+      setMediaUrls(res.data.media_urls || []);
+      onSaved?.();
+    } catch (e) {
+      console.error('Remove failed', e);
+    }
+  };
 
   const original = {
     strategy:      trade.strategy || '',
@@ -96,6 +131,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
         notes:         editData.notes         || null,
       });
       setSavedOk(true);
+      onSaved?.();
       setTimeout(() => setSavedOk(false), 2000);
     } catch (err) {
       setSaveError(err.message || "Хадгалахад алдаа гарлаа");
@@ -343,27 +379,65 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
             </div>
           </div>
 
-          {/* Screenshot */}
-          <div className="px-5 py-4">
-            <label className={labelCls}>Screenshot</label>
-            <div className="rounded-xl overflow-hidden border border-slate-800 aspect-video flex items-center justify-center text-slate-600 relative group cursor-pointer bg-slate-950">
-              {trade.screenshot_url ? (
-                <>
-                  <img src={trade.screenshot_url} alt="Trade Screenshot" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-                  <div className="absolute inset-0 bg-slate-950/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <a href={trade.screenshot_url} target="_blank" rel="noreferrer"
-                      className="bg-slate-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition-colors">
-                      Томруулж харах
-                    </a>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <ImageIcon className="w-7 h-7 mb-1.5 opacity-30" />
-                  <span className="text-xs text-slate-700 absolute bottom-4">Зураг оруулаагүй</span>
-                </>
+          {/* Screenshots / Media */}
+          <div className="px-5 py-4 border-b border-slate-800/60">
+            <div className="flex items-center justify-between mb-2">
+              <label className={labelCls}>Зурагнууд ({mediaUrls.length}/3)</label>
+              {mediaUrls.length < 3 && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-1 text-[10px] font-semibold text-accent hover:text-accent/80 transition-colors disabled:opacity-40"
+                >
+                  {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
+                  {uploading ? 'Байршуулж байна...' : 'Зураг нэмэх'}
+                </button>
               )}
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={e => { const f = e.target.files[0]; if (f) { handleUpload(f); e.target.value = ''; } }}
+            />
+            {mediaUrls.length === 0 ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={e => { e.preventDefault(); }}
+                onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleUpload(f); }}
+                className="border-2 border-dashed border-slate-800 rounded-xl h-24 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-slate-600 hover:bg-slate-800/20 transition-all"
+              >
+                <Camera className="w-6 h-6 text-slate-600" />
+                <span className="text-xs text-slate-600">Зураг чирж хийх эсвэл дарах</span>
+              </div>
+            ) : (
+              <div className="flex gap-2 flex-wrap">
+                {mediaUrls.map((url, i) => (
+                  <div key={i} className="relative group/img w-[80px] h-[60px]">
+                    <img
+                      src={url} alt=""
+                      className="w-full h-full object-cover rounded-lg border border-slate-700 cursor-zoom-in hover:border-slate-500 transition-colors"
+                      onClick={() => setLightbox(url)}
+                    />
+                    <button
+                      onClick={() => handleRemoveMedia(url)}
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 hover:bg-rose-400 rounded-full flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
+                    >
+                      <X className="w-2.5 h-2.5 text-white" />
+                    </button>
+                  </div>
+                ))}
+                {mediaUrls.length < 3 && (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-[80px] h-[60px] border-2 border-dashed border-slate-700 rounded-lg flex items-center justify-center cursor-pointer hover:border-slate-500 hover:bg-slate-800/30 transition-all"
+                  >
+                    {uploading ? <Loader2 className="w-4 h-4 text-slate-500 animate-spin" /> : <Camera className="w-4 h-4 text-slate-600" />}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
         </div>
@@ -388,5 +462,26 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
 
       </div>
     </div>
+
+    {/* Lightbox */}
+    {lightbox && createPortal(
+      <div
+        className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4"
+        onClick={() => setLightbox(null)}
+      >
+        <img
+          src={lightbox} alt=""
+          className="max-w-[90vw] max-h-[90vh] object-contain rounded-xl shadow-2xl"
+          onClick={e => e.stopPropagation()}
+        />
+        <button
+          onClick={() => setLightbox(null)}
+          className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/80 text-white rounded-full transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>,
+      document.body
+    )}
   );
 }
