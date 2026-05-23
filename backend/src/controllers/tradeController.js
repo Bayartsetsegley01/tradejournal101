@@ -108,7 +108,7 @@ export const addTrade = async (req, res) => {
     let rrRatio = toNum(b.rr_ratio ?? b.rrRatio);
     if (!rrRatio && entryPrice && stopLoss && takeProfit) {
       if (Math.abs(entryPrice - stopLoss) > 0) {
-        rrRatio = Math.abs(takeProfit - entryPrice) / Math.abs(entryPrice - stopLoss);
+        rrRatio = parseFloat((Math.abs(takeProfit - entryPrice) / Math.abs(entryPrice - stopLoss)).toFixed(2));
       }
     }
 
@@ -181,7 +181,7 @@ export const updateTrade = async (req, res) => {
     let rrRatio = toNum(b.rr_ratio ?? b.rrRatio);
     if (!rrRatio && entryPrice && stopLoss && takeProfit) {
       if (Math.abs(entryPrice - stopLoss) > 0) {
-        rrRatio = Math.abs(takeProfit - entryPrice) / Math.abs(entryPrice - stopLoss);
+        rrRatio = parseFloat((Math.abs(takeProfit - entryPrice) / Math.abs(entryPrice - stopLoss)).toFixed(2));
       }
     }
 
