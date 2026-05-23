@@ -102,6 +102,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
     direction: 'LONG',
     strategy: '',
     session: '',
+    pnl: '',
     entry: '',
     exit: '',
     stopLoss: '',
@@ -214,6 +215,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
       mistakesMade:  initialData.mistakesMade  || initialData.mistakes_made  || '',
       lessonLearned: initialData.lessonLearned || initialData.lessons_learned || '',
       notes:         initialData.notes         || '',
+      pnl:           initialData.pnl != null ? initialData.pnl : '',
       riskPercent:   initialData.riskPercent   || (initialData.risk_percent != null ? String(initialData.risk_percent) : ''),
       screenshot_url: initialData.screenshot_url || null,
     }));
@@ -330,32 +332,6 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
     const risk = Math.abs(e - sl); return risk === 0 ? null : (Math.abs(tp - e) / risk).toFixed(2);
   })();
 
-  const estimatePnL = (entry, exit, direction, qty, market) => {
-    if (!entry || !exit || !qty) return null;
-    const ep = parseFloat(entry);
-    const ex = parseFloat(exit);
-    const q  = parseFloat(qty);
-    if (isNaN(ep) || isNaN(ex) || isNaN(q)) return null;
-
-    const diff = direction === 'LONG' ? ex - ep : ep - ex;
-    const mkt  = (market || 'forex').toLowerCase();
-
-    if (mkt === 'forex' || mkt === 'gold' || mkt === 'commodity') {
-      const pipSize  = ep > 50 ? 0.01 : 0.0001;
-      const pipValue = 10;
-      const pips = diff / pipSize;
-      return parseFloat((pips * pipValue * q).toFixed(2));
-    }
-
-    return parseFloat((diff * q).toFixed(2));
-  };
-
-  const pnl = (() => {
-    const exitVal = formData.status === 'CLOSED'
-      ? (formData.exit || formData.takeProfit)
-      : formData.takeProfit;
-    return estimatePnL(formData.entry, exitVal, formData.direction, formData.quantity, formData.market);
-  })();
 
   const riskAmount = (() => {
     const b = parseFloat(formData.accountBalance), r = parseFloat(formData.riskPercent);
@@ -491,6 +467,10 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                 <input type="number" step="any" className={inputCls} value={formData.exit} onChange={set('exit')} />
               </div>
               <div>
+                <label className={labelCls}>P&L <span className="text-slate-600 normal-case font-normal">(broker-оос)</span></label>
+                <input type="number" step="any" placeholder="0.00" className={inputCls} value={formData.pnl} onChange={set('pnl')} />
+              </div>
+              <div>
                 <label className={labelCls}>Stop Loss</label>
                 <input type="number" step="any" className={`${inputCls} text-rose-400`} value={formData.stopLoss} onChange={set('stopLoss')} />
               </div>
@@ -522,7 +502,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
               <div className="grid grid-cols-3 gap-4">
                 {[
                   { label: 'R/R Харьцаа', value: rr ? `${rr}R` : '—', cls: 'text-white' },
-                  { label: 'Est. P&L',    value: pnl ? `${pnl > 0 ? '+' : ''}$${pnl}` : '—', cls: parseFloat(pnl) > 0 ? 'text-emerald-400' : parseFloat(pnl) < 0 ? 'text-rose-400' : 'text-white' },
+                  { label: 'P&L', value: formData.pnl !== '' && formData.pnl != null ? `${parseFloat(formData.pnl) > 0 ? '+' : ''}$${formData.pnl}` : '—', cls: parseFloat(formData.pnl) > 0 ? 'text-emerald-400' : parseFloat(formData.pnl) < 0 ? 'text-rose-400' : 'text-white' },
                   { label: 'Risk $',      value: riskAmount ? `$${riskAmount}` : '—', cls: 'text-rose-400' },
                 ].map((item, i) => (
                   <div key={i}>

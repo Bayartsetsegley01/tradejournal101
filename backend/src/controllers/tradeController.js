@@ -58,16 +58,6 @@ export const getTrades = async (req, res) => {
   }
 };
 
-const calculatePnL = (entry, exit, direction, qty, market) => {
-  if (!entry || !exit || !qty) return 0;
-  const diff = direction === 'LONG' ? exit - entry : entry - exit;
-  const mkt = (market || 'forex').toLowerCase();
-  if (mkt === 'forex') {
-    if (entry < 10) return parseFloat((diff / 0.0001 * 10 * qty).toFixed(2));
-    if (entry < 500) return parseFloat((diff / 0.01 * 10 * qty).toFixed(2));
-  }
-  return parseFloat((diff * qty).toFixed(2));
-};
 
 export const addTrade = async (req, res) => {
   try {
@@ -96,15 +86,8 @@ export const addTrade = async (req, res) => {
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
 
-    // Always recalculate PnL from price data when available (never trust frontend value)
-    let pnl = null;
-    if (entryPrice && exitPrice && positionSize) {
-      pnl = calculatePnL(entryPrice, exitPrice, b.direction, positionSize, marketType);
-    } else if (b.pnl != null) {
-      pnl = toNum(b.pnl);
-    }
+    const pnl = b.pnl != null && b.pnl !== '' ? parseFloat(b.pnl) : null;
 
-    // Calculate R:R ratio
     let rrRatio = toNum(b.rr_ratio ?? b.rrRatio);
     if (!rrRatio && entryPrice && stopLoss && takeProfit) {
       if (Math.abs(entryPrice - stopLoss) > 0) {
@@ -170,13 +153,7 @@ export const updateTrade = async (req, res) => {
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
 
-    // Always recalculate PnL from price data when available (never trust frontend value)
-    let pnl = null;
-    if (entryPrice && exitPrice && positionSize) {
-      pnl = calculatePnL(entryPrice, exitPrice, b.direction, positionSize, marketType);
-    } else if (b.pnl != null) {
-      pnl = toNum(b.pnl);
-    }
+    const pnl = b.pnl != null && b.pnl !== '' ? parseFloat(b.pnl) : null;
 
     let rrRatio = toNum(b.rr_ratio ?? b.rrRatio);
     if (!rrRatio && entryPrice && stopLoss && takeProfit) {
