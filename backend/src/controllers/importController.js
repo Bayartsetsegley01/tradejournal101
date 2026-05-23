@@ -199,6 +199,7 @@ export const importTrades = async (req, res) => {
 
     const userId   = req.user.id;
     const { trades } = req.body;
+    const accountId = req.body.account_id || null;
 
     if (!trades || !Array.isArray(trades) || trades.length === 0) {
       return res.status(400).json({ success: false, error: 'No trades data provided' });
@@ -220,22 +221,22 @@ export const importTrades = async (req, res) => {
 
         await query(
           `INSERT INTO trades (
-            user_id, status, symbol, market_type, direction, strategy, session,
+            user_id, account_id, status, symbol, market_type, direction, strategy, session,
             entry_date, exit_date, entry_price, exit_price, stop_loss, take_profit,
             position_size, pnl, rr_ratio, risk_percent,
             notes, lessons_learned, why_entered, what_happened,
             emotion_before, emotion_after,
             positive_tags, mistake_tags
           ) VALUES (
-            $1,$2,$3,$4,$5,$6,$7,
-            $8,$9,$10,$11,$12,$13,
-            $14,$15,$16,$17,
-            $18,$19,$20,$21,
-            $22,$23,
-            $24,$25
+            $1,$2,$3,$4,$5,$6,$7,$8,
+            $9,$10,$11,$12,$13,$14,
+            $15,$16,$17,$18,
+            $19,$20,$21,$22,
+            $23,$24,
+            $25,$26
           )`,
           [
-            userId, n.status, n.symbol, n.market_type, n.direction, n.strategy, n.session,
+            userId, raw.account_id || accountId, n.status, n.symbol, n.market_type, n.direction, n.strategy, n.session,
             n.entry_date, n.exit_date,
             n.entry_price, n.exit_price, n.stop_loss, n.take_profit,
             n.position_size, n.pnl, n.rr_ratio, n.risk_percent,
