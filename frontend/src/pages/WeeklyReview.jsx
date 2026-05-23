@@ -144,6 +144,7 @@ export function WeeklyReviewPage() {
           </button>
         </div>
       </div>
+      </div>
 
       {/* Period navigator */}
       <div className="flex items-center justify-center gap-4">
