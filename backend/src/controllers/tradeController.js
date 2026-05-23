@@ -75,11 +75,12 @@ export const addTrade = async (req, res) => {
     const userId = req.user.id;
     const b = req.body;
     
-    const entryPrice = b.entry_price || b.entry || null;
-    const exitPrice = b.exit_price || b.exit || null;
-    const stopLoss = b.stop_loss || b.stopLoss || null;
-    const takeProfit = b.take_profit || b.takeProfit || null;
-    const positionSize = b.position_size || b.quantity || null;
+    const entryPrice   = toNum(b.entry_price   ?? b.entry);
+    const exitPrice    = toNum(b.exit_price    ?? b.exit);
+    const stopLoss     = toNum(b.stop_loss     ?? b.stopLoss);
+    const takeProfit   = toNum(b.take_profit   ?? b.takeProfit);
+    const positionSize = toNum(b.position_size ?? b.quantity);
+    const riskPercent  = toNum(b.risk_percent  ?? b.riskPercent);
     const entryDate = b.entry_date || b.date || null;
     const exitDate = b.exit_date || null;
     const marketType = b.market_type || b.market || null;
@@ -94,27 +95,20 @@ export const addTrade = async (req, res) => {
     const whatWentWell = b.what_went_well || b.whatWentWell || null;
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
-    const riskPercent = toNum(b.risk_percent ?? b.riskPercent);
 
     // Always recalculate PnL from price data when available (never trust frontend value)
     let pnl = null;
     if (entryPrice && exitPrice && positionSize) {
-      pnl = calculatePnL(
-        parseFloat(entryPrice), parseFloat(exitPrice),
-        b.direction, parseFloat(positionSize), marketType
-      );
+      pnl = calculatePnL(entryPrice, exitPrice, b.direction, positionSize, marketType);
     } else if (b.pnl != null) {
-      pnl = b.pnl;
+      pnl = toNum(b.pnl);
     }
 
     // Calculate R:R ratio
-    let rrRatio = b.rr_ratio || null;
+    let rrRatio = toNum(b.rr_ratio ?? b.rrRatio);
     if (!rrRatio && entryPrice && stopLoss && takeProfit) {
-      const ep = parseFloat(entryPrice);
-      const sl = parseFloat(stopLoss);
-      const tp = parseFloat(takeProfit);
-      if (!isNaN(ep) && !isNaN(sl) && !isNaN(tp) && Math.abs(ep - sl) > 0) {
-        rrRatio = Math.abs(tp - ep) / Math.abs(ep - sl);
+      if (Math.abs(entryPrice - stopLoss) > 0) {
+        rrRatio = Math.abs(takeProfit - entryPrice) / Math.abs(entryPrice - stopLoss);
       }
     }
 
@@ -155,11 +149,12 @@ export const updateTrade = async (req, res) => {
     const userId = req.user.id;
     const b = req.body;
     
-    const entryPrice = b.entry_price || b.entry || null;
-    const exitPrice = b.exit_price || b.exit || null;
-    const stopLoss = b.stop_loss || b.stopLoss || null;
-    const takeProfit = b.take_profit || b.takeProfit || null;
-    const positionSize = b.position_size || b.quantity || null;
+    const entryPrice   = toNum(b.entry_price   ?? b.entry);
+    const exitPrice    = toNum(b.exit_price    ?? b.exit);
+    const stopLoss     = toNum(b.stop_loss     ?? b.stopLoss);
+    const takeProfit   = toNum(b.take_profit   ?? b.takeProfit);
+    const positionSize = toNum(b.position_size ?? b.quantity);
+    const riskPercent  = toNum(b.risk_percent  ?? b.riskPercent);
     const entryDate = b.entry_date || b.date || null;
     const exitDate = b.exit_date || null;
     const marketType = b.market_type || b.market || null;
@@ -174,26 +169,19 @@ export const updateTrade = async (req, res) => {
     const whatWentWell = b.what_went_well || b.whatWentWell || null;
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
-    const riskPercent = toNum(b.risk_percent ?? b.riskPercent);
 
     // Always recalculate PnL from price data when available (never trust frontend value)
     let pnl = null;
     if (entryPrice && exitPrice && positionSize) {
-      pnl = calculatePnL(
-        parseFloat(entryPrice), parseFloat(exitPrice),
-        b.direction, parseFloat(positionSize), marketType
-      );
+      pnl = calculatePnL(entryPrice, exitPrice, b.direction, positionSize, marketType);
     } else if (b.pnl != null) {
-      pnl = b.pnl;
+      pnl = toNum(b.pnl);
     }
 
-    let rrRatio = b.rr_ratio || null;
+    let rrRatio = toNum(b.rr_ratio ?? b.rrRatio);
     if (!rrRatio && entryPrice && stopLoss && takeProfit) {
-      const ep = parseFloat(entryPrice);
-      const sl = parseFloat(stopLoss);
-      const tp = parseFloat(takeProfit);
-      if (!isNaN(ep) && !isNaN(sl) && !isNaN(tp) && Math.abs(ep - sl) > 0) {
-        rrRatio = Math.abs(tp - ep) / Math.abs(ep - sl);
+      if (Math.abs(entryPrice - stopLoss) > 0) {
+        rrRatio = Math.abs(takeProfit - entryPrice) / Math.abs(entryPrice - stopLoss);
       }
     }
 
