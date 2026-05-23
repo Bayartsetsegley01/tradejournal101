@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { X, ArrowUpRight, ArrowDownRight, Calendar, Clock, Check, Plus, Save, Image as ImageIcon, Copy, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { X, ArrowUpRight, ArrowDownRight, Calendar, Clock, Check, Save, Image as ImageIcon, Copy, Trash2 } from "lucide-react";
 import { safeFormatDate } from "@/lib/utils";
-import { EMOTIONS, POSITIVE_TAGS, MISTAKE_TAGS } from "@/lib/constants";
+import { EMOTIONS, POSITIVE_TAGS, MISTAKE_TAGS, SESSIONS } from "@/lib/constants";
 import { tradeService } from "@/services/tradeService";
 
 export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete }) {
@@ -12,56 +12,88 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
   };
 
   const [editData, setEditData] = useState({
-    strategy: trade.strategy || '',
-    positiveTags: parseTags(trade.positiveTags || trade.positive_tags),
-    mistakeTags: parseTags(trade.mistakeTags || trade.mistake_tags),
-    whyEntered: trade.whyEntered || trade.why_entered || '',
-    whatHappened: trade.whatHappened || trade.what_happened || '',
-    whatWentWell: trade.whatWentWell || trade.what_went_well || '',
-    mistakesMade: trade.mistakesMade || trade.mistakes_made || '',
+    strategy:      trade.strategy || '',
+    session:       trade.session  || '',
+    emotion_before: trade.emotionBefore || trade.emotion_before || '',
+    emotion_after:  trade.emotionAfter  || trade.emotion_after  || '',
+    pnl:           trade.pnl != null ? String(trade.pnl) : '',
+    positiveTags:  parseTags(trade.positiveTags || trade.positive_tags),
+    mistakeTags:   parseTags(trade.mistakeTags  || trade.mistake_tags),
+    whyEntered:    trade.whyEntered    || trade.why_entered    || '',
+    whatHappened:  trade.whatHappened  || trade.what_happened  || '',
+    whatWentWell:  trade.whatWentWell  || trade.what_went_well || '',
+    mistakesMade:  trade.mistakesMade  || trade.mistakes_made  || '',
     lessonLearned: trade.lessonLearned || trade.lessons_learned || '',
-    notes: trade.notes || '',
+    notes:         trade.notes || '',
   });
 
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving]   = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const [savedOk, setSavedOk] = useState(false);
+  const [savedOk, setSavedOk]     = useState(false);
 
   const original = {
-    strategy: trade.strategy || '',
-    positiveTags: parseTags(trade.positiveTags || trade.positive_tags),
-    mistakeTags: parseTags(trade.mistakeTags || trade.mistake_tags),
-    whyEntered: trade.whyEntered || trade.why_entered || '',
-    whatHappened: trade.whatHappened || trade.what_happened || '',
-    whatWentWell: trade.whatWentWell || trade.what_went_well || '',
-    mistakesMade: trade.mistakesMade || trade.mistakes_made || '',
+    strategy:      trade.strategy || '',
+    session:       trade.session  || '',
+    emotion_before: trade.emotionBefore || trade.emotion_before || '',
+    emotion_after:  trade.emotionAfter  || trade.emotion_after  || '',
+    pnl:           trade.pnl != null ? String(trade.pnl) : '',
+    positiveTags:  parseTags(trade.positiveTags || trade.positive_tags),
+    mistakeTags:   parseTags(trade.mistakeTags  || trade.mistake_tags),
+    whyEntered:    trade.whyEntered    || trade.why_entered    || '',
+    whatHappened:  trade.whatHappened  || trade.what_happened  || '',
+    whatWentWell:  trade.whatWentWell  || trade.what_went_well || '',
+    mistakesMade:  trade.mistakesMade  || trade.mistakes_made  || '',
     lessonLearned: trade.lessonLearned || trade.lessons_learned || '',
-    notes: trade.notes || '',
+    notes:         trade.notes || '',
   };
 
   const hasChanges =
-    editData.strategy !== original.strategy ||
-    editData.whyEntered !== original.whyEntered ||
-    editData.whatHappened !== original.whatHappened ||
+    editData.strategy      !== original.strategy      ||
+    editData.session       !== original.session       ||
+    editData.emotion_before !== original.emotion_before ||
+    editData.emotion_after  !== original.emotion_after  ||
+    editData.pnl           !== original.pnl           ||
+    editData.whyEntered    !== original.whyEntered    ||
+    editData.whatHappened  !== original.whatHappened  ||
     editData.lessonLearned !== original.lessonLearned ||
-    editData.notes !== original.notes ||
+    editData.notes         !== original.notes         ||
     JSON.stringify(editData.positiveTags) !== JSON.stringify(original.positiveTags) ||
-    JSON.stringify(editData.mistakeTags) !== JSON.stringify(original.mistakeTags);
+    JSON.stringify(editData.mistakeTags)  !== JSON.stringify(original.mistakeTags);
 
   const handleSave = async () => {
     setIsSaving(true);
     setSaveError(null);
     try {
       await tradeService.updateTrade(trade.id, {
-        strategy: editData.strategy,
+        // Preserve all original fields so the full UPDATE doesn't null them out
+        status:        trade.status || 'CLOSED',
+        symbol:        trade.symbol,
+        market_type:   trade.market_type,
+        direction:     trade.direction,
+        entry_date:    trade.entry_date,
+        exit_date:     trade.exit_date,
+        entry_price:   trade.entry_price,
+        exit_price:    trade.exit_price,
+        stop_loss:     trade.stop_loss,
+        take_profit:   trade.take_profit,
+        position_size: trade.position_size,
+        rr_ratio:      trade.rr_ratio,
+        risk_percent:  trade.risk_percent != null ? trade.risk_percent : trade.riskPercent,
+        screenshot_url: trade.screenshot_url,
+        // User-editable fields
+        strategy:      editData.strategy      || null,
+        session:       editData.session       || null,
+        emotion_before: editData.emotion_before || null,
+        emotion_after:  editData.emotion_after  || null,
+        pnl:           editData.pnl !== '' ? parseFloat(editData.pnl) : trade.pnl,
         positive_tags: editData.positiveTags,
-        mistake_tags: editData.mistakeTags,
-        why_entered: editData.whyEntered,
-        what_happened: editData.whatHappened,
-        what_went_well: editData.whatWentWell,
-        mistakes_made: editData.mistakesMade,
-        lessons_learned: editData.lessonLearned,
-        notes: editData.notes,
+        mistake_tags:  editData.mistakeTags,
+        why_entered:   editData.whyEntered    || null,
+        what_happened: editData.whatHappened  || null,
+        what_went_well: editData.whatWentWell  || null,
+        mistakes_made: editData.mistakesMade  || null,
+        lessons_learned: editData.lessonLearned || null,
+        notes:         editData.notes         || null,
       });
       setSavedOk(true);
       setTimeout(() => setSavedOk(false), 2000);
@@ -79,10 +111,6 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
       return { ...prev, [type]: [...tags, tagId] };
     });
   };
-
-  const getEmotion = (id) => EMOTIONS.find(e => e.id === id);
-  const eb = trade.emotionBefore || trade.emotion_before || null;
-  const ea = trade.emotionAfter  || trade.emotion_after  || null;
 
   const isWin = trade.pnl > 0;
   const isLoss = trade.pnl < 0;
@@ -188,36 +216,78 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
             </div>
           </div>
 
-          {/* Strategy (editable) */}
-          <div className="px-5 py-4 border-b border-slate-800/60">
-            <label className={labelCls}>Стратеги</label>
-            <input
-              type="text"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-600 transition-all"
-              placeholder="e.g. ICT, SMC, Breakout..."
-              value={editData.strategy}
-              onChange={e => setEditData(prev => ({ ...prev, strategy: e.target.value }))}
-            />
-          </div>
-
-          {/* Emotions */}
-          {(eb || ea) && (
-            <div className="px-5 py-4 border-b border-slate-800/60">
-              <label className={labelCls}>Сэтгэл зүй</label>
-              <div className="flex gap-2 flex-wrap">
-                {eb && (
-                  <span className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-300">
-                    {getEmotion(eb)?.emoji || '😐'} {getEmotion(eb)?.label || eb} <span className="text-slate-500">(өмнө)</span>
-                  </span>
-                )}
-                {ea && (
-                  <span className="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-300">
-                    {getEmotion(ea)?.emoji || '😐'} {getEmotion(ea)?.label || ea} <span className="text-slate-500">(дараа)</span>
-                  </span>
-                )}
+          {/* Strategy + Session (editable) */}
+          <div className="px-5 py-4 border-b border-slate-800/60 space-y-3">
+            <div>
+              <label className={labelCls}>Стратеги</label>
+              <input
+                type="text"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-600 transition-all"
+                placeholder="e.g. ICT, SMC, Breakout..."
+                value={editData.strategy}
+                onChange={e => setEditData(prev => ({ ...prev, strategy: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Trading Session</label>
+                <select
+                  value={editData.session}
+                  onChange={e => setEditData(prev => ({ ...prev, session: e.target.value }))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-600 transition-all"
+                >
+                  <option value="">— сонгох —</option>
+                  {SESSIONS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Est. P&amp;L ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-600 transition-all"
+                  placeholder="0.00"
+                  value={editData.pnl}
+                  onChange={e => setEditData(prev => ({ ...prev, pnl: e.target.value }))}
+                />
               </div>
             </div>
-          )}
+          </div>
+
+          {/* Emotions (editable) */}
+          <div className="px-5 py-4 border-b border-slate-800/60">
+            <label className={labelCls}>Сэтгэл зүй</label>
+            <div className="space-y-2.5">
+              <div>
+                <p className="text-[10px] text-slate-600 mb-1.5">Арилжааны өмнө</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {EMOTIONS.map(e => (
+                    <button key={e.id}
+                      onClick={() => setEditData(p => ({ ...p, emotion_before: p.emotion_before === e.id ? '' : e.id }))}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
+                        editData.emotion_before === e.id
+                          ? 'bg-accent/10 border-accent/50 text-accent'
+                          : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-600 hover:text-slate-300'
+                      }`}>{e.emoji} {e.label}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-600 mb-1.5">Арилжааны дараа</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {EMOTIONS.map(e => (
+                    <button key={e.id}
+                      onClick={() => setEditData(p => ({ ...p, emotion_after: p.emotion_after === e.id ? '' : e.id }))}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
+                        editData.emotion_after === e.id
+                          ? 'bg-accent/10 border-accent/50 text-accent'
+                          : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-600 hover:text-slate-300'
+                      }`}>{e.emoji} {e.label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Positive Tags (editable) */}
           <div className="px-5 py-4 border-b border-slate-800/60">
