@@ -18,7 +18,6 @@ export function Header() {
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
           <a href="#features" className="hover:text-white transition-colors">Онцлог</a>
           <a href="#how-it-works" className="hover:text-white transition-colors">Хэрхэн ажилладаг</a>
-          <a href="#pricing" className="hover:text-white transition-colors">Үнэ</a>
           <a href="#faq" className="hover:text-white transition-colors">Асуулт</a>
         </nav>
 
@@ -42,7 +41,7 @@ export function Header() {
                 to="/register"
                 className="bg-accent hover:bg-accent-hover text-slate-950 text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
               >
-                Үнэгүй эхлэх
+                Бүртгүүлэх
               </Link>
             </>
           )}

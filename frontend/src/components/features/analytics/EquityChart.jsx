@@ -2,36 +2,41 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianG
 import { useLang } from "@/contexts/LanguageContext";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
-const MNT_RATE = 3450;
-
-function fmtVal(val, currency) {
-  if (currency === '₮') return `${val >= 0 ? '+' : ''}${Math.round(val * MNT_RATE).toLocaleString()} ₮`;
-  return `${val >= 0 ? '+' : ''}$${Math.abs(val).toFixed(2)}`;
-}
+const toLocalDateStr = (date) => {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '-';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 function CustomTooltip({ active, payload, label, currency }) {
   if (!active || !payload?.length) return null;
   const val = payload[0]?.value ?? 0;
   const pnl = payload[0]?.payload?.pnl ?? 0;
+  const fmt = (v) =>
+    currency === '₮'
+      ? `${v >= 0 ? '+' : ''}${Math.round(v * 3450).toLocaleString()} ₮`
+      : `${v >= 0 ? '+' : '-'}$${Math.abs(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return (
-    <div className="bg-slate-800 border border-slate-700/60 rounded-xl shadow-2xl px-4 py-3 text-sm">
-      <p className="text-slate-400 text-xs mb-2 font-medium">{label}</p>
-      <div className="space-y-1">
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-slate-500 text-xs">Нийт</span>
-          <span className={`font-bold text-sm ${val >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {fmtVal(val, currency)}
+    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px', minWidth: 140 }}>
+      <p style={{ color: '#64748b', fontSize: 11, marginBottom: 6, fontWeight: 500 }}>{label}</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+        <span style={{ color: '#94a3b8', fontSize: 11 }}>Нийт</span>
+        <span style={{ fontWeight: 700, fontSize: 13, color: val >= 0 ? '#22c55e' : '#ef4444' }}>{fmt(val)}</span>
+      </div>
+      {pnl !== 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 4 }}>
+          <span style={{ color: '#94a3b8', fontSize: 11 }}>Энэ</span>
+          <span style={{ fontWeight: 600, fontSize: 11, color: pnl >= 0 ? '#22c55e' : '#ef4444' }}>
+            {pnl >= 0 ? '+' : '-'}
+            {currency === '₮'
+              ? Math.round(Math.abs(pnl) * 3450).toLocaleString() + ' ₮'
+              : '$' + Math.abs(pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
-        {pnl !== 0 && (
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-slate-500 text-xs">Энэ</span>
-            <span className={`font-semibold text-xs ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {pnl >= 0 ? '+' : ''}{currency === '₮' ? Math.round(pnl * MNT_RATE).toLocaleString() + ' ₮' : '$' + Math.abs(pnl).toFixed(2)}
-            </span>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -39,18 +44,17 @@ function CustomTooltip({ active, payload, label, currency }) {
 export function EquityChart({ data, currency = '$' }) {
   const { t } = useLang();
 
-  const formattedData = (data || []).map(item => {
-    const dateObj = new Date(item.date);
-    return {
-      ...item,
-      formattedDate: isNaN(dateObj.getTime()) ? '-' : dateObj.toLocaleDateString('mn-MN', { month: 'short', day: 'numeric' }),
-      value: item.equity,
-    };
-  });
+  const formattedData = (data || []).map(item => ({
+    ...item,
+    formattedDate: toLocalDateStr(item.date),
+    value: item.equity,
+  }));
 
   const lastVal = formattedData.length > 0 ? (formattedData[formattedData.length - 1]?.value ?? 0) : 0;
   const isPositive = lastVal >= 0;
   const isEmpty = formattedData.length === 0;
+
+  const color = isPositive ? '#22c55e' : '#ef4444';
 
   return (
     <div className="bg-slate-900 border border-slate-800/60 rounded-2xl p-5 hover:border-slate-700 hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-all duration-300 h-[320px] flex flex-col">
@@ -64,11 +68,11 @@ export function EquityChart({ data, currency = '$' }) {
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${
             isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
           }`}>
-            {isPositive
-              ? <TrendingUp className="w-3.5 h-3.5" />
-              : <TrendingDown className="w-3.5 h-3.5" />
-            }
-            {fmtVal(Math.abs(lastVal), currency)}
+            {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            {isPositive ? '+' : '-'}
+            {currency === '₮'
+              ? Math.round(Math.abs(lastVal) * 3450).toLocaleString() + ' ₮'
+              : '$' + Math.abs(lastVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
         )}
       </div>
@@ -78,13 +82,7 @@ export function EquityChart({ data, currency = '$' }) {
         {!isEmpty ? (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={formattedData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={isPositive ? '#10b981' : '#f43f5e'} stopOpacity={0.2} />
-                  <stop offset="100%" stopColor={isPositive ? '#10b981' : '#f43f5e'} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="2 6" stroke="#1e293b" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} strokeWidth={0.8} />
               <XAxis
                 dataKey="formattedDate"
                 stroke="#334155"
@@ -101,26 +99,27 @@ export function EquityChart({ data, currency = '$' }) {
                 axisLine={false}
                 tickFormatter={(v) =>
                   currency === '₮'
-                    ? `${Math.round(v * MNT_RATE / 1000)}K₮`
-                    : v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v}`
+                    ? `${Math.round(v * 3450 / 1000)}K₮`
+                    : `$${v.toLocaleString()}`
                 }
                 dx={-4}
                 tick={{ fill: '#475569' }}
-                width={48}
+                width={56}
               />
               <Tooltip
                 content={<CustomTooltip currency={currency} />}
-                cursor={{ stroke: isPositive ? '#10b981' : '#f43f5e', strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.5 }}
+                cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 4', opacity: 0.4 }}
               />
               <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 4" strokeWidth={1} />
               <Area
-                type="monotone"
+                type="natural"
                 dataKey="value"
-                stroke={isPositive ? '#10b981' : '#f43f5e'}
+                stroke={color}
                 strokeWidth={2}
-                fill="url(#equityGrad)"
+                fill={color}
+                fillOpacity={0.15}
                 dot={false}
-                activeDot={{ r: 4, fill: isPositive ? '#10b981' : '#f43f5e', stroke: '#0f172a', strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: color, stroke: '#0f172a', strokeWidth: 2 }}
                 isAnimationActive
                 animationDuration={700}
                 animationEasing="ease-out"

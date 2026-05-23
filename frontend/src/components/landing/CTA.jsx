@@ -16,17 +16,14 @@ export function CTA() {
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link to="/app" className="w-full sm:w-auto bg-accent hover:bg-accent-hover text-slate-950 text-base font-semibold py-3 px-8 rounded-xl transition-colors flex items-center justify-center gap-2">
-            Үнэгүй эхлэх
+          <Link to="/register" className="w-full sm:w-auto bg-accent hover:bg-accent-hover text-slate-950 text-base font-semibold py-3 px-8 rounded-xl transition-colors flex items-center justify-center gap-2">
+            Бүртгүүлэх
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link to="/login" className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white text-base font-medium py-3 px-8 rounded-xl transition-colors flex items-center justify-center">
             Нэвтрэх
           </Link>
         </div>
-        <p className="mt-6 text-sm text-slate-500">
-          Карт шаардлагагүй. Хэзээ ч цуцлах боломжтой.
-        </p>
       </div>
     </section>
   );

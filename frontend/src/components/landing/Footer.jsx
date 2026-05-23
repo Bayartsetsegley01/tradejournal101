@@ -23,7 +23,6 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-slate-500">
               <li><a href="#" className="hover:text-accent transition-colors">Нүүр хуудас</a></li>
               <li><a href="#features" className="hover:text-accent transition-colors">Боломжууд</a></li>
-              <li><a href="#pricing" className="hover:text-accent transition-colors">Үнийн мэдээлэл</a></li>
               <li><a href="#" className="hover:text-accent transition-colors">Холбоо барих</a></li>
             </ul>
           </div>

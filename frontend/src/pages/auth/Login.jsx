@@ -236,7 +236,7 @@ export function LoginPage({ defaultMode = 'login' }) {
               {visibleMode === 'login' ? (
                 <>Бүртгэл байхгүй юу?{' '}
                   <button onClick={() => switchMode('register')} className="text-accent hover:text-accent-hover font-medium transition-colors">
-                    Үнэгүй бүртгүүлэх
+                    Бүртгүүлэх
                   </button>
                 </>
               ) : (
