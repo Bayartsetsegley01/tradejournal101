@@ -102,12 +102,6 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
     direction: 'LONG',
     strategy: '',
     session: '',
-    exchange: '',
-    leverage: '',
-    strike: '',
-    expiry: '',
-    optionType: 'CALL',
-    sector: '',
     entry: '',
     exit: '',
     stopLoss: '',
@@ -193,12 +187,6 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
       if (raw) { const d = new Date(raw); if (!isNaN(d)) formattedDate = toLocalISO(d); }
     } catch {}
 
-    let formattedExpiry = '';
-    try {
-      const raw = initialData.expiry || initialData.expiry_date;
-      if (raw) { const d = new Date(raw); if (!isNaN(d)) formattedExpiry = d.toISOString().slice(0, 10); }
-    } catch {}
-
     const parseTags = (v) => {
       if (Array.isArray(v)) return v;
       if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } }
@@ -208,7 +196,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
     setFormData(prev => ({
       ...prev, ...initialData,
       date:          formattedDate,
-      expiry:        formattedExpiry,
+      session:       (initialData.session || '').toLowerCase(),
       entry:         initialData.entry_price   ?? initialData.entry         ?? '',
       exit:          initialData.exit_price    ?? initialData.exit          ?? '',
       stopLoss:      initialData.stop_loss     ?? initialData.stopLoss      ?? '',
@@ -351,11 +339,6 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
       : parseFloat(formData.takeProfit);
     if (isNaN(e) || isNaN(ex) || isNaN(qty)) return null;
     const diff = formData.direction === 'LONG' ? ex - e : e - ex;
-    const mkt = (formData.market || 'forex').toLowerCase();
-    if (mkt === 'forex') {
-      if (e < 10)   return (diff / 0.0001 * 10 * qty).toFixed(2);
-      if (e < 500)  return (diff / 0.01 * 10 * qty).toFixed(2);
-    }
     return (diff * qty).toFixed(2);
   })();
 
@@ -473,44 +456,9 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                   {SESSIONS.map(s => (
                     <button key={s.id} type="button" onClick={() => setV('session', s.id)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                        formData.session === s.id ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
+                        formData.session?.toLowerCase() === s.id?.toLowerCase() ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
                       }`}>{s.label}</button>
                   ))}
-                </div>
-              </div>
-            )}
-            {formData.market === 'crypto' && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Exchange</label>
-                  <input type="text" placeholder="Binance, Bybit" className={inputCls} value={formData.exchange} onChange={set('exchange')} />
-                </div>
-                <div>
-                  <label className={labelCls}>Leverage (x)</label>
-                  <input type="number" placeholder="10" className={inputCls} value={formData.leverage} onChange={set('leverage')} />
-                </div>
-              </div>
-            )}
-            {formData.market === 'options' && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>Option Type</label>
-                  <div className="flex gap-2">
-                    {['CALL','PUT'].map(type => (
-                      <button key={type} type="button" onClick={() => setV('optionType', type)}
-                        className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${
-                          formData.optionType === type ? 'bg-slate-800 border-slate-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
-                        }`}>{type}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className={labelCls}>Strike Price</label>
-                  <input type="number" className={inputCls} value={formData.strike} onChange={set('strike')} />
-                </div>
-                <div className="col-span-2">
-                  <label className={labelCls}>Expiry Date</label>
-                  <input type="date" className={inputCls} value={formData.expiry || ''} onChange={set('expiry')} />
                 </div>
               </div>
             )}
