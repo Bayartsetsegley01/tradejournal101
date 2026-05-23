@@ -178,7 +178,7 @@ export const normalizeRow = (raw) => {
     rr_ratio:        parseNumber(result.rr_ratio),
     strategy:        String(result.strategy || '').trim() || null,
     session:         String(result.session  || '').trim() || null,
-    market_type:     String(result.market_type || '').trim() || null,
+    market_type:     String(result.market_type || '').trim() || inferMarketType(String(result.symbol || '').trim()) || null,
     emotion_before:  String(result.emotion_before || '').trim() || null,
     emotion_after:   String(result.emotion_after  || '').trim() || null,
     positive_tags:   parseTags(result.positive_tags),
@@ -188,6 +188,31 @@ export const normalizeRow = (raw) => {
     lessons_learned: String(result.lessons_learned || '').trim() || null,
     notes:           String(result.notes           || '').trim() || null,
   };
+};
+
+// ── inferMarketType ───────────────────────────────────────────────────────────
+const inferMarketType = (symbol) => {
+  if (!symbol) return null;
+  const s = symbol.toUpperCase().trim();
+
+  const cryptoSymbols = ['BTC','ETH','BNB','XRP','SOL','ADA','DOGE','DOT','AVAX','MATIC',
+    'LINK','UNI','LTC','BCH','ATOM','FIL','TRX','NEAR','ALGO','VET'];
+  if (cryptoSymbols.some(c => s.startsWith(c) || s.includes(c + 'USD') || s.includes(c + 'USDT')))
+    return 'crypto';
+
+  const indexSymbols = ['SPX','SPY','QQQ','DJI','NAS','NDX','RUT','VIX','US30','US500','US100'];
+  if (indexSymbols.some(i => s.includes(i))) return 'index';
+
+  const commodities = ['XAUUSD','GOLD','XAGUSD','SILVER','USOIL','UKOIL','WTI','BRENT','NGAS','COPPER'];
+  if (commodities.some(c => s === c || s.includes(c))) return 'commodity';
+
+  const forexCurrencies = ['USD','EUR','GBP','JPY','AUD','CAD','CHF','NZD','SGD','HKD','NOK','SEK','DKK'];
+  const isForex = s.length === 6 &&
+    forexCurrencies.some(c => s.startsWith(c)) &&
+    forexCurrencies.some(c => s.endsWith(c));
+  if (isForex) return 'forex';
+
+  return null;
 };
 
 // ── Route handler ─────────────────────────────────────────────────────────────
