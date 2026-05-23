@@ -18,6 +18,7 @@ export function LoginPage({ defaultMode = 'login' }) {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
 
   useEffect(() => {
+    setForm({ name: '', email: '', password: '', confirmPassword: '' });
     const params = new URLSearchParams(window.location.search);
     if (params.get('error') === 'google_auth_failed') {
       setError('Google нэвтрэлт амжилтгүй боллоо. Дахин оролдоно уу.');
@@ -138,7 +139,7 @@ export function LoginPage({ defaultMode = 'login' }) {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4">
 
               {visibleMode === 'register' && (
                 <div>
@@ -158,7 +159,7 @@ export function LoginPage({ defaultMode = 'login' }) {
                 <div className="relative group">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-accent transition-colors duration-200" />
                   <input
-                    type="email" value={form.email} onChange={set('email')} placeholder="name@example.com" autoComplete="email"
+                    type="email" value={form.email} onChange={set('email')} placeholder="name@example.com" autoComplete="off"
                     className="w-full bg-slate-950/70 border border-slate-800 focus:border-accent/50 focus:ring-2 focus:ring-accent/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-600 outline-none transition-all duration-200 text-sm"
                   />
                 </div>
@@ -170,7 +171,7 @@ export function LoginPage({ defaultMode = 'login' }) {
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-accent transition-colors duration-200" />
                   <input
                     type={showPassword ? 'text' : 'password'} value={form.password} onChange={set('password')}
-                    placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    placeholder="••••••••" autoComplete="new-password"
                     className="w-full bg-slate-950/70 border border-slate-800 focus:border-accent/50 focus:ring-2 focus:ring-accent/10 rounded-xl pl-10 pr-11 py-3 text-white placeholder-slate-600 outline-none transition-all duration-200 text-sm"
                   />
                   <button type="button" onClick={() => setShowPassword(v => !v)}
