@@ -330,16 +330,31 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
     const risk = Math.abs(e - sl); return risk === 0 ? null : (Math.abs(tp - e) / risk).toFixed(2);
   })();
 
+  const estimatePnL = (entry, exit, direction, qty, market) => {
+    if (!entry || !exit || !qty) return null;
+    const ep = parseFloat(entry);
+    const ex = parseFloat(exit);
+    const q  = parseFloat(qty);
+    if (isNaN(ep) || isNaN(ex) || isNaN(q)) return null;
+
+    const diff = direction === 'LONG' ? ex - ep : ep - ex;
+    const mkt  = (market || 'forex').toLowerCase();
+
+    if (mkt === 'forex' || mkt === 'gold' || mkt === 'commodity') {
+      const pipSize  = ep > 50 ? 0.01 : 0.0001;
+      const pipValue = 10;
+      const pips = diff / pipSize;
+      return parseFloat((pips * pipValue * q).toFixed(2));
+    }
+
+    return parseFloat((diff * q).toFixed(2));
+  };
+
   const pnl = (() => {
-    if (!formData.entry || !formData.quantity) return null;
-    const e = parseFloat(formData.entry), qty = parseFloat(formData.quantity);
-    // CLOSED бол exit price, бусад тохиолдолд TP ашиглана (est. P&L)
-    const ex = formData.status === 'CLOSED'
-      ? (formData.exit ? parseFloat(formData.exit) : parseFloat(formData.takeProfit))
-      : parseFloat(formData.takeProfit);
-    if (isNaN(e) || isNaN(ex) || isNaN(qty)) return null;
-    const diff = formData.direction === 'LONG' ? ex - e : e - ex;
-    return (diff * qty).toFixed(2);
+    const exitVal = formData.status === 'CLOSED'
+      ? (formData.exit || formData.takeProfit)
+      : formData.takeProfit;
+    return estimatePnL(formData.entry, exitVal, formData.direction, formData.quantity, formData.market);
   })();
 
   const riskAmount = (() => {
