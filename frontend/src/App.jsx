@@ -84,8 +84,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-          <Route path="/register" element={<GuestRoute><LoginPage defaultMode="register" /></GuestRoute>} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<LoginPage defaultMode="register" />} />
 
           {/* Onboarding */}
           <Route path="/onboarding" element={<OnboardingRoute><OnboardingPage /></OnboardingRoute>} />
