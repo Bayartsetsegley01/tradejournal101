@@ -4,6 +4,13 @@ import cloudinary from '../config/cloudinary.js';
 const uniquePublicId = (userId) =>
   `tradejournal/${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
+// Safely parse a numeric field — rejects empty strings, NaN, null → null
+const toNum = (v) => {
+  if (v === null || v === undefined || v === '') return null;
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+};
+
 const uploadBase64 = (dataUrl, userId) => new Promise((resolve, reject) => {
   cloudinary.uploader.upload(dataUrl,
     { public_id: uniquePublicId(userId), resource_type: 'image', overwrite: false,
@@ -87,8 +94,7 @@ export const addTrade = async (req, res) => {
     const whatWentWell = b.what_went_well || b.whatWentWell || null;
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
-    const riskPercent = b.risk_percent != null ? b.risk_percent
-                        : b.riskPercent  != null ? b.riskPercent : null;
+    const riskPercent = toNum(b.risk_percent ?? b.riskPercent);
 
     // Always recalculate PnL from price data when available (never trust frontend value)
     let pnl = null;
@@ -168,8 +174,7 @@ export const updateTrade = async (req, res) => {
     const whatWentWell = b.what_went_well || b.whatWentWell || null;
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
-    const riskPercent = b.risk_percent != null ? b.risk_percent
-                        : b.riskPercent  != null ? b.riskPercent : null;
+    const riskPercent = toNum(b.risk_percent ?? b.riskPercent);
 
     // Always recalculate PnL from price data when available (never trust frontend value)
     let pnl = null;
