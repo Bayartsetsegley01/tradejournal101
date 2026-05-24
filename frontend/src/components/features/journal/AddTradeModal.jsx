@@ -313,6 +313,11 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
         market_type: formData.market,
         entry_date:  formData.date,
         account_id:  accountId || null,
+        // Overwrite stale snake_case from ...initialData spread with current selections:
+        emotion_before: formData.emotionBefore || null,
+        emotion_after:  formData.emotionAfter  || null,
+        positive_tags:  formData.positiveTags,
+        mistake_tags:   formData.mistakeTags,
       };
       if (payload.id) await tradeService.updateTrade(payload.id, payload);
       else            await tradeService.createTrade(payload);
