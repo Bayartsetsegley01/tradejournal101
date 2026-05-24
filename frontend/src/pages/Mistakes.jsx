@@ -3,8 +3,9 @@ import {
   BrainCircuit, TrendingDown, AlertCircle, CheckCircle2,
   Loader2, Activity, TrendingUp, ArrowUp, ArrowDown, Minus,
   Target, DollarSign, ShieldCheck, AlertTriangle,
+  ChevronDown, Check, BarChart2, Wallet,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { analyticsService } from "@/services/analyticsService";
 import { useTradesUpdated } from "@/lib/tradesSync";
 import { TimeFilter } from "@/components/features/analytics/TimeFilter";
@@ -26,6 +27,60 @@ function computePrevRange(range) {
   else if (range === '1y') { end.setFullYear(now.getFullYear() - 1); start.setFullYear(now.getFullYear() - 2); }
   else return null;
   return `${start.toISOString().slice(0, 10)}_${end.toISOString().slice(0, 10)}`;
+}
+
+// ── Account dropdown ──────────────────────────────────────────────────────────
+function AccountDropdown({ value, onChange, accounts }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+  const options = [
+    { value: 'all',      label: 'Бүх данс',    icon: BarChart2 },
+    { value: 'personal', label: 'Үндсэн данс', icon: Wallet },
+    ...accounts.map(a => ({ value: String(a.id), label: a.name || a.login, icon: BarChart2 })),
+  ];
+  const selected = options.find(o => String(o.value) === String(value)) || options[0];
+  const SelIcon = selected.icon;
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(p => !p)}
+        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-sm font-medium transition-all ${
+          open ? 'bg-slate-800 border-slate-600 text-white' : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-600 hover:text-white'
+        }`}
+      >
+        <SelIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+        <span className="max-w-[130px] truncate">{selected.label}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-2 w-56 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/40 z-[200] py-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="px-3 pt-2 pb-1.5 mb-1 border-b border-slate-800">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Данс сонгох</span>
+          </div>
+          {options.map(opt => {
+            const Icon = opt.icon;
+            const isSel = String(value) === String(opt.value);
+            return (
+              <button key={opt.value} onClick={() => { onChange(opt.value); setOpen(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                  isSel ? 'text-white bg-slate-800/60' : 'text-slate-300 hover:bg-slate-800/40 hover:text-white'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <span className="flex-1 truncate text-left">{opt.label}</span>
+                {isSel && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Animated bar ──────────────────────────────────────────────────────────────
@@ -237,29 +292,41 @@ export function MistakesPage() {
   const [timeRange, setTimeRange]     = useState('all');
   const [customRange, setCustomRange] = useState(null);
   const [histPrev, setHistPrev]       = useState(null);
+  const [accountId, setAccountId]     = useState('all');
+  const [mt5Accounts, setMt5Accounts] = useState([]);
+
+  useEffect(() => {
+    fetch((import.meta.env.VITE_API_URL || '') + '/api/mt5/accounts', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      credentials: 'include',
+    })
+      .then(r => r.json())
+      .then(d => { if (d.success) setMt5Accounts(d.data || []); })
+      .catch(() => {});
+  }, []);
 
   const fetchMistakes = useCallback(() => {
     setLoading(true);
-    analyticsService.getMistakes(timeRange)
+    analyticsService.getMistakes(timeRange, accountId)
       .then(res => {
         if (res.success) setData(res.data);
         else setError(res.error || 'Алдаа гарлаа');
       })
       .catch(() => setError('Сервертэй холбогдоход алдаа гарлаа.'))
       .finally(() => setLoading(false));
-  }, [timeRange]);
+  }, [timeRange, accountId]);
 
   // Өмнөх ижил хугацааны дата — жинхэнэ харьцуулалт
   useEffect(() => {
     const prevRange = computePrevRange(timeRange);
     if (prevRange) {
-      analyticsService.getMistakes(prevRange)
+      analyticsService.getMistakes(prevRange, accountId)
         .then(res => { if (res.success) setHistPrev(res.data); else setHistPrev(null); })
         .catch(() => setHistPrev(null));
     } else {
       setHistPrev(null);
     }
-  }, [timeRange]);
+  }, [timeRange, accountId]);
 
   useEffect(() => { fetchMistakes(); }, [fetchMistakes]);
   useTradesUpdated(fetchMistakes);
@@ -271,7 +338,7 @@ export function MistakesPage() {
   const top5Mistakes  = (data?.mistakes     || []).slice(0, 5);
   const top5Positive  = (data?.positiveTags || []).slice(0, 5);
 
-  const emotionChartData = (data?.emotions || []).map(e => ({
+  const emotionChartData = (data?.emotions || []).slice(0, 5).map(e => ({
     name: e.name.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim(),
     fullName: e.name,
     value: parseFloat((e.totalPnl || 0).toFixed(2)),
@@ -301,8 +368,8 @@ export function MistakesPage() {
         )}
       </div>
 
-      {/* ── Хугацааны шүүлтүүр ──────────────────────────────────────────────── */}
-      <div>
+      {/* ── Шүүлтүүр ──────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 flex-wrap">
         <TimeFilter
           value={timeRange}
           onChange={setTimeRange}
@@ -310,6 +377,7 @@ export function MistakesPage() {
           onCustomRangeChange={setCustomRange}
           align="left"
         />
+        <AccountDropdown value={accountId} onChange={setAccountId} accounts={mt5Accounts} />
       </div>
 
       {/* ── Loading / Error / Empty ──────────────────────────────────────────── */}
@@ -466,7 +534,7 @@ export function MistakesPage() {
             </div>
           </div>
 
-          {/* ── Сэтгэл зүй ──────────────────────────────────────────────────── */}
+          {/* ── Сэтгэл зүй (top 5) ──────────────────────────────────────────── */}
           {data.emotions.length > 0 && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
               <SectionHeader
@@ -474,10 +542,10 @@ export function MistakesPage() {
                 iconBg="bg-amber-500/10"
                 iconColor="text-amber-400"
                 title="Сэтгэл зүй"
-                badge={`${data.emotions.length} төлөв`}
+                badge={`Хамгийн их 5 / ${data.emotions.length} төлөв`}
               />
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {data.emotions.map((e, i) => <EmotionCard key={i} e={e} />)}
+                {data.emotions.slice(0, 5).map((e, i) => <EmotionCard key={i} e={e} />)}
               </div>
             </div>
           )}
