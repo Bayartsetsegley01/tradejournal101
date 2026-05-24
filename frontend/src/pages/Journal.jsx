@@ -677,9 +677,10 @@ export function JournalPage() {
     if (filters.status !== 'all' && trade.status !== filters.status) return false;
     if (filters.direction !== 'all' && trade.direction !== filters.direction) return false;
     if (filters.session !== 'all') {
-      const sess = SESSIONS.find(s => s.id === filters.session);
       const ts = (trade.session || '').toLowerCase();
-      if (ts !== filters.session.toLowerCase() && (!sess || ts !== sess.label.toLowerCase())) return false;
+      // ID-ээр шалгана; хуучин "london" хэлбэрийн өгөгдөлтэй нийцүүлнэ
+      const sessionId = filters.session.toLowerCase();
+      if (ts !== sessionId) return false;
     }
     if (filters.markets.length > 0 && !filters.markets.includes(trade.market_type)) return false;
     if (filters.timeRange !== 'all') {

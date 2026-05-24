@@ -2,14 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 const MARKET_OPTIONS = [
-  { id: 'crypto',      label: 'Crypto',       symbol: '₿', color: 'text-blue-400'   },
-  { id: 'forex',       label: 'Forex',        symbol: '$', color: 'text-emerald-400' },
-  { id: 'stock',       label: 'Stock',        symbol: '📈', color: 'text-indigo-400' },
-  { id: 'gold',        label: 'Gold',         symbol: '🥇', color: 'text-amber-400'  },
-  { id: 'commodities', label: 'Commodities',  symbol: '🛢',  color: 'text-orange-400' },
-  { id: 'indices',     label: 'Indices',      symbol: '📊', color: 'text-purple-400' },
-  { id: 'futures',     label: 'Futures',      symbol: '⏱', color: 'text-cyan-400'   },
-  { id: 'options',     label: 'Options',      symbol: '⚙', color: 'text-pink-400'   },
+  { id: 'crypto',      label: 'Крипто',      symbol: '₿', color: 'text-blue-400'   },
+  { id: 'forex',       label: 'Forex',       symbol: '$', color: 'text-emerald-400' },
+  { id: 'stock',       label: 'Хувьцаа',    symbol: '📈', color: 'text-indigo-400' },
+  { id: 'gold',        label: 'Алт',         symbol: '🥇', color: 'text-amber-400'  },
+  { id: 'commodities', label: 'Түүхий эд',  symbol: '🛢',  color: 'text-orange-400' },
+  { id: 'indices',     label: 'Индекс',      symbol: '📊', color: 'text-purple-400' },
+  { id: 'futures',     label: 'Фьючерс',    symbol: '⏱', color: 'text-cyan-400'   },
+  { id: 'options',     label: 'Опцион',      symbol: '⚙', color: 'text-pink-400'   },
 ];
 
 export function MarketSelect({ value, onChange, className = '' }) {
