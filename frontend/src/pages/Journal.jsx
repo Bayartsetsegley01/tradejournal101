@@ -807,6 +807,9 @@ export function JournalPage() {
         setFilters={setFilters}
         customRange={customRange}
         onCustomRangeChange={(r) => { setCustomRange(r); if (r) localStorage.setItem('analytics_custom_range', JSON.stringify(r)); }}
+        accounts={accounts}
+        selectedAccount={selectedAccount}
+        onAccountChange={handleSelectAccount}
       />
 
       {/* Table */}

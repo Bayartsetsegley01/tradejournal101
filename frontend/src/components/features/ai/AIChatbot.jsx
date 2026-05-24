@@ -80,28 +80,37 @@ export function AIChatbot() {
     }
   }, [messages]);
 
+  const DAY_MN = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
+
   const fetchTradeContext = async () => {
     try {
       const r = await fetch(`${API_BASE_URL}/trades`, { headers: getHeaders(), credentials: 'include' });
       const data = await r.json();
       if (data.success && data.data?.length > 0) {
-        const trades = data.data.slice(0, 20);
+        const trades = data.data.slice(0, 50);
         const closed = trades.filter(t => t.status === 'CLOSED');
         const wins = closed.filter(t => parseFloat(t.pnl) > 0);
         setTradeContext({
           totalTrades: closed.length,
           winRate: closed.length > 0 ? ((wins.length / closed.length) * 100).toFixed(0) : 0,
           totalPnl: closed.reduce((s, t) => s + parseFloat(t.pnl || 0), 0).toFixed(2),
-          recentTrades: trades.slice(0, 5).map(t => ({
-            symbol: t.symbol,
-            direction: t.direction,
-            pnl: t.pnl,
-            emotion_before: t.emotion_before,
-            emotion_after: t.emotion_after,
-            strategy: t.strategy,
-            mistake_tags: t.mistake_tags,
-            positive_tags: t.positive_tags,
-          }))
+          recentTrades: closed.slice(0, 30).map(t => {
+            const dateRaw = t.entry_date || t.created_at;
+            const dateObj = dateRaw ? new Date(dateRaw) : null;
+            return {
+              symbol: t.symbol,
+              direction: t.direction,
+              pnl: t.pnl,
+              entry_date: t.entry_date ? new Date(t.entry_date).toISOString().slice(0, 10) : null,
+              exit_date:  t.exit_date  ? new Date(t.exit_date).toISOString().slice(0, 10)  : null,
+              weekday: dateObj ? DAY_MN[dateObj.getDay()] : null,
+              emotion_before: t.emotion_before,
+              emotion_after: t.emotion_after,
+              strategy: t.strategy,
+              mistake_tags: t.mistake_tags,
+              positive_tags: t.positive_tags,
+            };
+          })
         });
       }
     } catch (e) {

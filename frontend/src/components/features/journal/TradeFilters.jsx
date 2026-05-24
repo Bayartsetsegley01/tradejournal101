@@ -4,15 +4,17 @@ import { MARKET_TYPES, SESSIONS } from "@/lib/constants";
 import { useLang } from "@/contexts/LanguageContext";
 import { TimeFilter } from "@/components/features/analytics/TimeFilter";
 
-export function TradeFilters({ filters, setFilters, customRange, onCustomRangeChange }) {
+export function TradeFilters({ filters, setFilters, customRange, onCustomRangeChange, accounts = [], selectedAccount, onAccountChange }) {
   const { t } = useLang();
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isMarketDropdownOpen, setIsMarketDropdownOpen] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchHistory, setSearchHistory] = useState([]);
   const marketDropdownRef = useRef(null);
   const statusDropdownRef = useRef(null);
+  const accountDropdownRef = useRef(null);
   const searchRef = useRef(null);
 
   useEffect(() => {
@@ -42,6 +44,8 @@ export function TradeFilters({ filters, setFilters, customRange, onCustomRangeCh
         setIsMarketDropdownOpen(false);
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target))
         setIsStatusDropdownOpen(false);
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(e.target))
+        setIsAccountDropdownOpen(false);
       if (searchRef.current && !searchRef.current.contains(e.target))
         setIsSearchFocused(false);
     };
@@ -112,6 +116,51 @@ export function TradeFilters({ filters, setFilters, customRange, onCustomRangeCh
             </div>
           )}
         </div>
+
+        {/* Account dropdown */}
+        {onAccountChange && (
+          <div className="relative shrink-0" ref={accountDropdownRef}>
+            <button
+              onClick={() => { setIsAccountDropdownOpen(v => !v); setIsMarketDropdownOpen(false); setIsStatusDropdownOpen(false); }}
+              className={`flex items-center gap-2 border rounded-xl px-3.5 py-2.5 text-sm transition-all ${
+                selectedAccount?.id !== 'personal' && selectedAccount?.id
+                  ? 'bg-slate-800 border-slate-600 text-white'
+                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white'
+              }`}
+            >
+              {selectedAccount?.id === 'personal' ? 'Үндсэн данс' : (selectedAccount?.name || selectedAccount?.login || 'Бүх данс')}
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isAccountDropdownOpen && (
+              <div className="absolute top-full left-0 mt-2 w-52 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-[200] py-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-3 pb-2 pt-1 mb-1 border-b border-slate-800">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Данс</span>
+                </div>
+                <button
+                  onClick={() => { onAccountChange({ id: 'personal', name: 'Үндсэн данс' }); setIsAccountDropdownOpen(false); }}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
+                    selectedAccount?.id === 'personal' ? 'text-white bg-slate-800/60' : 'text-slate-300 hover:bg-slate-800/40 hover:text-white'
+                  }`}
+                >
+                  Үндсэн данс
+                  {selectedAccount?.id === 'personal' && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
+                </button>
+                {accounts.map(acc => (
+                  <button key={acc.id}
+                    onClick={() => { onAccountChange(acc); setIsAccountDropdownOpen(false); }}
+                    className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
+                      selectedAccount?.id === acc.id ? 'text-white bg-slate-800/60' : 'text-slate-300 hover:bg-slate-800/40 hover:text-white'
+                    }`}
+                  >
+                    <span className="truncate">{acc.name || acc.login}</span>
+                    {selectedAccount?.id === acc.id && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Market dropdown */}
         <div className="relative shrink-0" ref={marketDropdownRef}>

@@ -15,7 +15,7 @@ function getLast7Days() {
 }
 
 const OPTIONS = [
-  { id: 'all',    label: 'Бүгд' },
+  { id: 'all',    label: 'Хугацаа' },
   { id: '1y',     label: '1 жил' },
   { id: '6m',     label: '6 сар' },
   { id: '3m',     label: '3 сар' },
@@ -108,7 +108,7 @@ export function TimeFilter({ value, onChange, customRange, onCustomRangeChange }
 
       {/* Dropdown panel */}
       {open && (
-        <div className={cn("absolute top-full right-0 mt-2 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/40 z-50 animate-in fade-in slide-in-from-top-2 duration-150", showPicker ? "w-[320px]" : "w-52")}>
+        <div className={cn("absolute top-full right-0 mt-2 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/40 z-[200] animate-in fade-in slide-in-from-top-2 duration-150 max-h-[80vh] overflow-y-auto", showPicker ? "w-[320px]" : "w-52")}>
           <div className="py-1.5">
             {OPTIONS.map((opt, i) => {
               const isSelected = value === opt.id;

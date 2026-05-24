@@ -14,25 +14,34 @@ const MODE_PROMPTS = {
   learning: 'Боловсролын горимд ажиллана уу. Ойлгомжтой тайлбар, жишээ, аналоги ашигла. Арилжааны суурь болон дэвшилтэт ойлголтуудыг тайлбарла.',
 };
 
+const DAY_MN = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
+
 const buildSystemPrompt = async (tradeContext, userId, mode = 'analysis') => {
   let prompt = `Та бол мэргэжлийн арилжааны зөвлөх AI юм. Монгол хэлээр богино, тодорхой хариулт өгнө.
 Хариултаа 3-5 өгүүлбэрт хэмжлэг. Markdown **bold** ашиглаж болно.
 Арилжааны психологи, эрсдэлийн удирдлага, техникийн анализын мэргэжилтэн.
 
+Чухал: "Ялагч арилжаа" биш "Ашигтай арилжаа", "Таны өгсөн датад" биш "Таны түүхэнд" гэж хэлнэ.
+Хэрэглэгчийн талаар ярихдаа "Таны түүхэнд", "Таны арилжаанд", "Таны үзүүлэлтэд" гэж хэлнэ.
+Арилжааны огноо, гараг мэдээлэл байвал өдрийн дүн шинжилгээ хийж болно.
+
 Одоогийн горим: ${MODE_PROMPTS[mode] || MODE_PROMPTS.analysis}`;
 
   if (tradeContext) {
-    prompt += `\n\nХэрэглэгчийн арилжааны статистик:
+    prompt += `\n\nТаны арилжааны статистик:
 - Нийт хаасан арилжаа: ${tradeContext.totalTrades}
-- Win Rate: ${tradeContext.winRate}%
-- Нийт PnL: ${tradeContext.totalPnl}
+- Ашигтай арилжааны хувь: ${tradeContext.winRate}%
+- Нийт А/А: ${tradeContext.totalPnl}
 - Сүүлийн арилжаанууд: ${JSON.stringify(tradeContext.recentTrades, null, 2)}`;
   } else if (getDbStatus() && userId) {
     try {
       const [tradeRes, tagRes, emotionRes] = await Promise.all([
         query(
-          `SELECT symbol, direction, pnl, emotion_before, emotion_after, strategy, mistake_tags, positive_tags
-           FROM trades WHERE user_id=$1 AND status='CLOSED' ORDER BY created_at DESC LIMIT 10`,
+          `SELECT symbol, direction, pnl, emotion_before, emotion_after, strategy,
+                  mistake_tags, positive_tags,
+                  entry_date, exit_date, created_at
+           FROM trades WHERE user_id=$1 AND status='CLOSED'
+           ORDER BY COALESCE(entry_date, created_at) DESC LIMIT 30`,
           [userId]
         ),
         query('SELECT id, name FROM tag_definitions'),
@@ -42,14 +51,19 @@ const buildSystemPrompt = async (tradeContext, userId, mode = 'analysis') => {
         const tagMap = {}; tagRes.rows.forEach(t => { tagMap[t.id] = t.name; });
         const emoMap = {}; emotionRes.rows.forEach(e => { emoMap[e.id] = e.name; });
         const resolveName = (id, map, fallback) => map[id] || fallback[id] || id;
-        const EMOTION_NAMES = { calm:'Тайван', confident:'Итгэлтэй', planned:'Төлөвлөсөн', scared:'Айсан', fomo:'FOMO', angry:'Ууртай', stressed:'Стресстэй', doubtful:'Эргэлзсэн' };
-        const TAG_NAMES = { 'well-managed':'Сайн удирдсан','perfect-entry':'Төгс оролт','patient':'Тэвчээртэй','plan-follow':'Төлөвлөгөө дагасан','disciplined':'Сахилга баттай','impulsive':'Сэтгэл хөдлөлөөр','revenge-trading':'Өшөө авалт','early-exit':'Эрт хаасан','overtrading':'Хэт их арилжаа','no-stop-loss':'SL тавиагүй','fomo-entry':'FOMO оролт','bad-risk':'Буруу эрсдэл' };
+        const EMOTION_NAMES = { calm:'Тайван', confident:'Итгэлтэй', planned:'Төлөвлөсөн', scared:'Айсан', fomo:'Сандарсан', angry:'Ууртай', stressed:'Стресстэй', doubtful:'Эргэлзсэн' };
+        const TAG_NAMES = { 'well-managed':'Сайн удирдсан','perfect-entry':'Төгс оролт','patient':'Тэвчээртэй','plan-follow':'Төлөвлөгөө дагасан','disciplined':'Сахилга баттай','impulsive':'Сэтгэл хөдлөлөөр','revenge-trading':'Өшөө авалт','early-exit':'Эрт хаасан','overtrading':'Хэт их арилжаа','no-stop-loss':'SL тавиагүй','fomo-entry':'Сандарч орсон','bad-risk':'Буруу эрсдэл' };
 
         const trades = tradeRes.rows.map(t => {
           let mt = t.mistake_tags; if (typeof mt === 'string') { try { mt = JSON.parse(mt); } catch { mt = []; } }
           let pt = t.positive_tags; if (typeof pt === 'string') { try { pt = JSON.parse(pt); } catch { pt = []; } }
+          const dateRaw = t.entry_date || t.created_at;
+          const dateObj = dateRaw ? new Date(dateRaw) : null;
           return {
             symbol: t.symbol, direction: t.direction, pnl: t.pnl, strategy: t.strategy,
+            entry_date: t.entry_date ? new Date(t.entry_date).toISOString().slice(0, 10) : null,
+            exit_date:  t.exit_date  ? new Date(t.exit_date).toISOString().slice(0, 10)  : null,
+            weekday: dateObj ? DAY_MN[dateObj.getDay()] : null,
             emotion_before: t.emotion_before ? resolveName(t.emotion_before, emoMap, EMOTION_NAMES) : null,
             emotion_after:  t.emotion_after  ? resolveName(t.emotion_after,  emoMap, EMOTION_NAMES) : null,
             positive_tags: (pt || []).map(id => resolveName(id, tagMap, TAG_NAMES)),
@@ -57,8 +71,8 @@ const buildSystemPrompt = async (tradeContext, userId, mode = 'analysis') => {
           };
         });
         const wins = trades.filter(t => parseFloat(t.pnl) > 0);
-        prompt += `\n\nХэрэглэгчийн сүүлийн ${trades.length} арилжааны мэдээлэл:
-- Win Rate: ${((wins.length / trades.length) * 100).toFixed(0)}%
+        prompt += `\n\nТаны сүүлийн ${trades.length} арилжааны мэдээлэл (entry_date, weekday — гараг байна):
+- Ашигтай арилжааны хувь: ${((wins.length / trades.length) * 100).toFixed(0)}%
 - Арилжаанууд: ${JSON.stringify(trades)}`;
       }
     } catch (e) {

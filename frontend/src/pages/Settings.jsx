@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { User, Palette, Globe, Bell, Shield, AlertTriangle, BarChart2, RefreshCw, Check, Eye, EyeOff, Plus, Trash2, Zap } from "lucide-react";
+import { User, Palette, Globe, Shield, AlertTriangle, BarChart2, RefreshCw, Check, Eye, EyeOff, Plus, Trash2, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const API_BASE = (import.meta.env.VITE_API_URL || '') + '/api';
@@ -326,8 +326,8 @@ function MT5Tab() {
 
       {/* Page header */}
       <div>
-        <h2 className="text-base font-semibold text-white">MetaTrader 5 холболт</h2>
-        <p className="text-xs text-slate-500 mt-0.5">MT5 дансаа холбож арилжааны түүхийг автоматаар татна</p>
+        <h2 className="text-base font-semibold text-white">Данс удирдлага</h2>
+        <p className="text-xs text-slate-500 mt-0.5">Дансаа холбож арилжааны түүхийг автоматаар татна</p>
       </div>
 
       {/* Auto-Sync accounts */}
@@ -338,8 +338,8 @@ function MT5Tab() {
               <Zap className="w-3.5 h-3.5 text-accent" />
             </div>
             <span className="text-sm font-semibold text-white">Auto-Sync</span>
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
-              Санал болгох
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-500 border border-slate-700">
+              Туршилт
             </span>
           </div>
           {!showConnectForm && (
@@ -364,7 +364,7 @@ function MT5Tab() {
             <div className="w-10 h-10 rounded-xl bg-slate-800/60 flex items-center justify-center mx-auto mb-3">
               <BarChart2 className="w-5 h-5 text-slate-600" />
             </div>
-            <p className="text-sm font-medium text-slate-500">MT5 данс холбогдоогүй байна</p>
+            <p className="text-sm font-medium text-slate-500">Данс холбогдоогүй байна</p>
             <p className="text-xs text-slate-600 mt-1 mb-4">Investor password ашиглан read-only горимоор холбоно</p>
             <button onClick={() => setShowConnectForm(true)}
               className="inline-flex items-center gap-1.5 text-xs font-semibold bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 px-3 py-2 rounded-lg transition-colors">
@@ -432,10 +432,6 @@ export function SettingsPage() {
     const saved = localStorage.getItem('app_preferences');
     return saved ? JSON.parse(saved) : { language: "mn", currency: "USD", timezone: "Asia/Ulaanbaatar" };
   });
-  const [notifications, setNotifications] = useState(() => {
-    const saved = localStorage.getItem('app_notifications');
-    return saved ? JSON.parse(saved) : { email: true, push: false, tradeAlerts: true };
-  });
 
   useEffect(() => {
     const { name: _n, email: _e, ...extra } = profile;
@@ -452,9 +448,6 @@ export function SettingsPage() {
     window.dispatchEvent(new Event('language-changed'));
   }, [preferences]);
 
-  useEffect(() => {
-    localStorage.setItem('app_notifications', JSON.stringify(notifications));
-  }, [notifications]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -476,12 +469,12 @@ export function SettingsPage() {
     mn: {
       settings: "Тохиргоо", settingsDesc: "Бүртгэл болон системийн тохиргоо",
       profile: "Профайл", appearance: "Харагдах байдал", preferences: "Тохиргоо",
-      notifications: "Мэдэгдэл", privacy: "Нууцлал",
+      privacy: "Нууцлал",
     },
     en: {
       settings: "Settings", settingsDesc: "Account and system preferences",
       profile: "Profile", appearance: "Appearance", preferences: "Preferences",
-      notifications: "Notifications", privacy: "Privacy",
+      privacy: "Privacy",
     },
   };
 
@@ -489,12 +482,11 @@ export function SettingsPage() {
   const text = t[lang];
 
   const tabs = [
-    { id: "profile",       label: text.profile,       icon: User },
-    { id: "appearance",    label: text.appearance,    icon: Palette },
-    { id: "preferences",   label: text.preferences,   icon: Globe },
-    { id: "notifications", label: text.notifications, icon: Bell },
-    { id: "privacy",       label: text.privacy,       icon: Shield },
-    { id: "mt5",           label: "MetaTrader 5",     icon: BarChart2 },
+    { id: "profile",     label: text.profile,     icon: User },
+    { id: "appearance",  label: text.appearance,  icon: Palette },
+    { id: "preferences", label: text.preferences, icon: Globe },
+    { id: "privacy",     label: text.privacy,     icon: Shield },
+    { id: "mt5",         label: "Холболт",        icon: BarChart2 },
   ];
 
   return (
@@ -623,52 +615,6 @@ export function SettingsPage() {
                     <option value="en">English</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1.5">Үндсэн мөнгөн тэмдэгт</label>
-                  <select value={preferences.currency} onChange={(e) => setPreferences({ ...preferences, currency: e.target.value })}
-                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner appearance-none">
-                    <option value="USD">USD ($)</option>
-                    <option value="MNT">MNT (₮)</option>
-                    <option value="EUR">EUR (€)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1.5">Цагийн бүс</label>
-                  <select value={preferences.timezone} onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
-                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-inner appearance-none">
-                    <option value="Asia/Ulaanbaatar">Asia/Ulaanbaatar (ULAT)</option>
-                    <option value="America/New_York">America/New_York (EST)</option>
-                    <option value="Europe/London">Europe/London (GMT)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "notifications" && (
-            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-lg font-semibold text-white">Мэдэгдэл</h2>
-              <div className="grid gap-6 max-w-md">
-                <label className="flex items-center justify-between cursor-pointer group p-3 -mx-3 rounded-xl hover:bg-slate-800/30 transition-colors">
-                  <div>
-                    <div className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">И-мэйл мэдэгдэл</div>
-                    <div className="text-xs text-slate-500 mt-1">Долоо хоногийн тайлан болон зөвлөмжүүд</div>
-                  </div>
-                  <div className={`w-12 h-6 rounded-full transition-colors duration-300 relative ${notifications.email ? 'bg-accent' : 'bg-slate-800'}`}
-                    onClick={() => setNotifications({...notifications, email: !notifications.email})}>
-                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm ${notifications.email ? 'left-7' : 'left-1'}`} />
-                  </div>
-                </label>
-                <label className="flex items-center justify-between cursor-pointer group p-3 -mx-3 rounded-xl hover:bg-slate-800/30 transition-colors">
-                  <div>
-                    <div className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">Арилжааны анхааруулга</div>
-                    <div className="text-xs text-slate-500 mt-1">Алдаа гаргах эрсдэлтэй үед AI анхааруулах</div>
-                  </div>
-                  <div className={`w-12 h-6 rounded-full transition-colors duration-300 relative ${notifications.tradeAlerts ? 'bg-accent' : 'bg-slate-800'}`}
-                    onClick={() => setNotifications({...notifications, tradeAlerts: !notifications.tradeAlerts})}>
-                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm ${notifications.tradeAlerts ? 'left-7' : 'left-1'}`} />
-                  </div>
-                </label>
               </div>
             </div>
           )}
