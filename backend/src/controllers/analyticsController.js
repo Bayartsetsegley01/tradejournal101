@@ -146,8 +146,8 @@ export const getMistakes = async (req, res) => {
       dbEmotionMap[e.id] = e.emoji ? `${e.name} ${e.emoji}` : e.name;
     });
 
-    const resolveTag = (id) => dbTagMap[id] || TAG_NAME_MAP[id] || String(id);
-    const resolveEmotion = (id) => dbEmotionMap[id] || EMOTION_NAME_MAP[id] || String(id);
+    const resolveTag = (id) => dbTagMap[id] || TAG_NAME_MAP[id] || TAG_NAME_MAP[id?.toLowerCase()] || String(id);
+    const resolveEmotion = (id) => dbEmotionMap[id] || EMOTION_NAME_MAP[id] || EMOTION_NAME_MAP[id?.toLowerCase()] || String(id);
 
     const rows = tradesRes.rows;
     const mistakeCount = {};
@@ -480,8 +480,8 @@ function buildReview(trades, type, start, end, lookups = {}) {
       emotionStats: {}, dailyBreakdown: [], summary: 'Энэ хугацаанд арилжаа байхгүй байна.' };
   }
   const { tagMap = {}, emotionMap = {} } = lookups;
-  const resolveTag = (id) => tagMap[id] || TAG_NAME_MAP[id] || String(id);
-  const resolveEmotion = (id) => emotionMap[id] || EMOTION_NAME_MAP[id] || String(id);
+  const resolveTag = (id) => tagMap[id] || TAG_NAME_MAP[id] || TAG_NAME_MAP[id?.toLowerCase()] || String(id);
+  const resolveEmotion = (id) => emotionMap[id] || EMOTION_NAME_MAP[id] || EMOTION_NAME_MAP[id?.toLowerCase()] || String(id);
 
   const winners = trades.filter(t => parseFloat(t.pnl) > 0);
   const losers = trades.filter(t => parseFloat(t.pnl) <= 0);

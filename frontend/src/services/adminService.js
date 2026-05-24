@@ -14,8 +14,11 @@ const handle = async (res) => {
 export const getDashboardStats = () =>
   fetch(`${API}/admin/dashboard`, { headers: authHeaders(), credentials: 'include' }).then(handle);
 
+const toQuery = (params) =>
+  new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''))).toString();
+
 export const getUsers = (params = {}) => {
-  const q = new URLSearchParams(params).toString();
+  const q = toQuery(params);
   return fetch(`${API}/admin/users?${q}`, { headers: authHeaders(), credentials: 'include' }).then(handle);
 };
 
@@ -29,7 +32,7 @@ export const deleteUser = (id) =>
   fetch(`${API}/admin/users/${id}`, { method: 'DELETE', headers: authHeaders(), credentials: 'include' }).then(handle);
 
 export const getFeedback = (params = {}) => {
-  const q = new URLSearchParams(params).toString();
+  const q = toQuery(params);
   return fetch(`${API}/admin/feedback?${q}`, { headers: authHeaders(), credentials: 'include' }).then(handle);
 };
 
