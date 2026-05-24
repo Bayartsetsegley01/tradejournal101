@@ -130,7 +130,7 @@ export const getMistakes = async (req, res) => {
     // Build ID→name lookup from DB for both tags and emotions
     const [tradesRes, tagDefsRes, emotionDefsRes] = await Promise.all([
       query(
-        `SELECT mistake_tags, positive_tags, emotion_before, emotion_after, pnl
+        `SELECT mistake_tags, positive_tags, emotion_before, emotion_after, pnl, entry_date
          FROM trades WHERE user_id=$1 ${filter.sql}`,
         [userId, ...filter.params]
       ),
@@ -154,8 +154,13 @@ export const getMistakes = async (req, res) => {
     const positiveCount = {};
     const emotionCount = {};
     const emotionPnl = {};
+    const emotionWins = {};
+    // weekly chart data: { "2024-W20": { weekLabel, mistakes: {name: count} } }
+    const weekMap = {};
 
     rows.forEach(t => {
+      const pnl = parseFloat(t.pnl) || 0;
+
       let mt = t.mistake_tags;
       if (typeof mt === 'string') { try { mt = JSON.parse(mt); } catch { mt = []; } }
       (mt || []).forEach(tag => {
@@ -173,7 +178,29 @@ export const getMistakes = async (req, res) => {
       if (t.emotion_before) {
         const eName = resolveEmotion(t.emotion_before);
         emotionCount[eName] = (emotionCount[eName] || 0) + 1;
-        emotionPnl[eName] = (emotionPnl[eName] || 0) + (parseFloat(t.pnl) || 0);
+        emotionPnl[eName] = (emotionPnl[eName] || 0) + pnl;
+        if (pnl > 0) emotionWins[eName] = (emotionWins[eName] || 0) + 1;
+      }
+
+      // Weekly mistake grouping
+      if (t.entry_date && (mt || []).length > 0) {
+        const d = new Date(t.entry_date);
+        const jan1 = new Date(d.getFullYear(), 0, 1);
+        const weekNum = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+        // Compute Monday of that week for the label
+        const day = d.getDay() || 7;
+        const monday = new Date(d);
+        monday.setDate(d.getDate() - (day - 1));
+        const weekKey = monday.toISOString().slice(0, 10);
+        const labelEnd = new Date(monday);
+        labelEnd.setDate(monday.getDate() + 6);
+        const fmtDate = (dd) => `${dd.getMonth()+1}/${dd.getDate()}`;
+        const weekLabel = `${fmtDate(monday)} – ${fmtDate(labelEnd)}`;
+        if (!weekMap[weekKey]) weekMap[weekKey] = { weekKey, weekLabel, mistakes: {} };
+        (mt || []).forEach(tag => {
+          const name = resolveTag(tag);
+          weekMap[weekKey].mistakes[name] = (weekMap[weekKey].mistakes[name] || 0) + 1;
+        });
       }
     });
 
@@ -193,10 +220,44 @@ export const getMistakes = async (req, res) => {
         name,
         count,
         percentage: totalEmotions > 0 ? Math.round((count / totalEmotions) * 100) : 0,
-        totalPnl: parseFloat((emotionPnl[name] || 0).toFixed(2))
+        totalPnl: parseFloat((emotionPnl[name] || 0).toFixed(2)),
+        winCount: emotionWins[name] || 0,
+        winRate: count > 0 ? Math.round(((emotionWins[name] || 0) / count) * 100) : 0,
+        avgProfit: count > 0 ? parseFloat(((emotionPnl[name] || 0) / count).toFixed(2)) : 0,
       }));
 
-    res.json({ success: true, data: { mistakes, positiveTags, emotions, totalTrades: rows.length } });
+    // Summary stats
+    const totalPnl = rows.reduce((s, t) => s + (parseFloat(t.pnl) || 0), 0);
+    const winCount = rows.filter(t => parseFloat(t.pnl) > 0).length;
+    const avgProfit = rows.length > 0 ? totalPnl / rows.length : 0;
+    const mTotal = mistakes.reduce((s, m) => s + m.count, 0);
+    const pTotal = positiveTags.reduce((s, t) => s + t.count, 0);
+    const totalTags = mTotal + pTotal;
+    const disciplineScore = totalTags > 0 ? Math.min(100, Math.round((pTotal / totalTags) * 100 * 1.5)) : 0;
+
+    // Weekly chart: top 3 mistakes as series
+    const top3 = mistakes.slice(0, 3).map(m => m.name);
+    const weeklyChart = Object.values(weekMap)
+      .sort((a, b) => a.weekKey.localeCompare(b.weekKey))
+      .slice(-8)
+      .map(w => {
+        const entry = { week: w.weekLabel };
+        top3.forEach(name => { entry[name] = w.mistakes[name] || 0; });
+        return entry;
+      });
+
+    res.json({ success: true, data: {
+      mistakes, positiveTags, emotions, totalTrades: rows.length,
+      summary: {
+        totalPnl: parseFloat(totalPnl.toFixed(2)),
+        winRate: rows.length > 0 ? Math.round((winCount / rows.length) * 100) : 0,
+        avgProfit: parseFloat(avgProfit.toFixed(2)),
+        disciplineScore,
+        winCount,
+      },
+      weeklyChart,
+      topMistake: mistakes[0] || null,
+    } });
   } catch (error) {
     console.error('getMistakes error:', error);
     res.status(500).json({ success: false, error: error.message });
