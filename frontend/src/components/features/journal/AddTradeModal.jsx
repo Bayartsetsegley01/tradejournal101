@@ -288,17 +288,8 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
 
   // ── Validation ────────────────────────────────────────────────────────────────
   const validateForm = () => {
-    if (!formData.symbol)    return 'Симбол (Symbol) оруулна уу';
-    if (!formData.entry)     return 'Орох үнэ (Entry price) оруулна уу';
-    if (!formData.stopLoss)  return 'Stop Loss оруулна уу';
-    if (!formData.takeProfit) return 'Take Profit оруулна уу';
-    if (!formData.quantity)  return 'Хэмжээ (Quantity/Lot) оруулна уу';
-    if (!formData.whyEntered) return 'Яагаад орсон шалтгаанаа бичнэ үү';
-    if (formData.status === 'CLOSED') {
-      if (!formData.exit) return 'Хаасан үнэ (Exit price) оруулна уу';
-      if (!formData.whatHappened) return 'Юу болсныг бичнэ үү';
-      if (!formData.lessonLearned) return 'Юу сурснаа бичнэ үү';
-    }
+    if (!formData.symbol) return 'Symbol оруулна уу';
+    if (formData.status === 'CLOSED' && !formData.exit) return 'Гаралтын үнэ оруулна уу';
     return null;
   };
 
@@ -346,7 +337,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
   const warnings = [
     formData.riskPercent && parseFloat(formData.riskPercent) > 3 && 'Risk 3%-аас их байна!',
     !formData.stopLoss && formData.entry && 'Stop Loss тавиагүй байна!',
-    rr && parseFloat(rr) < 1 && 'R/R харьцаа 1-ээс бага байна!',
+    rr && parseFloat(rr) < 1 && 'Э/Ш харьцаа 1-ээс бага байна!',
   ].filter(Boolean);
 
   // ── Tag lists: DB-only when available, static fallback ───────────────────────
@@ -447,7 +438,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             {/* Market-specific fields */}
             {(formData.market === 'forex' || formData.market === 'indices' || formData.market === 'gold') && (
               <div>
-                <label className={labelCls}>Арилжааны Сесс</label>
+                <label className={labelCls}>Арилжааны Сешн</label>
                 <div className="flex flex-wrap gap-2">
                   {SESSIONS.map(s => (
                     <button key={s.id} type="button" onClick={() => setV('session', s.id)}
@@ -472,7 +463,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                 <input type="number" step="any" className={inputCls} value={formData.exit} onChange={set('exit')} />
               </div>
               <div>
-                <label className={labelCls}>P&L <span className="text-slate-600 normal-case font-normal">(broker-оос)</span></label>
+                <label className={labelCls}<>А/А <span className="text-slate-600 normal-case font-normal">(broker-оос)</span></label>
                 <input type="number" step="any" placeholder="0.00" className={inputCls} value={formData.pnl} onChange={set('pnl')} />
               </div>
               <div>
@@ -506,8 +497,8 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4">
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: 'R/R Харьцаа', value: rr ? `${rr}R` : '—', cls: 'text-white' },
-                  { label: 'P&L', value: formData.pnl !== '' && formData.pnl != null ? `${parseFloat(formData.pnl) > 0 ? '+' : ''}$${formData.pnl}` : '—', cls: parseFloat(formData.pnl) > 0 ? 'text-emerald-400' : parseFloat(formData.pnl) < 0 ? 'text-rose-400' : 'text-white' },
+                  { label: 'Э/Ш Харьцаа', value: rr ? `${rr}R` : '—', cls: 'text-white' },
+                  { label: 'А/А', value: formData.pnl !== '' && formData.pnl != null ? `${parseFloat(formData.pnl) > 0 ? '+' : ''}$${formData.pnl}` : '—', cls: parseFloat(formData.pnl) > 0 ? 'text-emerald-400' : parseFloat(formData.pnl) < 0 ? 'text-rose-400' : 'text-white' },
                   { label: 'Risk $',      value: riskAmount ? `$${riskAmount}` : '—', cls: 'text-rose-400' },
                 ].map((item, i) => (
                   <div key={i}>

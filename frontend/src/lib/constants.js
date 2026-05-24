@@ -14,7 +14,7 @@ export const EMOTIONS = [
   { id: 'confident', label: 'Итгэлтэй', emoji: '💪' },
   { id: 'planned', label: 'Төлөвлөсөн', emoji: '😎' },
   { id: 'scared', label: 'Айсан', emoji: '😨' },
-  { id: 'fomo', label: 'FOMO', emoji: '🤯' },
+  { id: 'fomo', label: 'Сандарсан', emoji: '🤯' },
   { id: 'angry', label: 'Ууртай', emoji: '😡' },
   { id: 'stressed', label: 'Стресстэй', emoji: '😵' },
   { id: 'doubtful', label: 'Эргэлзсэн', emoji: '😞' },
@@ -34,7 +34,7 @@ export const MISTAKE_TAGS = [
   { id: 'early-exit', label: 'Эрт хаасан', emoji: '🏃' },
   { id: 'overtrading', label: 'Хэт их арилжаа хийсэн', emoji: '🔄' },
   { id: 'no-stop-loss', label: 'Stop Loss тавиагүй', emoji: '⛔' },
-  { id: 'fomo-entry', label: 'FOMO оролт', emoji: '🤯' },
+  { id: 'fomo-entry', label: 'Сандарч орсон', emoji: '🤯' },
   { id: 'bad-risk', label: 'Эрсдэл буруу тооцсон', emoji: '📉' },
 ];
 

@@ -335,8 +335,8 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
             <th className="px-5 py-4 font-semibold border-b border-slate-800">Чиглэл</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">Оролт</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">Гаралт</th>
-            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">R/R</th>
-            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">P&L</th>
+            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">Э/Ш</th>
+            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">А/А</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800 text-center">Статус</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800 text-center">Сэтгэл зүй</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800 text-center">Зураг</th>

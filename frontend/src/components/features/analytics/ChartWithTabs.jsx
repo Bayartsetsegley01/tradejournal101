@@ -84,7 +84,7 @@ function GrowthChart({ equityCurve, currency }) {
       <Tip>
         <p className="text-slate-500 mb-1.5 text-[11px]">{lbl}</p>
         <div className="flex justify-between gap-5 mb-0.5">
-          <span className="text-slate-400">Нийт P&L</span>
+          <span className="text-slate-400">Нийт А/А</span>
           <span className={cn("font-semibold", pnlTextCls(d.value))}>{fmtSigned(d.value, currency)}</span>
         </div>
         <div className="flex justify-between gap-5">
@@ -102,7 +102,7 @@ function GrowthChart({ equityCurve, currency }) {
         <span className={cn("text-2xl font-bold tracking-tight", pnlTextCls(total))}>
           {fmtSigned(total, currency)}
         </span>
-        <span className="text-xs text-slate-500">нийт P&L</span>
+        <span className="text-xs text-slate-500">нийт А/А</span>
       </div>
 
       <div className="flex-1 min-h-0">
@@ -321,7 +321,7 @@ function PnlChart({ winLoss, trades = [] }) {
 // Tab 4 — Session
 // ══════════════════════════════════════════════════════════════════════════════
 function SessionChart({ bySession, currency }) {
-  if (!bySession?.length) return <Empty label="Сессийн өгөгдөл хангалтгүй" />;
+  if (!bySession?.length) return <Empty label="Сешний өгөгдөл хангалтгүй" />;
 
   const data = bySession.map(d => ({ ...d, value: parseFloat(d.value) || 0 }));
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -354,7 +354,7 @@ function SessionChart({ bySession, currency }) {
         <span className={cn("text-2xl font-bold tracking-tight", pnlTextCls(total))}>
           {fmtSigned(total, currency)}
         </span>
-        <span className="text-xs text-slate-500">нийт сессийн P&L</span>
+        <span className="text-xs text-slate-500">нийт сешний P&L</span>
       </div>
 
       <div className="flex-1 min-h-0">
@@ -396,7 +396,7 @@ const TABS = [
   { id: 'growth',  label: 'Дансны өсөлт',    icon: TrendingUp },
   { id: 'monthly', label: 'Сарын гүйцэтгэл', icon: BarChart2  },
   { id: 'pnl',     label: 'Ашиг/Алдагдал',  icon: PieIcon    },
-  { id: 'session', label: 'Сесс',             icon: Globe      },
+  { id: 'session', label: 'Сешн',             icon: Globe      },
 ];
 
 export function ChartWithTabs({ equityCurve = [], perfData = null, trades = [], currency = '$' }) {

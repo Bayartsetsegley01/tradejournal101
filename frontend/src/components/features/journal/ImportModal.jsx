@@ -219,7 +219,7 @@ const SYSTEM_FIELDS = [
   { value: 'pnl',             label: 'P&L (Ашиг/Алдагдал)' },
   { value: 'rr_ratio',        label: 'R/R Харьцаа' },
   { value: 'strategy',        label: 'Стратеги' },
-  { value: 'session',         label: 'Сесс' },
+  { value: 'session',         label: "Сешн" },
   { value: 'market_type',     label: 'Зах зээлийн төрөл' },
   { value: 'positive_tags',   label: 'Эерэг тэмдэглэл' },
   { value: 'mistake_tags',    label: 'Алдааны тэмдэглэл' },

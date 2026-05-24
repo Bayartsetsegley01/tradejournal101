@@ -243,9 +243,9 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               {[
                 { label: 'Оролт', value: trade.entry_price || trade.entry || '—', cls: 'text-white' },
                 { label: 'Гаралт', value: trade.exit_price || trade.exit || '—', cls: 'text-white' },
-                { label: 'R/R', value: (trade.rr_ratio || trade.rr) ? `${trade.rr_ratio || trade.rr}R` : '—', cls: 'text-white' },
+                { label: 'Э/Ш', value: (trade.rr_ratio || trade.rr) ? `${trade.rr_ratio || trade.rr}R` : '—', cls: 'text-white' },
                 {
-                  label: 'P&L',
+                  label: 'А/А',
                   value: trade.pnl != null ? `${trade.pnl > 0 ? '+' : ''}$${trade.pnl}` : '—',
                   cls: isWin ? 'text-emerald-400' : isLoss ? 'text-rose-400' : 'text-white',
                   highlight: isWin ? 'border-emerald-500/30 bg-emerald-500/5' : isLoss ? 'border-rose-500/30 bg-rose-500/5' : '',
@@ -289,7 +289,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>Арилжааны Сесс</label>
+                <label className={labelCls}>Арилжааны Сешн</label>
                 <select
                   value={editData.session}
                   onChange={e => setEditData(prev => ({ ...prev, session: e.target.value }))}

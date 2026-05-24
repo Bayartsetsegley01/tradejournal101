@@ -227,7 +227,7 @@ export function TradeFilters({ filters, setFilters, customRange, onCustomRangeCh
 
             {/* Session */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Сесс</label>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Сешн</label>
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => setFilters({ ...filters, session: 'all' })}
                   className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${

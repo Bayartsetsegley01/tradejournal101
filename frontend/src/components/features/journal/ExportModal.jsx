@@ -59,7 +59,7 @@ const OPTION_LABELS = {
   entryExit:       'Оролт / Гаралт / SL / TP',
   riskManagement:  'Хэмжээ & Эрсдэл %',
   pnlStats:        'P&L Статистик',
-  strategySession: 'Стратеги & Сесс',
+  strategySession: 'Стратеги & Сешн',
   psychology:      'Сэтгэл зүй',
   reasonForEntry:  'Яагаад орсон',
   whatHappened:    'Юу болсон',
@@ -156,7 +156,7 @@ function buildReportHTML({ trades, options, stats }) {
     const strategyRow = options.strategySession && (t.strategy || t.session || t.market_type) ? `
       <div style="display:flex;gap:24px;padding:14px 18px;border-bottom:1px solid #f1f5f9;background:#fafafa;">
         ${t.strategy ? `<div><p style="font-size:9px;color:#94a3b8;margin:0 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Стратеги</p><p style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">${cleanText(t.strategy)}</p></div>` : ''}
-        ${t.session ? `<div><p style="font-size:9px;color:#94a3b8;margin:0 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Сесс</p><p style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">${cleanText(t.session)}</p></div>` : ''}
+        ${t.session ? `<div><p style="font-size:9px;color:#94a3b8;margin:0 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Сешн</p><p style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">${cleanText(t.session)}</p></div>` : ''}
         ${t.market_type ? `<div><p style="font-size:9px;color:#94a3b8;margin:0 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Зах зээл</p><p style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">${cleanText(t.market_type)}</p></div>` : ''}
       </div>` : '';
 
@@ -243,7 +243,7 @@ export function ExportModal({ onClose, trades = [] }) {
     if (options.entryExit)       cols.push(['Оролт', t => fmtNum(t.entry_price ?? t.entry)], ['Гаралт', t => fmtNum(t.exit_price ?? t.exit)], ['Stop Loss', t => fmtNum(t.stop_loss ?? t.stopLoss)], ['Take Profit', t => fmtNum(t.take_profit ?? t.takeProfit)]);
     if (options.riskManagement)  cols.push(['Хэмжээ', t => fmtNum(t.position_size ?? t.quantity)], ['Эрсдэл %', t => fmtNum(t.risk_percent ?? t.riskPercent)]);
     if (options.pnlStats)        cols.push(['P&L', t => parseFloat(t.pnl ?? 0).toFixed(2)], ['R:R', t => fmtNum(t.rr_ratio ?? t.rrRatio)]);
-    if (options.strategySession) cols.push(['Стратеги', t => cleanText(t.strategy)], ['Сесс', t => cleanText(t.session)]);
+    if (options.strategySession) cols.push(['Стратеги', t => cleanText(t.strategy)], ['Сешн', t => cleanText(t.session)]);
     if (options.psychology)      cols.push(['Сэтгэл зүй (өмнө)', t => cleanText(t.emotionBefore || t.emotion_before)], ['Сэтгэл зүй (дараа)', t => cleanText(t.emotionAfter || t.emotion_after)]);
     if (options.reasonForEntry)  cols.push(['Яагаад орсон', t => `"${cleanText(t.whyEntered || t.why_entered).replace(/"/g, '""')}"`]);
     if (options.whatHappened)    cols.push(['Юу болсон',    t => `"${cleanText(t.whatHappened || t.what_happened).replace(/"/g, '""')}"`]);
