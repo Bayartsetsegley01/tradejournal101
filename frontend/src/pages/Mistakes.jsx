@@ -6,6 +6,8 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import { analyticsService } from "@/services/analyticsService";
 import { useTradesUpdated } from "@/lib/tradesSync";
+import { TimeFilter } from "@/components/features/analytics/TimeFilter";
+import { MARKET_TYPES } from "@/lib/constants";
 
 function AnimatedBar({ pct, gradient }) {
   const [width, setWidth] = useState(0);
@@ -78,17 +80,20 @@ export function MistakesPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [timeRange, setTimeRange] = useState('all');
+  const [customRange, setCustomRange] = useState(null);
+  const [selectedMarket, setSelectedMarket] = useState('all');
 
   const fetchMistakes = useCallback(() => {
     setLoading(true);
-    analyticsService.getMistakes('all')
+    analyticsService.getMistakes(timeRange)
       .then(res => {
         if (res.success) setData(res.data);
         else setError(res.error || "Алдаа гарлаа");
       })
       .catch(() => setError("Сервертэй холбогдоход алдаа гарлаа."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [timeRange]);
 
   useEffect(() => { fetchMistakes(); }, [fetchMistakes]);
   useTradesUpdated(fetchMistakes);
@@ -113,6 +118,33 @@ export function MistakesPage() {
             <span>{data.totalTrades} арилжаа</span>
           </div>
         )}
+      </div>
+
+      {/* ── Шүүлтүүр ───────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-3">
+        <TimeFilter
+          value={timeRange}
+          onChange={setTimeRange}
+          customRange={customRange}
+          onCustomRangeChange={setCustomRange}
+        />
+
+        {/* Зах зээлийн шүүлтүүр */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {[{ id: 'all', label: 'Бүх зах зээл' }, ...MARKET_TYPES].map(m => (
+            <button
+              key={m.id}
+              onClick={() => setSelectedMarket(m.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                selectedMarket === m.id
+                  ? 'bg-accent/15 border-accent/40 text-accent'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── States ─────────────────────────────────────────────────────────── */}
