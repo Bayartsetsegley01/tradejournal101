@@ -15,7 +15,7 @@ function getLast7Days() {
 }
 
 const OPTIONS = [
-  { id: 'all',    label: 'Хугацаа' },
+  { id: 'all',    label: 'Бүх цаг үе' },
   { id: '1y',     label: '1 жил' },
   { id: '6m',     label: '6 сар' },
   { id: '3m',     label: '3 сар' },
