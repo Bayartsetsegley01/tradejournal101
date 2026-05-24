@@ -86,7 +86,13 @@ export const addTrade = async (req, res) => {
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
 
-    const pnl = b.pnl != null && b.pnl !== '' ? parseFloat(b.pnl) : null;
+    let pnl = null;
+    if (b.pnl != null && b.pnl !== '') {
+      pnl = parseFloat(b.pnl);
+    } else if (entryPrice && exitPrice && positionSize) {
+      const diff = b.direction === 'LONG' ? exitPrice - entryPrice : entryPrice - exitPrice;
+      pnl = parseFloat((diff * positionSize).toFixed(2));
+    }
 
     let rrRatio = toNum(b.rr_ratio ?? b.rrRatio);
     if (!rrRatio && entryPrice && stopLoss && takeProfit) {
@@ -153,7 +159,13 @@ export const updateTrade = async (req, res) => {
     const mistakesMade = b.mistakes_made || b.mistakesMade || null;
     const setupDescription = b.setup_description || b.setupDescription || null;
 
-    const pnl = b.pnl != null && b.pnl !== '' ? parseFloat(b.pnl) : null;
+    let pnl = null;
+    if (b.pnl != null && b.pnl !== '') {
+      pnl = parseFloat(b.pnl);
+    } else if (entryPrice && exitPrice && positionSize) {
+      const diff = b.direction === 'LONG' ? exitPrice - entryPrice : entryPrice - exitPrice;
+      pnl = parseFloat((diff * positionSize).toFixed(2));
+    }
 
     let rrRatio = toNum(b.rr_ratio ?? b.rrRatio);
     if (!rrRatio && entryPrice && stopLoss && takeProfit) {
