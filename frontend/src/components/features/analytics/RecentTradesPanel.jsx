@@ -63,7 +63,7 @@ export function RecentTradesPanel({ trades = [], currency = '$' }) {
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
                       isBuy ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'
                     }`}>
-                      {isBuy ? 'buy' : 'sell'}
+                      {isBuy ? 'LONG' : 'SHORT'}
                     </span>
                     {trade.position_size && (
                       <span className="text-[11px] text-slate-500 shrink-0">{parseFloat(trade.position_size).toFixed(2)}</span>

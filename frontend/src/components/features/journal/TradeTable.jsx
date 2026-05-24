@@ -331,15 +331,15 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
               />
             </th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800">Огноо</th>
-            <th className="px-5 py-4 font-semibold border-b border-slate-800">Market & Symbol</th>
-            <th className="px-5 py-4 font-semibold border-b border-slate-800">L/S</th>
-            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">Entry</th>
-            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">Exit</th>
+            <th className="px-5 py-4 font-semibold border-b border-slate-800">Зах зээл & Symbol</th>
+            <th className="px-5 py-4 font-semibold border-b border-slate-800">Чиглэл</th>
+            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">Оролт</th>
+            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">Гаралт</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">R/R</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">P&L</th>
-            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-center">Status</th>
+            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-center">Статус</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800 text-center">Сэтгэл зүй</th>
-            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-center">Media</th>
+            <th className="px-5 py-4 font-semibold border-b border-slate-800 text-center">Зураг</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800">Тэмдэглэл</th>
             <th className="px-5 py-4 font-semibold border-b border-slate-800 text-right">Үйлдэл</th>
           </tr>
@@ -542,12 +542,12 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
                     <div className="flex flex-col gap-1 items-center" onClick={(e) => e.stopPropagation()}>
                       {['OPEN', 'CLOSED', 'CANCELLED'].map((s) => (
                         <button key={s} onClick={() => saveField(t.id, 'status', { status: s })}
-                          className={`w-24 py-1 rounded-md text-[11px] font-semibold border transition-all ${
+                          className={`w-28 py-1 rounded-md text-[11px] font-semibold border transition-all ${
                             s === 'OPEN'   ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30' :
                             s === 'CLOSED' ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700' :
                                             'bg-slate-800/30 text-slate-500 border-slate-700/50 hover:bg-slate-700/50'
                           } ${t.status === s ? 'ring-1 ring-current' : ''}`}>
-                          {s}
+                          {s === 'OPEN' ? 'Нээлттэй' : s === 'CLOSED' ? 'Хаагдсан' : 'Цуцлагдсан'}
                         </button>
                       ))}
                     </div>
@@ -558,7 +558,7 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
                         t.status === 'CANCELLED' ? 'bg-slate-800/30 text-slate-600 border-slate-700/30' :
                                                    'bg-slate-800/50 text-slate-400 border-slate-700/50'
                       }`}>
-                        {t.status}
+                        {t.status === 'OPEN' ? 'Нээлттэй' : t.status === 'CLOSED' ? 'Хаагдсан' : t.status === 'DRAFT' ? 'Ноорог' : t.status === 'CANCELLED' ? 'Цуцлагдсан' : t.status}
                       </span>
                       <FlashOverlay id={t.id} field="status" />
                     </>

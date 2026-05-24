@@ -321,7 +321,7 @@ function PnlChart({ winLoss, trades = [] }) {
 // Tab 4 — Session
 // ══════════════════════════════════════════════════════════════════════════════
 function SessionChart({ bySession, currency }) {
-  if (!bySession?.length) return <Empty label="Session өгөгдөл хангалтгүй" />;
+  if (!bySession?.length) return <Empty label="Сессийн өгөгдөл хангалтгүй" />;
 
   const data = bySession.map(d => ({ ...d, value: parseFloat(d.value) || 0 }));
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -354,7 +354,7 @@ function SessionChart({ bySession, currency }) {
         <span className={cn("text-2xl font-bold tracking-tight", pnlTextCls(total))}>
           {fmtSigned(total, currency)}
         </span>
-        <span className="text-xs text-slate-500">нийт session P&L</span>
+        <span className="text-xs text-slate-500">нийт сессийн P&L</span>
       </div>
 
       <div className="flex-1 min-h-0">
@@ -396,7 +396,7 @@ const TABS = [
   { id: 'growth',  label: 'Дансны өсөлт',    icon: TrendingUp },
   { id: 'monthly', label: 'Сарын гүйцэтгэл', icon: BarChart2  },
   { id: 'pnl',     label: 'Ашиг/Алдагдал',  icon: PieIcon    },
-  { id: 'session', label: 'Session',          icon: Globe      },
+  { id: 'session', label: 'Сесс',             icon: Globe      },
 ];
 
 export function ChartWithTabs({ equityCurve = [], perfData = null, trades = [], currency = '$' }) {

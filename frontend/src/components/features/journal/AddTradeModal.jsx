@@ -435,11 +435,11 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             <div className="mb-3">
               <label className={labelCls}>Төлөв</label>
               <div className="flex gap-2">
-                {['PLANNED','OPEN','CLOSED'].map(s => (
+                {[['PLANNED','Төлөвлөсөн'],['OPEN','Нээлттэй'],['CLOSED','Хаагдсан']].map(([s, lbl]) => (
                   <button key={s} type="button" onClick={() => setV('status', s)}
                     className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border ${
                       formData.status === s ? 'bg-slate-800 border-slate-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
-                    }`}>{s}</button>
+                    }`}>{lbl}</button>
                 ))}
               </div>
             </div>
@@ -447,7 +447,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             {/* Market-specific fields */}
             {(formData.market === 'forex' || formData.market === 'indices' || formData.market === 'gold') && (
               <div>
-                <label className={labelCls}>Trading Session</label>
+                <label className={labelCls}>Арилжааны Сесс</label>
                 <div className="flex flex-wrap gap-2">
                   {SESSIONS.map(s => (
                     <button key={s.id} type="button" onClick={() => setV('session', s.id)}
@@ -464,11 +464,11 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
           <Section icon={LineChart} title="Гүйцэтгэл & Эрсдэл" sectionKey="execution" openSections={openSections} onToggle={toggleSection}>
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
-                <label className={labelCls}>Entry Price</label>
+                <label className={labelCls}>Оролтын үнэ</label>
                 <input type="number" step="any" className={inputCls} value={formData.entry} onChange={set('entry')} />
               </div>
               <div>
-                <label className={labelCls}>Exit Price <span className="text-slate-600 normal-case font-normal">(opt)</span></label>
+                <label className={labelCls}>Гаралтын үнэ <span className="text-slate-600 normal-case font-normal">(заавал биш)</span></label>
                 <input type="number" step="any" className={inputCls} value={formData.exit} onChange={set('exit')} />
               </div>
               <div>
@@ -484,11 +484,11 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                 <input type="number" step="any" className={`${inputCls} text-emerald-400`} value={formData.takeProfit} onChange={set('takeProfit')} />
               </div>
               <div>
-                <label className={labelCls}>Quantity / Lot</label>
+                <label className={labelCls}>Хэмжээ / Лот</label>
                 <input type="number" step="any" placeholder="0.5" className={inputCls} value={formData.quantity} onChange={set('quantity')} />
               </div>
               <div>
-                <label className={labelCls}>Risk %</label>
+                <label className={labelCls}>Эрсдэл %</label>
                 <div className="relative">
                   <input type="number" step="any" placeholder="1.0" className={`${inputCls} pr-8`} value={formData.riskPercent} onChange={set('riskPercent')} />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">%</span>
@@ -497,7 +497,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             </div>
 
             <div className="mb-3">
-              <label className={labelCls}>Account Balance</label>
+              <label className={labelCls}>Дансны үлдэгдэл</label>
               <input type="number" step="any" className={inputCls} value={formData.accountBalance ? parseFloat(formData.accountBalance).toFixed(2) : ''}
                 onChange={e => { setV('accountBalance', e.target.value); localStorage.setItem('account_balance', e.target.value); }} />
             </div>
@@ -576,7 +576,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             {/* Positive tags */}
             <div className="mb-4">
               <label className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-2">
-                <Check className="w-3 h-3" /> Давуу тал (Positive Tags)
+                <Check className="w-3 h-3" /> Давуу тал
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {allPositiveTags.map(t => (
@@ -599,7 +599,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             {/* Mistake tags */}
             <div>
               <label className="flex items-center gap-1.5 text-xs font-semibold text-rose-400 uppercase tracking-wide mb-2">
-                <X className="w-3 h-3" /> Алдаа (Mistake Tags)
+                <X className="w-3 h-3" /> Алдаа
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {allMistakeTags.map(t => (

@@ -55,16 +55,16 @@ const DEFAULT_OPTIONS = {
 };
 
 const OPTION_LABELS = {
-  tradeInfo:       'Trade Information',
-  entryExit:       'Entry / Exit / SL / TP',
-  riskManagement:  'Quantity & Risk %',
-  pnlStats:        'PnL Statistics',
-  strategySession: 'Strategy & Session',
-  psychology:      'Emotion / Psychology',
-  reasonForEntry:  'Reason For Entry',
-  whatHappened:    'What Happened',
-  lessonLearned:   'Lesson Learned',
-  screenshots:     'Screenshots (PDF only)',
+  tradeInfo:       'Арилжааны мэдээлэл',
+  entryExit:       'Оролт / Гаралт / SL / TP',
+  riskManagement:  'Хэмжээ & Эрсдэл %',
+  pnlStats:        'P&L Статистик',
+  strategySession: 'Стратеги & Сесс',
+  psychology:      'Сэтгэл зүй',
+  reasonForEntry:  'Яагаад орсон',
+  whatHappened:    'Юу болсон',
+  lessonLearned:   'Юу сурсан',
+  screenshots:     'Зурагнууд (PDF-д л)',
 };
 
 // PDF HTML builder
@@ -75,38 +75,38 @@ function buildReportHTML({ trades, options, stats }) {
   const coverHTML = `
     <div style="min-height:1050px;display:flex;flex-direction:column;justify-content:center;padding:60px 56px;background:white;border-bottom:3px solid #f1f5f9;margin-bottom:56px;">
       <div style="background:#f8fafc;border-radius:8px;padding:6px 14px;display:inline-block;margin-bottom:28px;width:fit-content;">
-        <span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#64748b;text-transform:uppercase;">Trade Journal</span>
+        <span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#64748b;text-transform:uppercase;">Арилжааны Тэмдэглэл</span>
       </div>
-      <h1 style="font-size:44px;font-weight:800;color:#0f172a;margin:0 0 10px;line-height:1.1;">Trading Performance<br/>Report</h1>
-      <p style="font-size:15px;color:#94a3b8;margin:0 0 48px;">Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} &nbsp;·&nbsp; ${stats.total} trades</p>
+      <h1 style="font-size:44px;font-weight:800;color:#0f172a;margin:0 0 10px;line-height:1.1;">Арилжааны Гүйцэтгэлийн<br/>Тайлан</h1>
+      <p style="font-size:15px;color:#94a3b8;margin:0 0 48px;">Үүсгэсэн: ${new Date().toLocaleDateString('mn-MN', { year: 'numeric', month: 'long', day: 'numeric' })} &nbsp;·&nbsp; ${stats.total} арилжаа</p>
 
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;">
         <div style="background:#f8fafc;border-radius:14px;padding:22px 20px;">
-          <p style="font-size:10px;color:#94a3b8;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Net PnL</p>
+          <p style="font-size:10px;color:#94a3b8;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Нийт P&L</p>
           <p style="font-size:28px;font-weight:800;margin:0;color:${pnlColor(stats.netPnl)};">${fmtPnl(stats.netPnl)}</p>
         </div>
         <div style="background:#f8fafc;border-radius:14px;padding:22px 20px;">
-          <p style="font-size:10px;color:#94a3b8;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Win Rate</p>
+          <p style="font-size:10px;color:#94a3b8;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Хожлын хувь</p>
           <p style="font-size:28px;font-weight:800;margin:0;color:#0f172a;">${stats.winRate}%</p>
         </div>
         <div style="background:#f8fafc;border-radius:14px;padding:22px 20px;">
-          <p style="font-size:10px;color:#94a3b8;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Closed Trades</p>
+          <p style="font-size:10px;color:#94a3b8;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Хаагдсан арилжаа</p>
           <p style="font-size:28px;font-weight:800;margin:0;color:#0f172a;">${stats.closed} / ${stats.total}</p>
         </div>
         ${stats.bestTrade ? `
         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:22px 20px;">
-          <p style="font-size:10px;color:#16a34a;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Best Trade</p>
+          <p style="font-size:10px;color:#16a34a;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Хамгийн сайн арилжаа</p>
           <p style="font-size:22px;font-weight:800;margin:0;color:#15803d;">${fmtPnl(stats.bestTrade.pnl)}</p>
           <p style="font-size:11px;color:#16a34a;margin:5px 0 0;">${cleanText(stats.bestTrade.symbol)} &middot; ${cleanText(stats.bestTrade.direction)}</p>
         </div>` : ''}
         ${stats.worstTrade ? `
         <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:14px;padding:22px 20px;">
-          <p style="font-size:10px;color:#dc2626;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Worst Trade</p>
+          <p style="font-size:10px;color:#dc2626;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Хамгийн муу арилжаа</p>
           <p style="font-size:22px;font-weight:800;margin:0;color:#b91c1c;">${fmtPnl(stats.worstTrade.pnl)}</p>
           <p style="font-size:11px;color:#dc2626;margin:5px 0 0;">${cleanText(stats.worstTrade.symbol)} &middot; ${cleanText(stats.worstTrade.direction)}</p>
         </div>` : ''}
         <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:14px;padding:22px 20px;">
-          <p style="font-size:10px;color:#7c3aed;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Avg RR</p>
+          <p style="font-size:10px;color:#7c3aed;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Дундаж R/R</p>
           <p style="font-size:22px;font-weight:800;margin:0;color:#6d28d9;">${stats.avgRR}R</p>
         </div>
       </div>
@@ -127,11 +127,11 @@ function buildReportHTML({ trades, options, stats }) {
       <div style="display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #f1f5f9;">
         ${options.entryExit ? `
         <div style="padding:14px 18px;border-right:1px solid #f1f5f9;">
-          <p style="font-size:9px;color:#94a3b8;margin:0 0 3px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Entry</p>
+          <p style="font-size:9px;color:#94a3b8;margin:0 0 3px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Оролт</p>
           <p style="font-size:13px;font-weight:700;color:#0f172a;margin:0;font-family:monospace;">${cleanText(t.entry_price ?? t.entry)}</p>
         </div>
         <div style="padding:14px 18px;border-right:1px solid #f1f5f9;">
-          <p style="font-size:9px;color:#94a3b8;margin:0 0 3px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Exit</p>
+          <p style="font-size:9px;color:#94a3b8;margin:0 0 3px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Гаралт</p>
           <p style="font-size:13px;font-weight:700;color:#0f172a;margin:0;font-family:monospace;">${cleanText(t.exit_price ?? t.exit)}</p>
         </div>
         <div style="padding:14px 18px;border-right:1px solid #f1f5f9;">
@@ -144,7 +144,7 @@ function buildReportHTML({ trades, options, stats }) {
         </div>` : ''}
         ${options.riskManagement ? `
         <div style="padding:14px 18px;border-right:1px solid #f1f5f9;${options.entryExit ? 'grid-column:1/3;border-top:1px solid #f1f5f9;' : ''}">
-          <p style="font-size:9px;color:#94a3b8;margin:0 0 3px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Quantity</p>
+          <p style="font-size:9px;color:#94a3b8;margin:0 0 3px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Хэмжээ</p>
           <p style="font-size:13px;font-weight:700;color:#0f172a;margin:0;font-family:monospace;">${cleanText(t.position_size ?? t.quantity)}</p>
         </div>
         <div style="padding:14px 18px;${options.entryExit ? 'grid-column:3/5;border-top:1px solid #f1f5f9;' : ''}">
@@ -155,17 +155,17 @@ function buildReportHTML({ trades, options, stats }) {
 
     const strategyRow = options.strategySession && (t.strategy || t.session || t.market_type) ? `
       <div style="display:flex;gap:24px;padding:14px 18px;border-bottom:1px solid #f1f5f9;background:#fafafa;">
-        ${t.strategy ? `<div><p style="font-size:9px;color:#94a3b8;margin:0 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Strategy</p><p style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">${cleanText(t.strategy)}</p></div>` : ''}
-        ${t.session ? `<div><p style="font-size:9px;color:#94a3b8;margin:0 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Session</p><p style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">${cleanText(t.session)}</p></div>` : ''}
-        ${t.market_type ? `<div><p style="font-size:9px;color:#94a3b8;margin:0 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Market</p><p style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">${cleanText(t.market_type)}</p></div>` : ''}
+        ${t.strategy ? `<div><p style="font-size:9px;color:#94a3b8;margin:0 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Стратеги</p><p style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">${cleanText(t.strategy)}</p></div>` : ''}
+        ${t.session ? `<div><p style="font-size:9px;color:#94a3b8;margin:0 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Сесс</p><p style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">${cleanText(t.session)}</p></div>` : ''}
+        ${t.market_type ? `<div><p style="font-size:9px;color:#94a3b8;margin:0 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Зах зээл</p><p style="font-size:12px;font-weight:600;color:#0f172a;margin:0;">${cleanText(t.market_type)}</p></div>` : ''}
       </div>` : '';
 
     const psychRow = options.psychology && (t.emotionBefore || t.emotion_before || t.emotionAfter || t.emotion_after) ? `
       <div style="padding:14px 18px;border-bottom:1px solid #f1f5f9;background:#fafafa;">
-        <p style="font-size:9px;color:#94a3b8;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Psychology</p>
+        <p style="font-size:9px;color:#94a3b8;margin:0 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Сэтгэл зүй</p>
         <div style="display:flex;gap:16px;">
-          ${(t.emotionBefore || t.emotion_before) ? `<span style="font-size:12px;color:#475569;">Before: <strong style="color:#0f172a;">${cleanText(t.emotionBefore || t.emotion_before)}</strong></span>` : ''}
-          ${(t.emotionAfter || t.emotion_after) ? `<span style="font-size:12px;color:#475569;">After: <strong style="color:#0f172a;">${cleanText(t.emotionAfter || t.emotion_after)}</strong></span>` : ''}
+          ${(t.emotionBefore || t.emotion_before) ? `<span style="font-size:12px;color:#475569;">Өмнө: <strong style="color:#0f172a;">${cleanText(t.emotionBefore || t.emotion_before)}</strong></span>` : ''}
+          ${(t.emotionAfter || t.emotion_after) ? `<span style="font-size:12px;color:#475569;">Дараа: <strong style="color:#0f172a;">${cleanText(t.emotionAfter || t.emotion_after)}</strong></span>` : ''}
         </div>
       </div>` : '';
 
@@ -179,15 +179,15 @@ function buildReportHTML({ trades, options, stats }) {
     };
 
     const notesSection = [
-      options.reasonForEntry ? note('Reason For Entry', t.whyEntered || t.why_entered, '#6d28d9') : '',
-      options.whatHappened  ? note('What Happened',    t.whatHappened || t.what_happened) : '',
-      options.lessonLearned ? note('Lesson Learned',   t.lessonLearned || t.lessons_learned, '#0369a1') : '',
+      options.reasonForEntry ? note('Яагаад орсон', t.whyEntered || t.why_entered, '#6d28d9') : '',
+      options.whatHappened  ? note('Юу болсон',    t.whatHappened || t.what_happened) : '',
+      options.lessonLearned ? note('Юу сурсан',   t.lessonLearned || t.lessons_learned, '#0369a1') : '',
     ].join('');
 
     const screenshotURL = t.screenshot_url;
     const screenshotSection = options.screenshots && screenshotURL ? `
       <div style="padding:14px 18px;border-bottom:1px solid #f1f5f9;">
-        <p style="font-size:9px;color:#94a3b8;margin:0 0 8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Screenshot</p>
+        <p style="font-size:9px;color:#94a3b8;margin:0 0 8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Зураг</p>
         <img src="${screenshotURL}" crossorigin="anonymous" style="width:100%;max-height:280px;object-fit:cover;border-radius:8px;display:block;" />
       </div>` : '';
 
@@ -217,7 +217,7 @@ function buildReportHTML({ trades, options, stats }) {
     `;
   }).join('');
 
-  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:white;width:800px;color:#1e293b;">${coverHTML}${tradeCardsHTML}<div style="padding:40px 48px;text-align:center;color:#94a3b8;font-size:11px;border-top:1px solid #f1f5f9;margin-top:40px;">Generated by Trade Journal &middot; ${new Date().toISOString().slice(0, 10)}</div></div>`;
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:white;width:800px;color:#1e293b;">${coverHTML}${tradeCardsHTML}<div style="padding:40px 48px;text-align:center;color:#94a3b8;font-size:11px;border-top:1px solid #f1f5f9;margin-top:40px;">Үүсгэсэн: Арилжааны Тэмдэглэл &middot; ${new Date().toISOString().slice(0, 10)}</div></div>`;
 }
 
 // component
@@ -239,15 +239,15 @@ export function ExportModal({ onClose, trades = [] }) {
     if (!trades.length) return alert('Татах арилжаа байхгүй байна.');
 
     const cols = [];
-    if (options.tradeInfo)       cols.push(['Date', t => fmtDateCSV(t.entry_date || t.date)], ['Symbol', t => cleanText(t.symbol)], ['Direction', t => cleanText(t.direction)], ['Status', t => cleanText(t.status)]);
-    if (options.entryExit)       cols.push(['Entry', t => fmtNum(t.entry_price ?? t.entry)], ['Exit', t => fmtNum(t.exit_price ?? t.exit)], ['Stop Loss', t => fmtNum(t.stop_loss ?? t.stopLoss)], ['Take Profit', t => fmtNum(t.take_profit ?? t.takeProfit)]);
-    if (options.riskManagement)  cols.push(['Quantity', t => fmtNum(t.position_size ?? t.quantity)], ['Risk %', t => fmtNum(t.risk_percent ?? t.riskPercent)]);
-    if (options.pnlStats)        cols.push(['PnL', t => parseFloat(t.pnl ?? 0).toFixed(2)], ['R:R', t => fmtNum(t.rr_ratio ?? t.rrRatio)]);
-    if (options.strategySession) cols.push(['Strategy', t => cleanText(t.strategy)], ['Session', t => cleanText(t.session)]);
-    if (options.psychology)      cols.push(['Emotion Before', t => cleanText(t.emotionBefore || t.emotion_before)], ['Emotion After', t => cleanText(t.emotionAfter || t.emotion_after)]);
-    if (options.reasonForEntry)  cols.push(['Reason For Entry', t => `"${cleanText(t.whyEntered || t.why_entered).replace(/"/g, '""')}"`]);
-    if (options.whatHappened)    cols.push(['What Happened',    t => `"${cleanText(t.whatHappened || t.what_happened).replace(/"/g, '""')}"`]);
-    if (options.lessonLearned)   cols.push(['Lesson Learned',   t => `"${cleanText(t.lessonLearned || t.lessons_learned).replace(/"/g, '""')}"`]);
+    if (options.tradeInfo)       cols.push(['Огноо', t => fmtDateCSV(t.entry_date || t.date)], ['Symbol', t => cleanText(t.symbol)], ['Чиглэл', t => cleanText(t.direction)], ['Статус', t => cleanText(t.status)]);
+    if (options.entryExit)       cols.push(['Оролт', t => fmtNum(t.entry_price ?? t.entry)], ['Гаралт', t => fmtNum(t.exit_price ?? t.exit)], ['Stop Loss', t => fmtNum(t.stop_loss ?? t.stopLoss)], ['Take Profit', t => fmtNum(t.take_profit ?? t.takeProfit)]);
+    if (options.riskManagement)  cols.push(['Хэмжээ', t => fmtNum(t.position_size ?? t.quantity)], ['Эрсдэл %', t => fmtNum(t.risk_percent ?? t.riskPercent)]);
+    if (options.pnlStats)        cols.push(['P&L', t => parseFloat(t.pnl ?? 0).toFixed(2)], ['R:R', t => fmtNum(t.rr_ratio ?? t.rrRatio)]);
+    if (options.strategySession) cols.push(['Стратеги', t => cleanText(t.strategy)], ['Сесс', t => cleanText(t.session)]);
+    if (options.psychology)      cols.push(['Сэтгэл зүй (өмнө)', t => cleanText(t.emotionBefore || t.emotion_before)], ['Сэтгэл зүй (дараа)', t => cleanText(t.emotionAfter || t.emotion_after)]);
+    if (options.reasonForEntry)  cols.push(['Яагаад орсон', t => `"${cleanText(t.whyEntered || t.why_entered).replace(/"/g, '""')}"`]);
+    if (options.whatHappened)    cols.push(['Юу болсон',    t => `"${cleanText(t.whatHappened || t.what_happened).replace(/"/g, '""')}"`]);
+    if (options.lessonLearned)   cols.push(['Юу сурсан',   t => `"${cleanText(t.lessonLearned || t.lessons_learned).replace(/"/g, '""')}"`]);
 
     const header = cols.map(([h]) => h).join(',');
     const rows = trades.map(t => cols.map(([, fn]) => fn(t)).join(','));
@@ -348,7 +348,7 @@ export function ExportModal({ onClose, trades = [] }) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-800">
           <div>
-            <h2 className="text-lg font-bold text-white">Trade Journal Report Generator</h2>
+            <h2 className="text-lg font-bold text-white">Тайлан үүсгэх</h2>
             <p className="text-xs text-slate-400 mt-0.5">{trades.length} арилжаа · Форматаа сонгоод татаж авна уу</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
@@ -365,13 +365,13 @@ export function ExportModal({ onClose, trades = [] }) {
                 onClick={() => setFormat('pdf')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all ${format === 'pdf' ? 'bg-accent/10 border-accent/50 text-accent' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'}`}
               >
-                <FileText className="w-4 h-4" /> PDF Report
+                <FileText className="w-4 h-4" /> PDF Тайлан
               </button>
               <button
                 onClick={() => setFormat('csv')}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all ${format === 'csv' ? 'bg-accent/10 border-accent/50 text-accent' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'}`}
               >
-                <FileSpreadsheet className="w-4 h-4" /> CSV Data
+                <FileSpreadsheet className="w-4 h-4" /> CSV Дата
               </button>
             </div>
           </div>
@@ -403,7 +403,7 @@ export function ExportModal({ onClose, trades = [] }) {
                       )}
                     </div>
                     <span className="text-sm text-slate-300 flex-1">{label}</span>
-                    {isPdfOnly && <span className="text-[9px] text-slate-600 bg-slate-800 px-1.5 py-0.5 rounded">PDF</span>}
+                    {isPdfOnly && <span className="text-[9px] text-slate-600 bg-slate-800 px-1.5 py-0.5 rounded">PDF л</span>}
                   </label>
                 );
               })}
@@ -429,7 +429,7 @@ export function ExportModal({ onClose, trades = [] }) {
             onClick={onClose}
             className="px-4 py-2.5 text-sm text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
           >
-            Цуцлах
+            Болих
           </button>
           <button
             onClick={handleExport}

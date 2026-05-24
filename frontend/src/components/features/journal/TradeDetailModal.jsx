@@ -195,7 +195,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-white">{trade.symbol}</h2>
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded uppercase">{trade.market_type || trade.market}</span>
-                {trade.is_draft && <span className="text-[9px] font-bold text-slate-500 uppercase bg-slate-800 px-1.5 py-0.5 rounded">Draft</span>}
+                {trade.is_draft && <span className="text-[9px] font-bold text-slate-500 uppercase bg-slate-800 px-1.5 py-0.5 rounded">Ноорог</span>}
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                 <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{safeFormatDate(trade.entry_date || trade.date, "MMM dd, yyyy")}</span>
@@ -241,8 +241,8 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
           <div className="px-5 py-4 border-b border-slate-800/60">
             <div className="grid grid-cols-4 gap-2">
               {[
-                { label: 'Entry', value: trade.entry_price || trade.entry || '—', cls: 'text-white' },
-                { label: 'Exit', value: trade.exit_price || trade.exit || '—', cls: 'text-white' },
+                { label: 'Оролт', value: trade.entry_price || trade.entry || '—', cls: 'text-white' },
+                { label: 'Гаралт', value: trade.exit_price || trade.exit || '—', cls: 'text-white' },
                 { label: 'R/R', value: (trade.rr_ratio || trade.rr) ? `${trade.rr_ratio || trade.rr}R` : '—', cls: 'text-white' },
                 {
                   label: 'P&L',
@@ -269,7 +269,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
                 <div className="text-xs font-mono text-emerald-400">{trade.take_profit || '—'}</div>
               </div>
               <div className="bg-slate-950 border border-slate-800 rounded-xl p-3">
-                <div className="text-[10px] text-slate-500 mb-1">Lot / Qty</div>
+                <div className="text-[10px] text-slate-500 mb-1">Лот / Хэмжээ</div>
                 <div className="text-xs font-mono text-white">{trade.position_size || '—'}</div>
               </div>
             </div>
@@ -282,14 +282,14 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               <input
                 type="text"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-600 transition-all"
-                placeholder="e.g. ICT, SMC, Breakout..."
+                placeholder="Жш: ICT, SMC, Breakout..."
                 value={editData.strategy}
                 onChange={e => setEditData(prev => ({ ...prev, strategy: e.target.value }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>Trading Session</label>
+                <label className={labelCls}>Арилжааны Сесс</label>
                 <select
                   value={editData.session}
                   onChange={e => setEditData(prev => ({ ...prev, session: e.target.value }))}
@@ -300,7 +300,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
                 </select>
               </div>
               <div>
-                <label className={labelCls}>Est. P&amp;L ($)</label>
+                <label className={labelCls}>Тооцоолсон P&amp;L ($)</label>
                 <input
                   type="number"
                   step="0.01"

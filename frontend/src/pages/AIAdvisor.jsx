@@ -65,9 +65,9 @@ export function AIAdvisorPage() {
   const chatEndRef = useRef(null);
 
   const MODES = [
-    { id: 'analysis', label: 'Analysis', color: 'text-accent'      },
-    { id: 'advice',   label: 'Advice',   color: 'text-emerald-400' },
-    { id: 'learning', label: 'Learning', color: 'text-blue-400'    },
+    { id: 'analysis', label: 'Анализ',   color: 'text-accent'      },
+    { id: 'advice',   label: 'Зөвлөгөө', color: 'text-emerald-400' },
+    { id: 'learning', label: 'Сургалт',  color: 'text-blue-400'    },
   ];
 
   const modeQuickQ = {
@@ -84,7 +84,7 @@ export function AIAdvisorPage() {
       const trades    = tradesRes.data || [];
       const res       = await aiService.getInsights(trades);
       if (res.success) setInsights(res.data);
-      else setInsightError(res.error || 'Failed to fetch insights');
+      else setInsightError(res.error || 'Мэдээлэл авахад алдаа гарлаа');
     } catch { setInsightError(t('errorConnecting')); }
     finally   { setLoading(false); }
   }, [t]);

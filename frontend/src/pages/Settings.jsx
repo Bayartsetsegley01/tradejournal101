@@ -597,12 +597,12 @@ export function SettingsPage() {
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-3">Загвар (Theme)</label>
                   <div className="flex gap-3 p-1 bg-slate-950/50 rounded-xl border border-slate-800/50">
-                    {["dark", "light", "system"].map((t) => (
+                    {[["dark","Харанхуй"], ["light","Цайвар"], ["system","Системийн"]].map(([t, lbl]) => (
                       <button key={t} onClick={() => setAppearance({ ...appearance, theme: t })}
                         className={`flex-1 py-2.5 rounded-lg text-sm font-medium capitalize transition-all duration-300 ${
                           appearance.theme === t ? "bg-slate-800 text-accent shadow-md" : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
                         }`}>
-                        {t}
+                        {lbl}
                       </button>
                     ))}
                   </div>

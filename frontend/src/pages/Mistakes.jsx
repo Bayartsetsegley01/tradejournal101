@@ -130,7 +130,7 @@ export function MistakesPage() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-300">Дата олдсонгүй</p>
-            <p className="text-xs text-slate-500 mt-1 max-w-xs">Арилжаа нэмэхдээ Psychology & Tags tab-аас сэтгэл зүй болон алдааны tag сонгоорой.</p>
+            <p className="text-xs text-slate-500 mt-1 max-w-xs">Арилжаа нэмэхдээ Сэтгэл зүй & Таг хэсгээс сэтгэл зүй болон алдааны таг сонгоорой.</p>
           </div>
         </div>
       ) : (
@@ -149,12 +149,12 @@ export function MistakesPage() {
                   <h2 className="text-sm font-semibold text-white">{t('topMistakesTitle')}</h2>
                 </div>
                 <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded-md">
-                  {data.mistakes.length} tag
+                  {data.mistakes.length} таг
                 </span>
               </div>
 
               {data.mistakes.length === 0 ? (
-                <p className="text-slate-600 text-sm py-4 text-center">Алдааны tag бүртгэгдээгүй байна.</p>
+                <p className="text-slate-600 text-sm py-4 text-center">Алдааны таг бүртгэгдээгүй байна.</p>
               ) : (
                 <div>
                   {data.mistakes.map((m, i) => (
@@ -181,12 +181,12 @@ export function MistakesPage() {
                   <h2 className="text-sm font-semibold text-white">{t('positiveTagsTitle')}</h2>
                 </div>
                 <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded-md">
-                  {data.positiveTags.length} tag
+                  {data.positiveTags.length} таг
                 </span>
               </div>
 
               {data.positiveTags.length === 0 ? (
-                <p className="text-slate-600 text-sm py-4 text-center">Positive tag бүртгэгдээгүй байна.</p>
+                <p className="text-slate-600 text-sm py-4 text-center">Давуу талын таг бүртгэгдээгүй байна.</p>
               ) : (
                 <div>
                   {data.positiveTags.map((tag, i) => (

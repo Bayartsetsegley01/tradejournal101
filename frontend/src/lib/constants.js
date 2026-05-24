@@ -1,12 +1,12 @@
 export const MARKET_TYPES = [
-  { id: 'crypto', label: 'Crypto' },
+  { id: 'crypto', label: 'Крипто' },
   { id: 'forex', label: 'Forex' },
-  { id: 'stock', label: 'Stock' },
-  { id: 'gold', label: 'Gold (XAUUSD)' },
-  { id: 'commodities', label: 'Commodities' },
-  { id: 'indices', label: 'Indices' },
-  { id: 'futures', label: 'Futures' },
-  { id: 'options', label: 'Options' },
+  { id: 'stock', label: 'Хувьцаа' },
+  { id: 'gold', label: 'Алт (XAUUSD)' },
+  { id: 'commodities', label: 'Түүхий эд' },
+  { id: 'indices', label: 'Индекс' },
+  { id: 'futures', label: 'Фьючерс' },
+  { id: 'options', label: 'Опцион' },
 ];
 
 export const EMOTIONS = [
@@ -39,8 +39,8 @@ export const MISTAKE_TAGS = [
 ];
 
 export const SESSIONS = [
-  { id: 'tokyo',    label: 'Tokyo' },
-  { id: 'london',   label: 'London' },
-  { id: 'new-york', label: 'New York' },
-  { id: 'sydney',   label: 'Sydney' },
+  { id: 'tokyo',    label: 'Токио' },
+  { id: 'london',   label: 'Лондон' },
+  { id: 'new-york', label: 'Нью-Йорк' },
+  { id: 'sydney',   label: 'Сидней' },
 ];

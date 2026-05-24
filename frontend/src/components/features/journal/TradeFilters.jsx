@@ -227,7 +227,7 @@ export function TradeFilters({ filters, setFilters, customRange, onCustomRangeCh
 
             {/* Session */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Session</label>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Сесс</label>
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => setFilters({ ...filters, session: 'all' })}
                   className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
@@ -300,7 +300,7 @@ export function TradeFilters({ filters, setFilters, customRange, onCustomRangeCh
           )}
           {filters.hasScreenshot && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-xs font-medium">
-              Screenshot
+              Зураг байгаа
               <button onClick={() => setFilters(p => ({ ...p, hasScreenshot: false }))} className="hover:bg-slate-700 rounded-full p-0.5"><X className="w-3 h-3" /></button>
             </span>
           )}
