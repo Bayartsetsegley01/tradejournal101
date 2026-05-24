@@ -1,9 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, ArrowUpRight, ArrowDownRight, Calendar, Clock, Check, Save, Camera, Loader2, Copy, Trash2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { safeFormatDate } from "@/lib/utils";
 import { EMOTIONS, POSITIVE_TAGS, MISTAKE_TAGS, SESSIONS } from "@/lib/constants";
 import { tradeService } from "@/services/tradeService";
+import { tagService } from "@/services/tagService";
+import { emotionService } from "@/services/emotionService";
 
 export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete, onSaved }) {
   const parseTags = (v) => {
@@ -11,6 +13,26 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
     if (typeof v === 'string') { try { return JSON.parse(v); } catch { return []; } }
     return [];
   };
+
+  const [customEmotions,     setCustomEmotions]     = useState([]);
+  const [customPositiveTags, setCustomPositiveTags] = useState([]);
+  const [customMistakeTags,  setCustomMistakeTags]  = useState([]);
+
+  useEffect(() => {
+    emotionService.getEmotions().then(res => {
+      if (res?.data) setCustomEmotions(res.data.map(e => ({ id: e.id, label: e.name, emoji: e.emoji || '' })));
+    }).catch(() => {});
+    tagService.getTags().then(res => {
+      if (res?.data) {
+        setCustomPositiveTags(res.data.filter(t => t.type === 'POSITIVE').map(t => ({ id: t.id, label: t.name })));
+        setCustomMistakeTags( res.data.filter(t => t.type === 'MISTAKE' ).map(t => ({ id: t.id, label: t.name })));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const allEmotions     = customEmotions.length     > 0 ? customEmotions     : EMOTIONS;
+  const allPositiveTags = customPositiveTags.length > 0 ? customPositiveTags : POSITIVE_TAGS;
+  const allMistakeTags  = customMistakeTags.length  > 0 ? customMistakeTags  : MISTAKE_TAGS;
 
   const [editData, setEditData] = useState({
     strategy:      trade.strategy || '',
@@ -298,7 +320,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               <div>
                 <p className="text-[10px] text-slate-600 mb-1.5">Арилжааны өмнө</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {EMOTIONS.map(e => (
+                  {allEmotions.map(e => (
                     <button key={e.id}
                       onClick={() => setEditData(p => ({ ...p, emotion_before: p.emotion_before === e.id ? '' : e.id }))}
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
@@ -312,7 +334,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               <div>
                 <p className="text-[10px] text-slate-600 mb-1.5">Арилжааны дараа</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {EMOTIONS.map(e => (
+                  {allEmotions.map(e => (
                     <button key={e.id}
                       onClick={() => setEditData(p => ({ ...p, emotion_after: p.emotion_after === e.id ? '' : e.id }))}
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
@@ -332,13 +354,13 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               <Check className="w-3 h-3" /> Давуу тал
             </label>
             <div className="flex flex-wrap gap-1.5">
-              {POSITIVE_TAGS.map(t => (
+              {allPositiveTags.map(t => (
                 <button key={t.id} onClick={() => toggleTag('positiveTags', t.id)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
                     editData.positiveTags.includes(t.id)
                       ? 'bg-accent/10 border-accent/50 text-accent'
                       : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-600 hover:text-slate-300'
-                  }`}>{t.label}</button>
+                  }`}>{t.emoji ? `${t.emoji} ` : ''}{t.label}</button>
               ))}
             </div>
           </div>
@@ -349,13 +371,13 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               <X className="w-3 h-3" /> Алдаа
             </label>
             <div className="flex flex-wrap gap-1.5">
-              {MISTAKE_TAGS.map(t => (
+              {allMistakeTags.map(t => (
                 <button key={t.id} onClick={() => toggleTag('mistakeTags', t.id)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
                     editData.mistakeTags.includes(t.id)
                       ? 'bg-rose-500/10 border-rose-500/50 text-rose-400'
                       : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-600 hover:text-slate-300'
-                  }`}>{t.label}</button>
+                  }`}>{t.emoji ? `${t.emoji} ` : ''}{t.label}</button>
               ))}
             </div>
           </div>

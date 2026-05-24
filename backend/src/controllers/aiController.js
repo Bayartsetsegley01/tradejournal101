@@ -29,13 +29,33 @@ const buildSystemPrompt = async (tradeContext, userId, mode = 'analysis') => {
 - Сүүлийн арилжаанууд: ${JSON.stringify(tradeContext.recentTrades, null, 2)}`;
   } else if (getDbStatus() && userId) {
     try {
-      const result = await query(
-        `SELECT symbol, direction, pnl, emotion_before, emotion_after, strategy, mistake_tags, positive_tags
-         FROM trades WHERE user_id=$1 AND status='CLOSED' ORDER BY created_at DESC LIMIT 10`,
-        [userId]
-      );
-      if (result.rows.length > 0) {
-        const trades = result.rows;
+      const [tradeRes, tagRes, emotionRes] = await Promise.all([
+        query(
+          `SELECT symbol, direction, pnl, emotion_before, emotion_after, strategy, mistake_tags, positive_tags
+           FROM trades WHERE user_id=$1 AND status='CLOSED' ORDER BY created_at DESC LIMIT 10`,
+          [userId]
+        ),
+        query('SELECT id, name FROM tag_definitions'),
+        query('SELECT id, name FROM emotion_tags'),
+      ]);
+      if (tradeRes.rows.length > 0) {
+        const tagMap = {}; tagRes.rows.forEach(t => { tagMap[t.id] = t.name; });
+        const emoMap = {}; emotionRes.rows.forEach(e => { emoMap[e.id] = e.name; });
+        const resolveName = (id, map, fallback) => map[id] || fallback[id] || id;
+        const EMOTION_NAMES = { calm:'Тайван', confident:'Итгэлтэй', planned:'Төлөвлөсөн', scared:'Айсан', fomo:'FOMO', angry:'Ууртай', stressed:'Стресстэй', doubtful:'Эргэлзсэн' };
+        const TAG_NAMES = { 'well-managed':'Сайн удирдсан','perfect-entry':'Төгс оролт','patient':'Тэвчээртэй','plan-follow':'Төлөвлөгөө дагасан','disciplined':'Сахилга баттай','impulsive':'Сэтгэл хөдлөлөөр','revenge-trading':'Өшөө авалт','early-exit':'Эрт хаасан','overtrading':'Хэт их арилжаа','no-stop-loss':'SL тавиагүй','fomo-entry':'FOMO оролт','bad-risk':'Буруу эрсдэл' };
+
+        const trades = tradeRes.rows.map(t => {
+          let mt = t.mistake_tags; if (typeof mt === 'string') { try { mt = JSON.parse(mt); } catch { mt = []; } }
+          let pt = t.positive_tags; if (typeof pt === 'string') { try { pt = JSON.parse(pt); } catch { pt = []; } }
+          return {
+            symbol: t.symbol, direction: t.direction, pnl: t.pnl, strategy: t.strategy,
+            emotion_before: t.emotion_before ? resolveName(t.emotion_before, emoMap, EMOTION_NAMES) : null,
+            emotion_after:  t.emotion_after  ? resolveName(t.emotion_after,  emoMap, EMOTION_NAMES) : null,
+            positive_tags: (pt || []).map(id => resolveName(id, tagMap, TAG_NAMES)),
+            mistake_tags:  (mt || []).map(id => resolveName(id, tagMap, TAG_NAMES)),
+          };
+        });
         const wins = trades.filter(t => parseFloat(t.pnl) > 0);
         prompt += `\n\nХэрэглэгчийн сүүлийн ${trades.length} арилжааны мэдээлэл:
 - Win Rate: ${((wins.length / trades.length) * 100).toFixed(0)}%
