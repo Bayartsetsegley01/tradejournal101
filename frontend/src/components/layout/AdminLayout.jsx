@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const nav = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
-  { label: "Хэрэглэгчид", icon: Users, path: "/admin/users" },
-  { label: "Feedback", icon: MessageSquare, path: "/admin/feedback" },
-  { label: "Тохиргоо", icon: Settings, path: "/admin/settings" },
+  { label: "Хяналтын самбар", icon: LayoutDashboard, path: "/admin/dashboard" },
+  { label: "Хэрэглэгчид",     icon: Users,           path: "/admin/users" },
+  { label: "Санал хүсэлт",    icon: MessageSquare,   path: "/admin/feedback" },
+  { label: "Тохиргоо",        icon: Settings,        path: "/admin/settings" },
 ];
 
 export function AdminLayout() {

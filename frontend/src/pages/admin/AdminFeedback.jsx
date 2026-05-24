@@ -2,14 +2,14 @@ import { useEffect, useState, useCallback } from "react";
 import { Trash2, ChevronLeft, ChevronRight, CheckCircle2, Mail, Flag } from "lucide-react";
 import { getFeedback, updateFeedbackStatus, deleteFeedback } from "@/services/adminService";
 
-const TYPE_LABELS = { bug: "Bug", feature: "Feature", general: "General", complaint: "Complaint" };
-const TYPE_COLORS = { bug: "bg-rose-500/10 text-rose-400", feature: "bg-blue-500/10 text-blue-400", general: "bg-slate-700 text-slate-300", complaint: "bg-amber-500/10 text-amber-400" };
-const STATUS_LABELS = { new: "New", reviewed: "Reviewed", resolved: "Resolved" };
+const TYPE_LABELS   = { bug: "Алдаа", feature: "Хүсэлт", general: "Ерөнхий", complaint: "Гомдол" };
+const TYPE_COLORS   = { bug: "bg-rose-500/10 text-rose-400", feature: "bg-blue-500/10 text-blue-400", general: "bg-slate-700 text-slate-300", complaint: "bg-amber-500/10 text-amber-400" };
+const STATUS_LABELS = { new: "Шинэ", reviewed: "Хянасан", resolved: "Шийдсэн" };
 const STATUS_COLORS = { new: "bg-amber-500/10 text-amber-400", reviewed: "bg-blue-500/10 text-blue-400", resolved: "bg-emerald-500/10 text-emerald-400" };
 const PRIORITY_CONFIG = {
-  urgent: { label: "Urgent", color: "bg-rose-500/15 text-rose-400 border-rose-500/30" },
-  normal: { label: "Normal", color: "bg-slate-700 text-slate-300 border-slate-600" },
-  low:    { label: "Low",    color: "bg-slate-800 text-slate-500 border-slate-700" },
+  urgent: { label: "Яаралтай", color: "bg-rose-500/15 text-rose-400 border-rose-500/30" },
+  normal: { label: "Энгийн",   color: "bg-slate-700 text-slate-300 border-slate-600" },
+  low:    { label: "Бага",     color: "bg-slate-800 text-slate-500 border-slate-700" },
 };
 
 export function AdminFeedback() {
@@ -50,43 +50,43 @@ export function AdminFeedback() {
   };
 
   const handleReply = (fb) => {
-    const subject = encodeURIComponent(`Re: Your feedback — ${TYPE_LABELS[fb.type] || fb.type}`);
-    const body = encodeURIComponent(`Hi${fb.user_name ? ` ${fb.user_name}` : ''},\n\nThank you for your feedback.\n\n---\nYour message: "${fb.message}"\n---\n\nBest regards,\nTradeJournal Team`);
+    const subject = encodeURIComponent(`Re: Таны санал хүсэлт — ${TYPE_LABELS[fb.type] || fb.type}`);
+    const body = encodeURIComponent(`Сайн байна уу${fb.user_name ? `, ${fb.user_name}` : ''},\n\nТаны санал хүсэлтэд баярлалаа.\n\n---\nТаны мессеж: "${fb.message}"\n---\n\nХүндэтгэлтэй,\nTradeJournal Баг`);
     window.open(`mailto:${fb.user_email}?subject=${subject}&body=${body}`, '_blank');
   };
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Feedback</h1>
-        <p className="text-slate-400 text-sm mt-1">{data.total} total submissions</p>
+        <h1 className="text-2xl font-bold text-white">Санал хүсэлт</h1>
+        <p className="text-slate-400 text-sm mt-1">{data.total} нийт санал</p>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-5">
         <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
           className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-accent/50">
-          <option value="">All status</option>
-          <option value="new">New</option>
-          <option value="reviewed">Reviewed</option>
-          <option value="resolved">Resolved</option>
+          <option value="">Бүх статус</option>
+          <option value="new">Шинэ</option>
+          <option value="reviewed">Хянасан</option>
+          <option value="resolved">Шийдсэн</option>
         </select>
         <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
           className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-accent/50">
-          <option value="">All types</option>
-          <option value="bug">Bug report</option>
-          <option value="feature">Feature request</option>
-          <option value="general">General</option>
-          <option value="complaint">Complaint</option>
+          <option value="">Бүх төрөл</option>
+          <option value="bug">Алдааны мэдэгдэл</option>
+          <option value="feature">Хүсэлт</option>
+          <option value="general">Ерөнхий</option>
+          <option value="complaint">Гомдол</option>
         </select>
       </div>
 
       {/* List */}
       <div className="space-y-3">
         {loading ? (
-          <div className="text-center py-12 text-slate-500">Loading...</div>
+          <div className="text-center py-12 text-slate-500">Уншиж байна...</div>
         ) : data.feedback.length === 0 ? (
-          <div className="text-center py-12 text-slate-500">No feedback found</div>
+          <div className="text-center py-12 text-slate-500">Санал хүсэлт олдсонгүй</div>
         ) : data.feedback.map(fb => {
           const priority = priorities[fb.id] || 'normal';
           const pConfig = PRIORITY_CONFIG[priority];
@@ -118,14 +118,14 @@ export function AdminFeedback() {
                         ))}
                       </div>
                     </div>
-                    <span className="text-xs text-slate-500">{new Date(fb.created_at).toLocaleDateString()}</span>
+                    <span className="text-xs text-slate-500">{new Date(fb.created_at).toLocaleDateString('mn-MN')}</span>
                   </div>
-                  <p className="text-xs text-slate-500 mb-1.5">{fb.user_name || 'Anonymous'} · {fb.user_email || '—'}</p>
+                  <p className="text-xs text-slate-500 mb-1.5">{fb.user_name || 'Нэргүй'} · {fb.user_email || '—'}</p>
                   <p className={`text-sm text-slate-300 ${expanded !== fb.id ? 'line-clamp-2' : ''}`}>{fb.message}</p>
                   {fb.message.length > 120 && (
                     <button onClick={() => setExpanded(expanded === fb.id ? null : fb.id)}
                       className="text-xs text-accent mt-1 hover:underline">
-                      {expanded === fb.id ? 'Collapse' : 'Read more'}
+                      {expanded === fb.id ? 'Хураах' : 'Дэлгэрэнгүй'}
                     </button>
                   )}
                 </div>
@@ -133,20 +133,25 @@ export function AdminFeedback() {
                   {fb.user_email && (
                     <button
                       onClick={() => handleReply(fb)}
-                      title="Reply via email"
+                      title="Имэйлээр хариулах"
                       className="p-1.5 rounded-lg hover:bg-blue-500/10 text-slate-400 hover:text-blue-400 transition-colors"
                     >
                       <Mail className="w-4 h-4" />
                     </button>
                   )}
                   {fb.status !== 'resolved' && (
-                    <button onClick={() => handleStatus(fb.id, fb.status === 'new' ? 'reviewed' : 'resolved')}
-                      title="Next status" className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-400 transition-colors">
+                    <button
+                      onClick={() => handleStatus(fb.id, fb.status === 'new' ? 'reviewed' : 'resolved')}
+                      title="Дараагийн статус"
+                      className="p-1.5 rounded-lg hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-400 transition-colors"
+                    >
                       <CheckCircle2 className="w-4 h-4" />
                     </button>
                   )}
-                  <button onClick={() => handleDelete(fb.id)}
-                    className="p-1.5 rounded-lg hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition-colors">
+                  <button
+                    onClick={() => handleDelete(fb.id)}
+                    className="p-1.5 rounded-lg hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition-colors"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -158,7 +163,7 @@ export function AdminFeedback() {
 
       {data.pages > 1 && (
         <div className="flex items-center justify-between mt-5">
-          <span className="text-xs text-slate-500">{page} / {data.pages} pages</span>
+          <span className="text-xs text-slate-500">{page} / {data.pages} хуудас</span>
           <div className="flex gap-2">
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
               className="p-1.5 rounded-lg hover:bg-slate-800 disabled:opacity-40 text-slate-400 transition-colors">

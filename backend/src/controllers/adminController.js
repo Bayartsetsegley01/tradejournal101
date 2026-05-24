@@ -29,21 +29,38 @@ export const getDashboardStats = async (req, res) => {
     `);
 
     const registrationTrend = await query(`
-      SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') AS month,
-        COUNT(*)::int AS count
-      FROM users
-      WHERE created_at >= NOW() - INTERVAL '6 months' AND COALESCE(role, 'user') != 'admin'
-      GROUP BY DATE_TRUNC('month', created_at)
-      ORDER BY DATE_TRUNC('month', created_at)
+      WITH months AS (
+        SELECT generate_series(
+          DATE_TRUNC('month', NOW() - INTERVAL '5 months'),
+          DATE_TRUNC('month', NOW()),
+          INTERVAL '1 month'
+        )::date AS month_start
+      )
+      SELECT TO_CHAR(months.month_start, 'YYYY-MM') AS month,
+        COUNT(u.id)::int AS count
+      FROM months
+      LEFT JOIN users u
+        ON DATE_TRUNC('month', u.created_at)::date = months.month_start
+        AND COALESCE(u.role, 'user') != 'admin'
+      GROUP BY months.month_start
+      ORDER BY months.month_start
     `);
 
     const tradingTrend = await query(`
-      SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') AS month,
-        COUNT(*)::int AS count
-      FROM trades
-      WHERE created_at >= NOW() - INTERVAL '6 months'
-      GROUP BY DATE_TRUNC('month', created_at)
-      ORDER BY DATE_TRUNC('month', created_at)
+      WITH months AS (
+        SELECT generate_series(
+          DATE_TRUNC('month', NOW() - INTERVAL '5 months'),
+          DATE_TRUNC('month', NOW()),
+          INTERVAL '1 month'
+        )::date AS month_start
+      )
+      SELECT TO_CHAR(months.month_start, 'YYYY-MM') AS month,
+        COUNT(t.id)::int AS count
+      FROM months
+      LEFT JOIN trades t
+        ON DATE_TRUNC('month', COALESCE(t.entry_date::timestamp, t.created_at))::date = months.month_start
+      GROUP BY months.month_start
+      ORDER BY months.month_start
     `);
 
     res.json({

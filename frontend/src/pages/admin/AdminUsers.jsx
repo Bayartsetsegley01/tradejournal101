@@ -20,7 +20,7 @@ export function AdminUsers() {
     setError('');
     getUsers({ page, limit: 20, search: search || undefined, status: status || undefined, sort, order })
       .then(d => { setData(d); setSelected(new Set()); })
-      .catch(e => setError(e.message || 'Failed to load users'))
+      .catch(e => setError(e.message || 'Хэрэглэгчдийг ачаалахад алдаа гарлаа'))
       .finally(() => setLoading(false));
   }, [page, search, status, sort, order]);
 
@@ -73,22 +73,22 @@ export function AdminUsers() {
   };
 
   const exportCSV = () => {
-    const headers = ['Name', 'Email', 'Auth', 'Trades', 'Status', 'Created', 'Last Login'];
+    const headers = ['Нэр', 'Имэйл', 'Нэвтрэх', 'Арилжаа', 'Статус', 'Нэгдсэн', 'Сүүлд нэвтэрсэн'];
     const rows = data.users.map(u => [
       u.name || '',
       u.email,
-      u.auth_provider === 'google' ? 'Google' : u.auth_provider === 'both' ? 'Email+Google' : 'Email',
+      u.auth_provider === 'google' ? 'Google' : u.auth_provider === 'both' ? 'Имэйл+Google' : 'Имэйл',
       u.trade_count,
-      u.is_active ? 'Active' : 'Inactive',
-      u.created_at ? new Date(u.created_at).toLocaleDateString() : '',
-      u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : '',
+      u.is_active ? 'Идэвхтэй' : 'Идэвхгүй',
+      u.created_at ? new Date(u.created_at).toLocaleDateString('mn-MN') : '',
+      u.last_login_at ? new Date(u.last_login_at).toLocaleDateString('mn-MN') : '',
     ]);
     const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `users_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `users_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -102,14 +102,15 @@ export function AdminUsers() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Users</h1>
-          <p className="text-slate-400 text-sm mt-1">{data.total} total users</p>
+          <h1 className="text-2xl font-bold text-white">Хэрэглэгчид</h1>
+          <p className="text-slate-400 text-sm mt-1">{data.total} нийт хэрэглэгч</p>
         </div>
         <button
           onClick={exportCSV}
+          title="Хэрэглэгчдийн жагсаалтыг CSV файлаар татаж авах"
           className="flex items-center gap-2 px-3 py-2 bg-accent/10 hover:bg-accent/20 text-accent rounded-xl text-sm font-medium transition-colors border border-accent/20"
         >
-          <Download className="w-3.5 h-3.5" /> Export CSV
+          <Download className="w-3.5 h-3.5" /> CSV татах
         </button>
       </div>
 
@@ -118,31 +119,31 @@ export function AdminUsers() {
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input
-            type="text" placeholder="Search by name or email..."
+            type="text" placeholder="Нэр эсвэл имэйлээр хайх..."
             value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
             className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-accent/50"
           />
         </div>
         <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}
           className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-accent/50">
-          <option value="">All status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="">Бүх статус</option>
+          <option value="active">Идэвхтэй</option>
+          <option value="inactive">Идэвхгүй</option>
         </select>
       </div>
 
       {/* Bulk actions bar */}
       {selected.size > 0 && (
         <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-accent/5 border border-accent/20 rounded-xl animate-in fade-in duration-200">
-          <span className="text-sm font-medium text-accent">{selected.size} selected</span>
+          <span className="text-sm font-medium text-accent">{selected.size} сонгосон</span>
           <button onClick={() => handleBulkStatus(true)} className="text-xs px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-colors flex items-center gap-1.5">
-            <UserCheck className="w-3.5 h-3.5" /> Activate
+            <UserCheck className="w-3.5 h-3.5" /> Идэвхжүүлэх
           </button>
           <button onClick={() => handleBulkStatus(false)} className="text-xs px-3 py-1.5 bg-slate-700 text-slate-300 border border-slate-600 rounded-lg hover:bg-slate-600 transition-colors flex items-center gap-1.5">
-            <UserX className="w-3.5 h-3.5" /> Deactivate
+            <UserX className="w-3.5 h-3.5" /> Идэвхгүй болгох
           </button>
           <button onClick={() => setBulkConfirm(true)} className="text-xs px-3 py-1.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500/20 transition-colors flex items-center gap-1.5">
-            <Trash2 className="w-3.5 h-3.5" /> Delete
+            <Trash2 className="w-3.5 h-3.5" /> Устгах
           </button>
           <button onClick={() => setSelected(new Set())} className="ml-auto p-1.5 text-slate-500 hover:text-slate-300 transition-colors">
             <X className="w-4 h-4" />
@@ -171,27 +172,27 @@ export function AdminUsers() {
                   />
                 </th>
                 <th className="text-left px-4 py-3 cursor-pointer hover:text-white" onClick={() => toggleSort('name')}>
-                  User <SortIcon field="name" />
+                  Хэрэглэгч <SortIcon field="name" />
                 </th>
-                <th className="text-left px-4 py-3">Auth</th>
+                <th className="text-left px-4 py-3">Нэвтрэх</th>
                 <th className="text-left px-4 py-3 cursor-pointer hover:text-white" onClick={() => toggleSort('trades')}>
-                  Trades <SortIcon field="trades" />
+                  Арилжаа <SortIcon field="trades" />
                 </th>
                 <th className="text-left px-4 py-3 cursor-pointer hover:text-white" onClick={() => toggleSort('created_at')}>
-                  Joined <SortIcon field="created_at" />
+                  Нэгдсэн <SortIcon field="created_at" />
                 </th>
                 <th className="text-left px-4 py-3 cursor-pointer hover:text-white" onClick={() => toggleSort('last_login_at')}>
-                  Last Login <SortIcon field="last_login_at" />
+                  Сүүлд нэвтэрсэн <SortIcon field="last_login_at" />
                 </th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">Actions</th>
+                <th className="text-left px-4 py-3">Статус</th>
+                <th className="text-left px-4 py-3">Үйлдэл</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} className="text-center py-12 text-slate-500">Loading...</td></tr>
+                <tr><td colSpan={8} className="text-center py-12 text-slate-500">Уншиж байна...</td></tr>
               ) : data.users.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-12 text-slate-500">No users found</td></tr>
+                <tr><td colSpan={8} className="text-center py-12 text-slate-500">Хэрэглэгч олдсонгүй</td></tr>
               ) : data.users.map(u => (
                 <tr key={u.id} className={`border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors ${selected.has(u.id) ? 'bg-accent/5' : ''}`}>
                   <td className="px-4 py-3">
@@ -215,25 +216,37 @@ export function AdminUsers() {
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-xs px-2 py-1 rounded-lg bg-slate-800 text-slate-400">
-                      {u.auth_provider === 'google' ? 'Google' : u.auth_provider === 'both' ? 'Email+Google' : 'Email'}
+                      {u.auth_provider === 'google' ? 'Google' : u.auth_provider === 'both' ? 'Имэйл+Google' : 'Имэйл'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-300 font-medium">{u.trade_count}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className="text-slate-300 font-semibold">{u.trade_count}</span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-400 text-xs">
+                    {u.created_at ? new Date(u.created_at).toLocaleDateString('mn-MN') : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-slate-400 text-xs">
+                    {u.last_login_at ? new Date(u.last_login_at).toLocaleDateString('mn-MN') : '—'}
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-lg font-medium ${u.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-                      {u.is_active ? 'Active' : 'Inactive'}
+                      {u.is_active ? 'Идэвхтэй' : 'Идэвхгүй'}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => handleStatusToggle(u)} title={u.is_active ? 'Deactivate' : 'Activate'}
-                        className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+                      <button
+                        onClick={() => handleStatusToggle(u)}
+                        title={u.is_active ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'}
+                        className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                      >
                         {u.is_active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                       </button>
-                      <button onClick={() => setConfirm(u.id)} title="Delete"
-                        className="p-1.5 rounded-lg hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition-colors">
+                      <button
+                        onClick={() => setConfirm(u.id)}
+                        title="Устгах"
+                        className="p-1.5 rounded-lg hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition-colors"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -246,7 +259,7 @@ export function AdminUsers() {
 
         {data.pages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800">
-            <span className="text-xs text-slate-500">{page} / {data.pages} pages</span>
+            <span className="text-xs text-slate-500">{page} / {data.pages} хуудас</span>
             <div className="flex gap-2">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                 className="p-1.5 rounded-lg hover:bg-slate-800 disabled:opacity-40 text-slate-400 hover:text-white transition-colors">
@@ -265,11 +278,11 @@ export function AdminUsers() {
       {confirm && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full">
-            <h3 className="text-white font-semibold mb-2">Delete User</h3>
-            <p className="text-slate-400 text-sm mb-5">This action cannot be undone. All trade data for this user will be deleted.</p>
+            <h3 className="text-white font-semibold mb-2">Хэрэглэгч устгах</h3>
+            <p className="text-slate-400 text-sm mb-5">Энэ үйлдлийг буцаах боломжгүй. Энэ хэрэглэгчийн бүх арилжааны мэдээлэл устна.</p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirm(null)} className="flex-1 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">Cancel</button>
-              <button onClick={() => handleDelete(confirm)} className="flex-1 py-2 rounded-xl text-sm font-medium bg-rose-500 text-white hover:bg-rose-600 transition-colors">Delete</button>
+              <button onClick={() => setConfirm(null)} className="flex-1 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">Болих</button>
+              <button onClick={() => handleDelete(confirm)} className="flex-1 py-2 rounded-xl text-sm font-medium bg-rose-500 text-white hover:bg-rose-600 transition-colors">Устгах</button>
             </div>
           </div>
         </div>
@@ -279,11 +292,11 @@ export function AdminUsers() {
       {bulkConfirm && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full">
-            <h3 className="text-white font-semibold mb-2">Delete {selected.size} Users</h3>
-            <p className="text-slate-400 text-sm mb-5">This will permanently delete {selected.size} users and all their trade data.</p>
+            <h3 className="text-white font-semibold mb-2">{selected.size} хэрэглэгч устгах</h3>
+            <p className="text-slate-400 text-sm mb-5">{selected.size} хэрэглэгч болон тэдний бүх арилжааны мэдээлэл устна.</p>
             <div className="flex gap-3">
-              <button onClick={() => setBulkConfirm(null)} className="flex-1 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">Cancel</button>
-              <button onClick={handleBulkDelete} className="flex-1 py-2 rounded-xl text-sm font-medium bg-rose-500 text-white hover:bg-rose-600 transition-colors">Delete All</button>
+              <button onClick={() => setBulkConfirm(null)} className="flex-1 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">Болих</button>
+              <button onClick={handleBulkDelete} className="flex-1 py-2 rounded-xl text-sm font-medium bg-rose-500 text-white hover:bg-rose-600 transition-colors">Бүгдийг устгах</button>
             </div>
           </div>
         </div>
