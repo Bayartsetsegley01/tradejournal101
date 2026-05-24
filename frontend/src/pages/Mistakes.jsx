@@ -141,10 +141,10 @@ function EmotionTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   const val = payload[0]?.value ?? 0;
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 shadow-2xl">
-      <p className="text-xs text-slate-300 font-semibold truncate max-w-[160px]">{label}</p>
-      <p className={`text-sm font-bold mt-1 ${val >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-        {val >= 0 ? '+' : ''}{val.toFixed(2)}
+    <div className="bg-slate-800/95 border border-slate-700/80 rounded-xl px-3.5 py-2.5 shadow-2xl backdrop-blur-sm">
+      <p className="text-xs text-slate-400 mb-1 truncate max-w-[180px]">{label}</p>
+      <p className={`text-base font-bold ${val >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+        {val >= 0 ? '+' : ''}${val.toFixed(2)}
       </p>
     </div>
   );
@@ -308,6 +308,7 @@ export function MistakesPage() {
           onChange={setTimeRange}
           customRange={customRange}
           onCustomRangeChange={setCustomRange}
+          align="left"
         />
       </div>
 
@@ -484,108 +485,146 @@ export function MistakesPage() {
           {/* ── Сэтгэл зүй vs А/А График ─────────────────────────────────────── */}
           {emotionChartData.length > 0 && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-              <SectionHeader
-                icon={TrendingUp}
-                iconBg="bg-violet-500/10"
-                iconColor="text-violet-400"
-                title="Сэтгэл зүй — Ашиг/Алдагдалд үзүүлэх нөлөө"
-              />
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={emotionChartData} barSize={32} margin={{ top: 4, right: 8, left: -10, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-3.5 h-3.5 text-violet-400" />
+                  </div>
+                  <h2 className="text-sm font-semibold text-white">Сэтгэл зүй — Ашиг/Алдагдалд үзүүлэх нөлөө</h2>
+                </div>
+                <span className="text-xs text-slate-500">{emotionChartData.length} сэтгэл зүй</span>
+              </div>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart
+                  data={emotionChartData}
+                  barSize={emotionChartData.length > 6 ? 20 : 28}
+                  barGap={4}
+                  margin={{ top: 12, right: 4, left: -18, bottom: 0 }}
+                >
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: '#64748b' }}
+                    tick={{ fontSize: 11, fill: '#475569' }}
                     tickLine={false}
                     axisLine={false}
                     interval={0}
                   />
-                  <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} />
-                  <ReferenceLine y={0} stroke="#334155" />
-                  <Tooltip content={<EmotionTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  <YAxis
+                    tick={{ fontSize: 10, fill: '#334155' }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={v => `$${v}`}
+                  />
+                  <ReferenceLine y={0} stroke="#1e293b" strokeWidth={1.5} />
+                  <Tooltip content={<EmotionTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)', radius: 4 }} />
+                  <Bar dataKey="value" radius={[5, 5, 2, 2]} isAnimationActive animationDuration={600}>
                     {emotionChartData.map((entry, i) => (
-                      <Cell key={i} fill={entry.value >= 0 ? '#34d399' : '#f87171'} fillOpacity={0.85} />
+                      <Cell
+                        key={i}
+                        fill={entry.value >= 0 ? '#34d399' : '#f87171'}
+                        fillOpacity={entry.value >= 0 ? 0.8 : 0.75}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
+              {/* Legend */}
+              <div className="flex items-center justify-center gap-5 mt-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-emerald-400/80" />
+                  <span className="text-[11px] text-slate-500">Ашигтай</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-rose-400/75" />
+                  <span className="text-[11px] text-slate-500">Алдагдалтай</span>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* ── AI зөвлөмжүүд — 3 баганат ────────────────────────────────────── */}
+          {/* ── AI зөвлөмж — нэг frame ───────────────────────────────────────── */}
           {hasRecs && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center">
-                    <BrainCircuit className="w-3.5 h-3.5 text-accent" />
-                  </div>
-                  <h2 className="text-sm font-semibold text-white">AI зөвлөмжүүд</h2>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center gap-2.5 px-5 py-4 border-b border-slate-800">
+                <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                  <BrainCircuit className="w-3.5 h-3.5 text-accent" />
                 </div>
+                <h2 className="text-sm font-semibold text-white">AI зөвлөмж</h2>
+                <span className="ml-auto text-xs text-slate-600">
+                  {recs.critical.length + recs.improve.length + recs.reinforce.length} зөвлөмж
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="divide-y divide-slate-800/70">
 
-                {/* Critical */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2 pb-2.5 border-b border-rose-500/20">
-                    <div className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                    <p className="text-xs font-bold text-rose-400 uppercase tracking-wider">Анхаарах зүйлс</p>
-                    {recs.critical.length > 0 && (
-                      <span className="ml-auto text-[10px] font-bold bg-rose-500/15 text-rose-400 px-1.5 py-0.5 rounded-full">{recs.critical.length}</span>
-                    )}
-                  </div>
-                  {recs.critical.length === 0 ? (
-                    <p className="text-xs text-slate-600 py-4 text-center">Критик зүйл байхгүй байна</p>
-                  ) : recs.critical.map((rec, i) => (
-                    <div key={i} className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3.5">
-                      <p className="text-sm font-semibold text-rose-300 mb-1.5 leading-tight">{rec.title}</p>
-                      <p className="text-xs text-slate-400 leading-relaxed mb-2">{rec.desc}</p>
-                      <p className="text-xs text-rose-400/70"><span className="text-rose-400 font-medium">Юу хийх вэ?</span> {rec.action}</p>
+                {/* Анхаарах зүйлс */}
+                {recs.critical.length > 0 && (
+                  <div className="px-5 py-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+                      <p className="text-xs font-bold text-rose-400 uppercase tracking-wider">Анхаарах зүйлс</p>
+                      <span className="text-[10px] text-rose-400/60 bg-rose-500/10 px-1.5 py-0.5 rounded-md ml-1">{recs.critical.length}</span>
                     </div>
-                  ))}
-                </div>
+                    <div className="space-y-2.5">
+                      {recs.critical.map((rec, i) => (
+                        <div key={i} className="flex gap-3 p-3 rounded-xl bg-rose-500/5 border border-rose-500/15">
+                          <div className="w-1 rounded-full bg-rose-500/40 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-rose-300 leading-snug mb-1">{rec.title}</p>
+                            <p className="text-xs text-slate-400 leading-relaxed mb-1.5">{rec.desc}</p>
+                            <p className="text-xs text-slate-500"><span className="text-rose-400 font-medium">→</span> {rec.action}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                {/* Improve */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2 pb-2.5 border-b border-amber-500/20">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                    <p className="text-xs font-bold text-amber-400 uppercase tracking-wider">Сайжруулах зүйлс</p>
-                    {recs.improve.length > 0 && (
-                      <span className="ml-auto text-[10px] font-bold bg-amber-500/15 text-amber-400 px-1.5 py-0.5 rounded-full">{recs.improve.length}</span>
-                    )}
-                  </div>
-                  {recs.improve.length === 0 ? (
-                    <p className="text-xs text-slate-600 py-4 text-center">Сайжруулах зүйл олдсонгүй</p>
-                  ) : recs.improve.map((rec, i) => (
-                    <div key={i} className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3.5">
-                      <p className="text-sm font-semibold text-amber-300 mb-1.5 leading-tight">{rec.title}</p>
-                      <p className="text-xs text-slate-400 leading-relaxed mb-2">{rec.desc}</p>
-                      <p className="text-xs text-amber-400/70"><span className="text-amber-400 font-medium">Юу хийх вэ?</span> {rec.action}</p>
+                {/* Сайжруулах зүйлс */}
+                {recs.improve.length > 0 && (
+                  <div className="px-5 py-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      <p className="text-xs font-bold text-amber-400 uppercase tracking-wider">Сайжруулах зүйлс</p>
+                      <span className="text-[10px] text-amber-400/60 bg-amber-500/10 px-1.5 py-0.5 rounded-md ml-1">{recs.improve.length}</span>
                     </div>
-                  ))}
-                </div>
+                    <div className="space-y-2.5">
+                      {recs.improve.map((rec, i) => (
+                        <div key={i} className="flex gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/15">
+                          <div className="w-1 rounded-full bg-amber-500/40 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-amber-300 leading-snug mb-1">{rec.title}</p>
+                            <p className="text-xs text-slate-400 leading-relaxed mb-1.5">{rec.desc}</p>
+                            <p className="text-xs text-slate-500"><span className="text-amber-400 font-medium">→</span> {rec.action}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                {/* Reinforce */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2 pb-2.5 border-b border-emerald-500/20">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Хүчтэй тал</p>
-                    {recs.reinforce.length > 0 && (
-                      <span className="ml-auto text-[10px] font-bold bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded-full">{recs.reinforce.length}</span>
-                    )}
-                  </div>
-                  {recs.reinforce.length === 0 ? (
-                    <p className="text-xs text-slate-600 py-4 text-center">Давуу тал бүртгэгдээгүй байна</p>
-                  ) : recs.reinforce.map((rec, i) => (
-                    <div key={i} className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5">
-                      <p className="text-sm font-semibold text-emerald-300 mb-1.5 leading-tight">{rec.title}</p>
-                      <p className="text-xs text-slate-400 leading-relaxed mb-2">{rec.desc}</p>
-                      <p className="text-xs text-emerald-400/70"><span className="text-emerald-400 font-medium">Юу сайн байна вэ?</span> {rec.action}</p>
+                {/* Хүчтэй тал */}
+                {recs.reinforce.length > 0 && (
+                  <div className="px-5 py-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                      <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Хүчтэй тал</p>
+                      <span className="text-[10px] text-emerald-400/60 bg-emerald-500/10 px-1.5 py-0.5 rounded-md ml-1">{recs.reinforce.length}</span>
                     </div>
-                  ))}
-                </div>
+                    <div className="space-y-2.5">
+                      {recs.reinforce.map((rec, i) => (
+                        <div key={i} className="flex gap-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
+                          <div className="w-1 rounded-full bg-emerald-500/40 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-emerald-300 leading-snug mb-1">{rec.title}</p>
+                            <p className="text-xs text-slate-400 leading-relaxed mb-1.5">{rec.desc}</p>
+                            <p className="text-xs text-slate-500"><span className="text-emerald-400 font-medium">→</span> {rec.action}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
               </div>
             </div>
