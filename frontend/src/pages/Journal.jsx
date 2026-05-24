@@ -589,6 +589,12 @@ export function JournalPage() {
     applyUpdate(id, changes);
     try {
       const payload = { ...trade, ...changes };
+      // snake_case өөрчлөлт ирвэл camelCase-ийн хуучин утгыг устга —
+      // backend camelCase-г эхлээд шалгадаг тул зөрчил гарахгүй байхын тулд.
+      if ('emotion_before' in changes) { payload.emotionBefore = changes.emotion_before; }
+      if ('emotion_after'  in changes) { payload.emotionAfter  = changes.emotion_after;  }
+      if ('positive_tags'  in changes) { payload.positiveTags  = changes.positive_tags;  }
+      if ('mistake_tags'   in changes) { payload.mistakeTags   = changes.mistake_tags;   }
       if (!('screenshot_url' in changes)) delete payload.screenshot_url;
       await tradeService.updateTrade(id, payload);
       invalidate();
