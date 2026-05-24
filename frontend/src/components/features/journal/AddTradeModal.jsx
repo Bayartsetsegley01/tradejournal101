@@ -463,7 +463,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                 <input type="number" step="any" className={inputCls} value={formData.exit} onChange={set('exit')} />
               </div>
               <div>
-                <label className={labelCls}<>А/А <span className="text-slate-600 normal-case font-normal">(broker-оос)</span></label>
+                <label className={labelCls}>А/А <span className="text-slate-600 normal-case font-normal">(broker-оос)</span></label>
                 <input type="number" step="any" placeholder="0.00" className={inputCls} value={formData.pnl} onChange={set('pnl')} />
               </div>
               <div>
