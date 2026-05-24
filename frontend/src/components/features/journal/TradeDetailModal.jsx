@@ -14,13 +14,17 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
     return [];
   };
 
-  const [customEmotions,     setCustomEmotions]     = useState([]);
+  const [emotionsBefore,     setEmotionsBefore]     = useState([]);
+  const [emotionsAfter,      setEmotionsAfter]       = useState([]);
   const [customPositiveTags, setCustomPositiveTags] = useState([]);
   const [customMistakeTags,  setCustomMistakeTags]  = useState([]);
 
   useEffect(() => {
-    emotionService.getEmotions().then(res => {
-      if (res?.data) setCustomEmotions(res.data.map(e => ({ id: e.id, label: e.name, emoji: e.emoji || '' })));
+    emotionService.getEmotions('before').then(res => {
+      if (res?.data) setEmotionsBefore(res.data.map(e => ({ id: e.id, label: e.name, emoji: e.emoji || '' })));
+    }).catch(() => {});
+    emotionService.getEmotions('after').then(res => {
+      if (res?.data) setEmotionsAfter(res.data.map(e => ({ id: e.id, label: e.name, emoji: e.emoji || '' })));
     }).catch(() => {});
     tagService.getTags().then(res => {
       if (res?.data) {
@@ -30,7 +34,8 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
     }).catch(() => {});
   }, []);
 
-  const allEmotions     = customEmotions.length     > 0 ? customEmotions     : EMOTIONS;
+  const allEmotionsBefore = emotionsBefore.length > 0 ? emotionsBefore : EMOTIONS;
+  const allEmotionsAfter  = emotionsAfter.length  > 0 ? emotionsAfter  : EMOTIONS;
   const allPositiveTags = customPositiveTags.length > 0 ? customPositiveTags : POSITIVE_TAGS;
   const allMistakeTags  = customMistakeTags.length  > 0 ? customMistakeTags  : MISTAKE_TAGS;
 
@@ -320,7 +325,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               <div>
                 <p className="text-[10px] text-slate-600 mb-1.5">Арилжааны өмнө</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {allEmotions.map(e => (
+                  {allEmotionsBefore.map(e => (
                     <button key={e.id}
                       onClick={() => setEditData(p => ({ ...p, emotion_before: p.emotion_before === e.id ? '' : e.id }))}
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
@@ -334,7 +339,7 @@ export function TradeDetailModal({ trade, onClose, onEdit, onDuplicate, onDelete
               <div>
                 <p className="text-[10px] text-slate-600 mb-1.5">Арилжааны дараа</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {allEmotions.map(e => (
+                  {allEmotionsAfter.map(e => (
                     <button key={e.id}
                       onClick={() => setEditData(p => ({ ...p, emotion_after: p.emotion_after === e.id ? '' : e.id }))}
                       className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${

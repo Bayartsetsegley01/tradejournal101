@@ -7,7 +7,7 @@ const getHeaders = () => {
 };
 
 export const emotionService = {
-  getEmotions:   async ()   => { const r = await fetch(`${API_BASE_URL}/emotions`, { headers: getHeaders(), credentials: 'include' }); return r.json(); },
+  getEmotions:   async (subtype) => { const url = `${API_BASE_URL}/emotions` + (subtype ? `?subtype=${subtype}` : ''); const r = await fetch(url, { headers: getHeaders(), credentials: 'include' }); return r.json(); },
   createEmotion: async (d)  => { const r = await fetch(`${API_BASE_URL}/emotions`, { method: 'POST',   headers: getHeaders(), credentials: 'include', body: JSON.stringify(d) }); return r.json(); },
   deleteEmotion: async (id) => { const r = await fetch(`${API_BASE_URL}/emotions/${id}`, { method: 'DELETE', headers: getHeaders(), credentials: 'include' }); return r.json(); },
 };

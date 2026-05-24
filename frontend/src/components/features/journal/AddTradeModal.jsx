@@ -76,7 +76,8 @@ function TagChip({ tag, isSelected, onClick, onDelete, colorSelected, colorDefau
 
 export function AddTradeModal({ isOpen, onClose, initialData = null, accountId = null }) {
   const [customTagModal, setCustomTagModal] = useState(null);
-  const [customEmotions, setCustomEmotions]         = useState([]);
+  const [emotionsBefore, setEmotionsBefore]         = useState([]);
+  const [emotionsAfter,  setEmotionsAfter]           = useState([]);
   const [customPositiveTags, setCustomPositiveTags] = useState([]);
   const [customMistakeTags, setCustomMistakeTags]   = useState([]);
 
@@ -127,10 +128,11 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
   // ── Fetch custom emotions & tags on open ─────────────────────────────────────
   useEffect(() => {
     if (!isOpen) return;
-    emotionService.getEmotions().then(res => {
-      if (res?.data) {
-        setCustomEmotions(res.data.map(e => ({ id: e.id, label: e.name, emoji: e.emoji || '', isDefault: e.is_default })));
-      }
+    emotionService.getEmotions('before').then(res => {
+      if (res?.data) setEmotionsBefore(res.data.map(e => ({ id: e.id, label: e.name, emoji: e.emoji || '', isDefault: e.is_default })));
+    }).catch(() => {});
+    emotionService.getEmotions('after').then(res => {
+      if (res?.data) setEmotionsAfter(res.data.map(e => ({ id: e.id, label: e.name, emoji: e.emoji || '', isDefault: e.is_default })));
     }).catch(() => {});
     tagService.getTags().then(res => {
       if (res?.data) {
@@ -238,7 +240,8 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
   const handleDeleteEmotion = async (id) => {
     try {
       await emotionService.deleteEmotion(id);
-      setCustomEmotions(prev => prev.filter(e => e.id !== id));
+      setEmotionsBefore(prev => prev.filter(e => e.id !== id));
+      setEmotionsAfter(prev => prev.filter(e => e.id !== id));
       setFormData(prev => ({
         ...prev,
         emotionBefore: prev.emotionBefore === id ? '' : prev.emotionBefore,
@@ -264,10 +267,17 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
   const handleCustomTagSave = async (newTag) => {
     try {
       if (customTagModal.type === 'emotion') {
-        const result = await emotionService.createEmotion({ name: newTag.label, emoji: newTag.emoji, color: newTag.color });
+        const subtype = customTagModal.subtype;
+        const result = await emotionService.createEmotion({ name: newTag.label, emoji: newTag.emoji, color: newTag.color, subtype });
         const saved = result.data;
-        setCustomEmotions(prev => [...prev, { id: saved.id, label: saved.name, emoji: saved.emoji || '', isDefault: false }]);
-        setV('emotionBefore', saved.id);
+        const entry = { id: saved.id, label: saved.name, emoji: saved.emoji || '', isDefault: false };
+        if (subtype === 'before') {
+          setEmotionsBefore(prev => [...prev, entry]);
+          setV('emotionBefore', saved.id);
+        } else {
+          setEmotionsAfter(prev => [...prev, entry]);
+          setV('emotionAfter', saved.id);
+        }
       } else {
         const result = await tagService.createTag({
           type: customTagModal.type === 'positive' ? 'POSITIVE' : 'MISTAKE',
@@ -343,7 +353,8 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
   // ── Tag lists: DB-only when available, static fallback ───────────────────────
   // Static IDs ('calm', 'confident'…) and DB UUIDs never match, so merging
   // always causes duplicates. Use DB exclusively when it returns data.
-  const allEmotions     = customEmotions.length     > 0 ? customEmotions     : EMOTIONS;
+  const allEmotionsBefore = emotionsBefore.length > 0 ? emotionsBefore : EMOTIONS;
+  const allEmotionsAfter  = emotionsAfter.length  > 0 ? emotionsAfter  : EMOTIONS;
   const allPositiveTags = customPositiveTags.length > 0 ? customPositiveTags : POSITIVE_TAGS;
   const allMistakeTags  = customMistakeTags.length  > 0 ? customMistakeTags  : MISTAKE_TAGS;
 
@@ -526,7 +537,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             <div className="mb-4">
               <label className={labelCls}>Орох үеийн сэтгэл зүй</label>
               <div className="flex flex-wrap gap-1.5">
-                {allEmotions.map(e => (
+                {allEmotionsBefore.map(e => (
                   <TagChip
                     key={`before-${e.id}`}
                     tag={e}
@@ -536,7 +547,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                     colorSelected="bg-slate-800 border-slate-500 text-white"
                   />
                 ))}
-                <button type="button" onClick={() => setCustomTagModal({ type: 'emotion' })}
+                <button type="button" onClick={() => setCustomTagModal({ type: 'emotion', subtype: 'before' })}
                   className="px-3 py-1.5 rounded-lg text-xs bg-slate-950 text-slate-500 border border-dashed border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-all flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Нэмэх
                 </button>
@@ -547,7 +558,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
             <div className="mb-4">
               <label className={labelCls}>Гарах үеийн сэтгэл зүй</label>
               <div className="flex flex-wrap gap-1.5">
-                {allEmotions.map(e => (
+                {allEmotionsAfter.map(e => (
                   <TagChip
                     key={`after-${e.id}`}
                     tag={e}
@@ -557,7 +568,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                     colorSelected="bg-slate-800 border-slate-500 text-white"
                   />
                 ))}
-                <button type="button" onClick={() => setCustomTagModal({ type: 'emotion' })}
+                <button type="button" onClick={() => setCustomTagModal({ type: 'emotion', subtype: 'after' })}
                   className="px-3 py-1.5 rounded-lg text-xs bg-slate-950 text-slate-500 border border-dashed border-slate-700 hover:border-slate-500 hover:text-slate-300 transition-all flex items-center gap-1">
                   <Plus className="w-3 h-3" /> Нэмэх
                 </button>

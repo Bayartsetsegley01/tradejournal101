@@ -477,3 +477,10 @@ DO $$ BEGIN
     ALTER TABLE mt5_accounts ADD COLUMN starting_balance DECIMAL DEFAULT 0;
   END IF;
 END $$;
+
+-- Emotion subtype: 'before', 'after', or NULL (appears in both)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='emotion_tags' AND column_name='subtype') THEN
+    ALTER TABLE emotion_tags ADD COLUMN subtype VARCHAR(20) DEFAULT NULL;
+  END IF;
+END $$;
