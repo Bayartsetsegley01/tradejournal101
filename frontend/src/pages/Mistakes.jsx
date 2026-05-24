@@ -584,7 +584,7 @@ export function MistakesPage() {
                       })()}
                     </p>
                   )}
-                </div>
+                </>
               )}
             </div>
 
