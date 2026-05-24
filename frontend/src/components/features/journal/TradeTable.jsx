@@ -11,6 +11,7 @@ import { safeFormatDate } from "@/lib/utils";
 import { DateTimePicker } from "@/components/ui/DateTimePicker";
 import { MarketSelect } from "@/components/ui/MarketSelect";
 import { tradeService } from "@/services/tradeService";
+import { emotionService } from "@/services/emotionService";
 
 const MARKET_CONFIG = {
   crypto:      { icon: Bitcoin,    color: 'text-blue-400',    bg: 'bg-blue-500/10',    border: 'border-blue-500/20' },
@@ -150,6 +151,16 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
   const [vals, setVals] = useState({});
   const [flashes, setFlashes] = useState({});
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [dbEmotions, setDbEmotions] = useState([]);
+
+  useEffect(() => {
+    emotionService.getEmotions().then(res => {
+      if (res?.data?.length > 0)
+        setDbEmotions(res.data.map(e => ({ id: e.id, label: e.name, emoji: e.emoji || '' })));
+    }).catch(() => {});
+  }, []);
+
+  const allEmotions = dbEmotions.length > 0 ? dbEmotions : EMOTIONS;
 
   // Notes popup
   const [notePopup, setNotePopup] = useState(null);
@@ -561,7 +572,7 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
                       <div className="mb-2">
                         <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Оролтоос өмнө</div>
                         <div className="flex flex-wrap gap-0.5">
-                          {EMOTIONS.map((em) => (
+                          {allEmotions.map((em) => (
                             <button key={em.id} title={em.label}
                               onClick={() => saveField(t.id, 'emotion', { emotion_before: em.id, emotion_after: gv(t.id, 'emotion_after') ?? emotAfter })}
                               className={`text-base p-0.5 rounded transition-all hover:scale-125 ${(gv(t.id, 'emotion_before') ?? emotBefore) === em.id ? 'ring-2 ring-accent scale-110 rounded-full' : ''}`}>
@@ -573,7 +584,7 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
                       <div>
                         <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Гарсны дараа</div>
                         <div className="flex flex-wrap gap-0.5">
-                          {EMOTIONS.map((em) => (
+                          {allEmotions.map((em) => (
                             <button key={em.id} title={em.label}
                               onClick={() => saveField(t.id, 'emotion', { emotion_before: gv(t.id, 'emotion_before') ?? emotBefore, emotion_after: em.id })}
                               className={`text-base p-0.5 rounded transition-all hover:scale-125 ${(gv(t.id, 'emotion_after') ?? emotAfter) === em.id ? 'ring-2 ring-accent scale-110 rounded-full' : ''}`}>
@@ -586,9 +597,9 @@ export function TradeTable({ trades, onRowClick, onEdit, onDuplicate, onDelete, 
                   ) : (
                     <>
                       <div className="flex items-center justify-center gap-1">
-                        {emotBefore && <span className="text-lg" title={EMOTIONS.find(e => e.id === emotBefore)?.label}>{EMOTIONS.find(e => e.id === emotBefore)?.emoji}</span>}
+                        {emotBefore && <span className="text-lg" title={allEmotions.find(e => e.id === emotBefore)?.label}>{allEmotions.find(e => e.id === emotBefore)?.emoji}</span>}
                         {emotBefore && emotAfter && <span className="text-slate-700 text-xs">→</span>}
-                        {emotAfter  && <span className="text-lg" title={EMOTIONS.find(e => e.id === emotAfter)?.label}>{EMOTIONS.find(e => e.id === emotAfter)?.emoji}</span>}
+                        {emotAfter  && <span className="text-lg" title={allEmotions.find(e => e.id === emotAfter)?.label}>{allEmotions.find(e => e.id === emotAfter)?.emoji}</span>}
                         {!emotBefore && !emotAfter && <span className="text-slate-600">—</span>}
                       </div>
                       <FlashOverlay id={t.id} field="emotion" />
