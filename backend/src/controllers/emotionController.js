@@ -3,7 +3,11 @@ import { query, getDbStatus } from '../config/database.js';
 export const getEmotions = async (req, res) => {
   try {
     if (!getDbStatus()) return res.status(503).json({ success: false, error: 'Database not connected' });
-    const result = await query('SELECT * FROM emotion_tags ORDER BY is_default DESC, name ASC');
+    const userId = req.user.id;
+    const result = await query(
+      'SELECT * FROM emotion_tags WHERE user_id=$1 OR is_default=true ORDER BY is_default DESC, name ASC',
+      [userId]
+    );
     res.json({ success: true, data: result.rows });
   } catch (error) {
     console.error('getEmotions error:', error);
