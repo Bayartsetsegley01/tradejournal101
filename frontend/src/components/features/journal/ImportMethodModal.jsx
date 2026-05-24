@@ -1,76 +1,7 @@
-import { X, Zap, FileSpreadsheet, Plus } from "lucide-react";
+import { X, Zap, FileSpreadsheet } from "lucide-react";
 
-const METHODS = [
-  {
-    id: 'autosync',
-    icon: Zap,
-    iconBg: 'bg-accent/10',
-    iconColor: 'text-accent',
-    label: 'Auto-Sync',
-    badge: 'Санал болгох',
-    badgeCls: 'bg-accent/10 text-accent border-accent/20',
-    desc: 'MT5 login болон investor password оруулна. Cloud-оор read-only горимоор арилжааны түүх татна.',
-  },
-  {
-    id: 'csv',
-    icon: FileSpreadsheet,
-    iconBg: 'bg-slate-700/50',
-    iconColor: 'text-slate-400',
-    label: 'CSV Import',
-    badge: 'Гараар',
-    badgeCls: 'bg-slate-700/50 text-slate-400 border-slate-600/40',
-    desc: 'MT5-аас CSV export хийж upload хийнэ. Ямар ч холболт шаардахгүй — хамгийн энгийн арга.',
-  },
-  {
-    id: 'manual',
-    icon: Plus,
-    iconBg: 'bg-slate-700/50',
-    iconColor: 'text-slate-400',
-    label: 'Гараар оруулах',
-    badge: 'Үндсэн данс',
-    badgeCls: 'bg-slate-700/50 text-slate-400 border-slate-600/40',
-    desc: 'Арилжаа тус бүрийг гараар нэмнэ. Үндсэн данс руу орно.',
-  },
-];
-
-function MethodCard({ method, onClick }) {
-  const Icon = method.icon;
-  return (
-    <button
-      onClick={onClick}
-      className="group w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700 transition-all duration-150"
-    >
-      <div className="flex items-start gap-3.5">
-        <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${method.iconBg} group-hover:scale-105 transition-transform`}>
-          <Icon className={`${method.iconColor}`} style={{ width: 18, height: 18 }} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-semibold text-white">{method.label}</span>
-            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${method.badgeCls}`}>
-              {method.badge}
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 leading-relaxed">{method.desc}</p>
-        </div>
-        <svg className="shrink-0 self-center w-4 h-4 text-slate-700 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all"
-          fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </div>
-    </button>
-  );
-}
-
-export function ImportMethodModal({ isOpen, onClose, onCSVImport, onAutoSync, onManual }) {
+export function ImportMethodModal({ isOpen, onClose, onCSVImport, onAutoSync }) {
   if (!isOpen) return null;
-
-  const handleMethod = (id) => {
-    onClose();
-    if (id === 'csv') { onCSVImport?.(); return; }
-    if (id === 'autosync') { onAutoSync?.(); return; }
-    if (id === 'manual') { onManual?.(); return; }
-  };
 
   return (
     <div
@@ -91,9 +22,45 @@ export function ImportMethodModal({ isOpen, onClose, onCSVImport, onAutoSync, on
           </div>
 
           <div className="space-y-2">
-            {METHODS.map(m => (
-              <MethodCard key={m.id} method={m} onClick={() => handleMethod(m.id)} />
-            ))}
+            {/* CSV Import */}
+            <button
+              onClick={() => { onClose(); onCSVImport?.(); }}
+              className="group w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700 transition-all duration-150"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="shrink-0 w-9 h-9 rounded-xl bg-slate-700/50 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <FileSpreadsheet className="text-slate-400" style={{ width: 18, height: 18 }} />
+                </div>
+                <span className="text-sm font-semibold text-white flex-1">CSV оруулах</span>
+                <svg className="shrink-0 w-4 h-4 text-slate-700 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+
+            {/* Auto-Sync */}
+            <button
+              onClick={() => { onClose(); onAutoSync?.(); }}
+              className="group w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700 transition-all duration-150"
+            >
+              <div className="flex items-center gap-3.5">
+                <div className="shrink-0 w-9 h-9 rounded-xl bg-slate-700/50 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Zap className="text-slate-400" style={{ width: 18, height: 18 }} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-white">Auto-Sync</span>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border bg-slate-700/50 text-slate-500 border-slate-600/40">Туршилт</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-0.5">MT5 дансаа шууд холбох боломжтой</p>
+                </div>
+                <svg className="shrink-0 w-4 h-4 text-slate-700 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
           </div>
         </div>
       </div>

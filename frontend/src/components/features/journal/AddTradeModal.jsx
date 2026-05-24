@@ -639,7 +639,7 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
 
               {/* Screenshot */}
               <div>
-                <label className={labelCls}>Screenshot</label>
+                <label className={labelCls}>Зураг</label>
                 {formData.screenshot_url ? (
                   <div className="relative rounded-xl overflow-hidden border border-slate-700 group">
                     <img src={formData.screenshot_url} alt="Trade Screenshot" className="w-full h-auto max-h-[240px] object-cover" />
@@ -656,10 +656,9 @@ export function AddTradeModal({ isOpen, onClose, initialData = null, accountId =
                     </div>
                   </div>
                 ) : (
-                  <label className="border-2 border-dashed border-slate-700 hover:border-accent/50 bg-slate-950/50 rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all cursor-pointer group">
-                    <UploadCloud className="w-8 h-8 text-slate-500 group-hover:text-accent mb-2 transition-colors" />
-                    <p className="text-sm text-slate-400">Зураг оруулах эсвэл Drag & Drop</p>
-                    <p className="text-xs text-slate-600 mt-1">PNG, JPG, GIF (Max 5MB)</p>
+                  <label className="border-2 border-dashed border-slate-700 hover:border-accent/50 bg-slate-950/50 rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all cursor-pointer group">
+                    <UploadCloud className="w-7 h-7 text-slate-500 group-hover:text-accent mb-2 transition-colors" />
+                    <p className="text-sm text-slate-400">Зураг оруулах</p>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) { const r = new FileReader(); r.onloadend = () => setV('screenshot_url', r.result); r.readAsDataURL(file); }

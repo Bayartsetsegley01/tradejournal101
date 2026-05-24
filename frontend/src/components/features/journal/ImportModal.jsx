@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import {
   X, Upload, FileSpreadsheet, CheckCircle2, AlertCircle,
-  Loader2, Download, ChevronRight, Info,
+  Loader2, Download, ChevronRight,
 } from "lucide-react";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || '') + '/api';
@@ -205,30 +205,30 @@ const applyMapping = (rawRows, mapping) =>
 // ── System field dropdown options ─────────────────────────────────────────────
 const SYSTEM_FIELDS = [
   { value: '', label: '— Ашиглахгүй —' },
-  { value: 'symbol',          label: 'Symbol / Pair' },
-  { value: 'direction',       label: 'Direction (LONG/SHORT)' },
-  { value: 'status',          label: 'Status' },
-  { value: 'entry_date',      label: 'Entry Date' },
-  { value: 'exit_date',       label: 'Exit Date' },
-  { value: 'entry_price',     label: 'Entry Price' },
-  { value: 'exit_price',      label: 'Exit Price' },
+  { value: 'symbol',          label: 'Symbol / Хос' },
+  { value: 'direction',       label: 'Чиглэл (LONG/SHORT)' },
+  { value: 'status',          label: 'Статус' },
+  { value: 'entry_date',      label: 'Оролтын огноо' },
+  { value: 'exit_date',       label: 'Гаралтын огноо' },
+  { value: 'entry_price',     label: 'Оролтын үнэ' },
+  { value: 'exit_price',      label: 'Гаралтын үнэ' },
   { value: 'stop_loss',       label: 'Stop Loss' },
   { value: 'take_profit',     label: 'Take Profit' },
-  { value: 'position_size',   label: 'Size / Lot' },
-  { value: 'risk_percent',    label: 'Risk %' },
+  { value: 'position_size',   label: 'Хэмжээ / Лот' },
+  { value: 'risk_percent',    label: 'Эрсдэл %' },
   { value: 'pnl',             label: 'P&L (Ашиг/Алдагдал)' },
-  { value: 'rr_ratio',        label: 'R/R Ratio' },
-  { value: 'strategy',        label: 'Strategy' },
-  { value: 'session',         label: 'Session' },
-  { value: 'market_type',     label: 'Market Type' },
-  { value: 'positive_tags',   label: 'Positive Tags' },
-  { value: 'mistake_tags',    label: 'Mistake Tags' },
+  { value: 'rr_ratio',        label: 'R/R Харьцаа' },
+  { value: 'strategy',        label: 'Стратеги' },
+  { value: 'session',         label: 'Сесс' },
+  { value: 'market_type',     label: 'Зах зээлийн төрөл' },
+  { value: 'positive_tags',   label: 'Эерэг тэмдэглэл' },
+  { value: 'mistake_tags',    label: 'Алдааны тэмдэглэл' },
   { value: 'why_entered',     label: 'Яагаад орсон бэ?' },
   { value: 'what_happened',   label: 'Юу болсон бэ?' },
   { value: 'lessons_learned', label: 'Юу сурсан бэ?' },
-  { value: 'notes',           label: 'Notes / Rating' },
-  { value: 'emotion_before',  label: 'Emotion Before' },
-  { value: 'emotion_after',   label: 'Emotion After' },
+  { value: 'notes',           label: 'Тэмдэглэл' },
+  { value: 'emotion_before',  label: 'Сэтгэл зүй (оролт)' },
+  { value: 'emotion_after',   label: 'Сэтгэл зүй (гаралт)' },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -362,12 +362,12 @@ export function ImportModal({ isOpen, onClose, onImportComplete, accountId = nul
 
   const PREVIEW_COLS = [
     { key: 'symbol',      label: 'Symbol' },
-    { key: 'direction',   label: 'Dir.' },
-    { key: 'entry_date',  label: 'Date' },
-    { key: 'entry_price', label: 'Entry' },
-    { key: 'exit_price',  label: 'Exit' },
+    { key: 'direction',   label: 'Чиглэл' },
+    { key: 'entry_date',  label: 'Огноо' },
+    { key: 'entry_price', label: 'Оролт' },
+    { key: 'exit_price',  label: 'Гаралт' },
     { key: 'pnl',         label: 'P&L' },
-    { key: 'strategy',    label: 'Strategy' },
+    { key: 'strategy',    label: 'Стратеги' },
   ];
 
   return (
@@ -379,7 +379,7 @@ export function ImportModal({ isOpen, onClose, onImportComplete, accountId = nul
           <div className="flex items-center gap-3">
             <FileSpreadsheet className="w-5 h-5 text-accent" />
             <h2 className="text-base font-bold text-white">
-              {step === 'mapping' ? 'Баганын харгалзуулалт' : step === 'preview' ? 'Preview' : step === 'result' ? 'Дууслаа' : 'Import'}
+              {step === 'mapping' ? 'Баганын харгалзуулалт' : step === 'preview' ? 'Урьдчилан харах' : step === 'result' ? 'Дууслаа' : 'CSV оруулах'}
             </h2>
             {isMT5 && <span className="text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full font-semibold">MetaTrader 5</span>}
           </div>
@@ -413,20 +413,8 @@ export function ImportModal({ isOpen, onClose, onImportComplete, accountId = nul
               >
                 <Upload className="w-10 h-10 text-slate-500 mx-auto mb-3" />
                 <p className="text-white font-medium mb-1">CSV эсвэл Excel файлаа сонгоно уу</p>
-                <p className="text-slate-500 text-xs">Дэмжигдэх формат: .csv · .xlsx · .xls · .txt</p>
-                <p className="text-slate-600 text-xs mt-1">Notion, Excel, MT5, ManualJournal — ямар ч формат</p>
+                <p className="text-slate-500 text-xs">.csv · .xlsx · .xls · .txt</p>
                 <input ref={fileRef} type="file" accept=".csv,.txt,.xlsx,.xls" onChange={handleFileInput} className="hidden" />
-              </div>
-
-              <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4">
-                <div className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
-                  <div className="text-xs text-slate-500 space-y-1">
-                    <p>Дараах огноо форматыг автоматаар таньдаг:</p>
-                    <p className="text-slate-600 font-mono">January 8 2026 · 01/08/2026 · 08.01.2026 · 2026.01.08 · 44934 (Excel serial)</p>
-                    <p className="mt-1">Тоог мөн автоматаар: <span className="font-mono">1,234.50 · (100) · -100</span></p>
-                  </div>
-                </div>
               </div>
 
               <button onClick={downloadTemplate}
@@ -506,7 +494,7 @@ export function ImportModal({ isOpen, onClose, onImportComplete, accountId = nul
                 </button>
                 <button onClick={handleConfirmMapping}
                   className="flex-1 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-slate-950 font-bold text-sm transition-all flex items-center justify-center gap-2">
-                  Preview харах <ChevronRight className="w-4 h-4" />
+                  Урьдчилан харах <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>

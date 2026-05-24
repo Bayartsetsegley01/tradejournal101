@@ -255,9 +255,10 @@ function PortfolioView({ accounts, accountsLoading, trades, onSelect, onAddAccou
 const inputCls = 'w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/10 transition-all';
 
 function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
-  const [step, setStep] = useState('method'); // method | autosync | manual | done
+  const [step, setStep] = useState('method'); // method | autosync | manual | csv-form | done
   const [form, setForm] = useState({ login: '', investorPassword: '', server: '' });
   const [manualForm, setManualForm] = useState({ name: '', startingBalance: '' });
+  const [csvForm, setCsvForm] = useState({ name: '', startingBalance: '' });
   const [showPass, setShowPass] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
@@ -266,6 +267,7 @@ function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
     setStep('method');
     setForm({ login: '', investorPassword: '', server: '' });
     setManualForm({ name: '', startingBalance: '' });
+    setCsvForm({ name: '', startingBalance: '' });
     setError(''); setConnecting(false);
   };
   const close = () => { reset(); onClose(); };
@@ -282,6 +284,21 @@ function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
       if (!d.success) { setError(d.error || 'Данс үүсгэхэд алдаа гарлаа'); setConnecting(false); return; }
       setStep('done');
       setTimeout(() => { onSuccess(); onManualTrade(d.data); close(); }, 1500);
+    } catch (e) { setError(e.message); setConnecting(false); }
+  };
+
+  const handleCreateCSV = async () => {
+    if (!csvForm.name.trim()) { setError('Дансны нэр оруулна уу'); return; }
+    setError(''); setConnecting(true);
+    try {
+      const res = await fetch(`${API_BASE}/mt5/manual`, {
+        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify({ name: csvForm.name, startingBalance: parseFloat(csvForm.startingBalance) || 0 }),
+      });
+      const d = await res.json();
+      if (!d.success) { setError(d.error || 'Данс үүсгэхэд алдаа гарлаа'); setConnecting(false); return; }
+      onSuccess('csv', d.data.id);
+      close();
     } catch (e) { setError(e.message); setConnecting(false); }
   };
 
@@ -320,7 +337,7 @@ function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
           <div>
             <h2 className="text-base font-bold text-white">Шинэ данс нэмэх</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {step === 'method' ? 'Аргаа сонгоно уу' : step === 'autosync' ? 'MT5 мэдээлэл оруулна уу' : step === 'manual' ? 'Шинэ гараар данс' : 'Амжилттай!'}
+              {step === 'method' ? 'Аргаа сонгоно уу' : step === 'autosync' ? 'MT5 мэдээлэл оруулна уу' : step === 'manual' ? 'Шинэ данс' : step === 'csv-form' ? 'Дансны мэдээлэл' : 'Амжилттай!'}
             </p>
           </div>
           <button onClick={close} className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors">
@@ -342,9 +359,9 @@ function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-semibold text-white">Auto-Sync</span>
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">Санал болгох</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-700/50 text-slate-500 border border-slate-600/40">Туршилт</span>
                     </div>
-                    <p className="text-xs text-slate-500">MT5 login болон investor password оруулна. Cloud-оор read-only горимоор арилжааны түүх татна.</p>
+                    <p className="text-xs text-slate-600">MT5 дансаа шууд холбох боломжтой</p>
                   </div>
                   <svg className="shrink-0 self-center w-4 h-4 text-slate-700 group-hover:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -353,20 +370,14 @@ function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
               </button>
 
               {/* CSV Import */}
-              <button onClick={() => { close(); onSuccess('csv'); }}
+              <button onClick={() => { setError(''); setStep('csv-form'); }}
                 className="group w-full text-left p-4 rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 hover:border-slate-700 transition-all">
-                <div className="flex items-start gap-3.5">
+                <div className="flex items-center gap-3.5">
                   <div className="shrink-0 w-9 h-9 rounded-xl bg-slate-700/50 flex items-center justify-center group-hover:scale-105 transition-transform">
                     <FileSpreadsheet className="w-[18px] h-[18px] text-slate-400" />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-semibold text-white">CSV Import</span>
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-700/50 text-slate-400 border border-slate-600/40">Гараар</span>
-                    </div>
-                    <p className="text-xs text-slate-500">MT5-аас CSV export хийж upload хийнэ. Ямар ч холболт шаардахгүй.</p>
-                  </div>
-                  <svg className="shrink-0 self-center w-4 h-4 text-slate-700 group-hover:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <span className="text-sm font-semibold text-white flex-1">CSV оруулах</span>
+                  <svg className="shrink-0 w-4 h-4 text-slate-700 group-hover:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -382,9 +393,7 @@ function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-semibold text-white">Гараар оруулах</span>
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-700/50 text-slate-400 border border-slate-600/40">Үндсэн данс</span>
                     </div>
-                    <p className="text-xs text-slate-500">Арилжаа тус бүрийг гараар нэмнэ. Үндсэн данс руу орно.</p>
                   </div>
                   <svg className="shrink-0 self-center w-4 h-4 text-slate-700 group-hover:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -489,6 +498,45 @@ function AddAccountModal({ isOpen, onClose, onSuccess, onManualTrade }) {
                 className="w-full flex items-center justify-center gap-2 text-sm font-semibold bg-accent hover:bg-accent-hover text-slate-950 py-2.5 rounded-lg transition-colors disabled:opacity-50 mt-2">
                 <Plus className="w-4 h-4" />
                 {connecting ? 'Үүсгэж байна...' : 'Данс үүсгэх'}
+              </button>
+            </div>
+          )}
+
+          {/* Step: CSV form — дансны нэр оруулж CSV import нээх */}
+          {step === 'csv-form' && (
+            <div className="space-y-3">
+              <button onClick={() => { setStep('method'); setError(''); }}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors mb-1">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Буцах
+              </button>
+
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Дансны нэр <span className="text-rose-400">*</span></label>
+                <input type="text" value={csvForm.name}
+                  onChange={e => setCsvForm({...csvForm, name: e.target.value})}
+                  placeholder="жш: Forex данс, Scalping данс..."
+                  disabled={connecting} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Эхний үлдэгдэл (USD)</label>
+                <input type="number" value={csvForm.startingBalance}
+                  onChange={e => setCsvForm({...csvForm, startingBalance: e.target.value})}
+                  placeholder="жш: 1000"
+                  disabled={connecting} className={inputCls} />
+              </div>
+
+              {error && (
+                <p className="text-xs text-rose-400 bg-rose-400/5 border border-rose-400/15 rounded-lg px-3 py-2">{error}</p>
+              )}
+
+              <button onClick={handleCreateCSV}
+                disabled={connecting || !csvForm.name.trim()}
+                className="w-full flex items-center justify-center gap-2 text-sm font-semibold bg-accent hover:bg-accent-hover text-slate-950 py-2.5 rounded-lg transition-colors disabled:opacity-50 mt-2">
+                <FileSpreadsheet className="w-4 h-4" />
+                {connecting ? 'Үүсгэж байна...' : 'Данс үүсгэж CSV оруулах'}
               </button>
             </div>
           )}
