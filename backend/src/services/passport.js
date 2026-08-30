@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { query } from '../config/database.js';
 
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -51,5 +52,8 @@ passport.use(new GoogleStrategy({
     return done(err);
   }
 }));
+} else {
+  console.warn('GOOGLE_CLIENT_ID/SECRET not set — Google OAuth strategy disabled (email login still works).');
+}
 
 export default passport;
